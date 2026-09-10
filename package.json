@@ -1,0 +1,58 @@
+{
+  "name": "purple-dragon-powertools",
+  "version": "2.0.1",
+  "description": "Purple Dragon PowerTools - Purple Dragon AI Command Center, a private Windows command center by Purple Dragon Foundation Ltd with Direct AI, Dragon Router, Dragon Council, System-Aware AI, Privacy & App Trust Intelligence, Change Journal + Undo, GitHub Release Center, Windows Feature Lab, and fast boot.",
+  "main": "src/main.js",
+  "author": "Purple Dragon Foundation Ltd",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "dist:win": "electron-builder --win nsis portable",
+    "pack:win": "electron-builder --win dir"
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.kyleaustin85.purpledragonpowertools",
+    "productName": "Purple Dragon PowerTools",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "!src/vendor/sensor-bridge/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "Purple-Dragon-PowerTools-${version}-${arch}.${ext}",
+      "requestedExecutionLevel": "asInvoker",
+      "icon": "src/assets/purple-dragon-foundation-mark.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Purple Dragon PowerTools"
+    },
+    "extraResources": [
+      {
+        "from": "src/vendor/sensor-bridge",
+        "to": "sensor-bridge"
+      }
+    ],
+    "copyright": "Copyright \u00a9 2026 Purple Dragon Foundation Ltd"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

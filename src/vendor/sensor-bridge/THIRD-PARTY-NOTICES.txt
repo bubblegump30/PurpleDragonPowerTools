@@ -1,0 +1,5 @@
+Purple Dragon PowerTools v0.3.2 Hardware Sensor Bridge
+
+LibreHardwareMonitorLib is used for local hardware sensor telemetry.
+The LibreHardwareMonitor license text is included as LibreHardwareMonitor-LICENSE.txt.
+Supporting runtime assemblies in this folder are redistributed solely to satisfy the local sensor bridge runtime.

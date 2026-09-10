@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+  <title>Purple Dragon PowerTools</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div class="aurora aurora-a"></div>
+    <div class="aurora aurora-b"></div>
+
+    <header class="titlebar drag-region">
+      <div class="brand no-drag">
+        <div class="brand-mark foundation-mark" role="img" aria-label="Purple Dragon Foundation Ltd"></div>
+        <div>
+          <div class="brand-title">POWERTOOLS</div>
+          <div class="brand-subtitle">PURPLE DRAGON FOUNDATION LTD</div>
+        </div>
+      </div>
+      <div class="search-wrap no-drag">
+        <span class="search-icon">⌕</span>
+        <input id="globalSearch" type="text" placeholder="Search tools, modules, settings..." autocomplete="off" />
+        <kbd>Ctrl K</kbd>
+      </div>
+      <div class="top-actions no-drag">
+        <button class="icon-btn" id="pulseBtn" title="Refresh metrics">⌁</button>
+        <button class="icon-btn notify-btn" id="notifyBtn" title="PowerTools status" aria-label="PowerTools status">◌</button>
+        <button class="icon-btn" id="settingsShortcut" title="Settings">⚙</button>
+        <div class="profile-account" id="profileAccount">
+          <button class="profile-chip" id="profileMenuButton" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu">
+            <div class="profile-orb" aria-hidden="true">PD</div>
+            <div class="profile-copy"><strong>Admin</strong><small>Superuser</small></div>
+            <span class="profile-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="profile-menu" id="profileMenu" role="menu" aria-label="Admin menu" hidden>
+            <div class="profile-menu-head">
+              <div class="profile-orb small" aria-hidden="true">PD</div>
+              <div><strong>Admin</strong><small>Superuser · Local profile</small></div>
+            </div>
+            <div class="profile-menu-separator"></div>
+            <button type="button" class="profile-menu-item" role="menuitem" data-profile-action="settings"><span>⚙</span><div><strong>Settings</strong><small>Interface, reliability & release controls</small></div><b>›</b></button>
+            <button type="button" class="profile-menu-item" role="menuitem" data-profile-action="about"><span>ⓘ</span><div><strong>About</strong><small>Purple Dragon PowerTools</small></div><b>›</b></button>
+            <div class="profile-menu-version">v2.0.1 · AI Command Center</div>
+          </div>
+        </div>
+        <div class="window-controls">
+          <button id="minBtn" title="Minimize" aria-label="Minimize">—</button>
+          <button id="maxBtn" title="Maximize or restore" aria-label="Maximize or restore">□</button>
+          <button id="closeBtn" class="close" title="Close" aria-label="Close">×</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <nav id="nav">
+          <button class="nav-item active" data-view="dashboard"><span>⌂</span>Dashboard</button>
+          <button class="nav-item" data-view="models"><span>◇</span>AI Command Center</button>
+          <button class="nav-item" data-view="performance"><span>◉</span>Performance</button>
+          <button class="nav-item" data-view="system"><span>▦</span>System</button>
+          <button class="nav-item" data-view="featurelab"><span>⚗</span>Feature Lab</button>
+          <button class="nav-item" data-view="data"><span>▣</span>Data Hub</button>
+          <button class="nav-item" data-view="apps"><span>▤</span>Process & Apps</button>
+          <button class="nav-item" data-view="network"><span>⌁</span>Network</button>
+          <button class="nav-item" data-view="privacy"><span>@</span>Privacy & Trust</button>
+          <button class="nav-item" data-view="automation"><span>⎇</span>Automation</button>
+          <button class="nav-item" data-view="journal"><span>↶</span>Change Journal</button>
+          <button class="nav-item" data-view="experiments"><span>⌬</span>Experiments</button>
+          <button class="nav-item" data-view="integrations"><span>⠿</span>Integrations</button>
+          <button class="nav-item" data-view="security"><span>⬡</span>Security</button>
+          <button class="nav-item" data-view="settings"><span>⚙</span>Settings</button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+        <section class="system-status-mini">
+          <div class="eyebrow">SYSTEM STATUS</div>
+          <div class="mini-ring" id="miniRing"><div><strong id="miniHealth">--%</strong><small id="miniHealthLabel">Calculating…</small></div></div>
+          <div class="status-line"><span class="status-dot"></span><span id="statusText">Collecting system data…</span></div>
+        </section>
+        <section class="pro-card">
+          <div class="crown">♛</div>
+          <div><strong>PURPLE DRAGON FOUNDATION LTD</strong><small>Private Development Build · v2.0.1</small></div>
+        </section>
+      </aside>
+
+      <main id="content" class="content">
+        <section class="view active" id="view-dashboard">
+          <div class="hero-grid">
+            <article class="panel hero-panel">
+              <div class="hero-copy">
+                <div>
+                  <h1 id="greeting">GOOD EVENING, ADMIN</h1>
+                  <p>Your Purple Dragon Command Center is connected to this PC.</p>
+                </div>
+                <span class="live-chip"><i></i> LIVE</span>
+              </div>
+              <div class="stat-cards">
+                <div class="stat-card"><span class="stat-icon cube">◇</span><div><strong id="cpuCard">--%</strong><span>CPU LOAD</span><small id="cpuName">Detecting processor…</small></div></div>
+                <div class="stat-card"><span class="stat-icon disk">▱</span><div><strong id="ramCard">--</strong><span>RAM USED</span><small id="ramDetail">Detecting memory…</small></div></div>
+                <div class="stat-card"><span class="stat-icon heart">♡</span><div><strong id="healthCard">--%</strong><span>SYSTEM HEALTH</span><small id="healthLabel">Calculating…</small></div></div>
+                <div class="stat-card"><span class="stat-icon bolt">ϟ</span><div><strong id="uptimeCard">--</strong><span>UPTIME</span><small>Current session</small></div></div>
+              </div>
+            </article>
+
+            <article class="panel assistant-panel">
+              <div class="assistant-visual"><div class="ai-orb"><span>AI</span></div></div>
+              <div class="assistant-copy">
+                <div class="eyebrow">AI ASSISTANT</div>
+                <div class="online"><i></i> Ready</div>
+                <p id="assistantMessage">Ask about CPU, memory, storage, or system health.</p>
+                <button class="primary-btn" id="assistantStart">Start Conversation <span>›</span></button>
+              </div>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel performance-panel">
+              <div class="panel-head"><h2>PERFORMANCE OVERVIEW</h2><span class="live-text"><i></i>Real-time</span></div>
+              <div class="performance-body">
+                <div class="main-ring" id="cpuRing"><div><strong id="cpuRingValue">--%</strong><span>CPU</span><small>Live</small></div></div>
+                <div class="metric-bars">
+                  <div class="bar-row"><label>CPU</label><div class="bar"><i id="cpuBar"></i></div><strong id="cpuPct">--%</strong></div>
+                  <div class="bar-row"><label>MEMORY</label><div class="bar"><i id="memoryBar"></i></div><strong id="memoryPct">--%</strong></div>
+                  <div class="bar-row"><label>STORAGE</label><div class="bar"><i id="storageBar"></i></div><strong id="storagePct">--%</strong></div>
+                  <div class="bar-row"><label>HEALTH</label><div class="bar"><i id="healthBar"></i></div><strong id="healthPct">--%</strong></div>
+                </div>
+              </div>
+              <canvas id="performanceChart" width="760" height="150"></canvas>
+            </article>
+
+            <article class="panel system-panel">
+              <div class="panel-head"><h2>SYSTEM PROFILE</h2><button class="small-btn" id="refreshSystem">Refresh</button></div>
+              <div class="system-list" id="systemProfile">
+                <div class="system-row"><div class="model-icon">CPU</div><div><strong>Processor</strong><small>Detecting…</small></div><span class="chip active">LIVE</span></div>
+                <div class="system-row"><div class="model-icon">GPU</div><div><strong>Graphics</strong><small>Detecting…</small></div><span class="chip">INFO</span></div>
+                <div class="system-row"><div class="model-icon">OS</div><div><strong>Windows</strong><small>Detecting…</small></div><span class="chip">HOST</span></div>
+                <div class="system-row"><div class="model-icon">RAM</div><div><strong>Memory</strong><small>Detecting…</small></div><span class="chip active">LIVE</span></div>
+              </div>
+            </article>
+
+            <article class="panel quick-panel">
+              <div class="panel-head"><h2>QUICK ACTIONS</h2></div>
+              <div class="quick-grid">
+                <button class="quick-btn" data-action="experiment"><span>⌬</span><b>New<br/>Experiment</b></button>
+                <button class="quick-btn" data-action="taskmanager"><span>▥</span><b>Task<br/>Manager</b></button>
+                <button class="quick-btn" data-action="startup"><span>✦</span><b>Startup<br/>Apps</b></button>
+                <button class="quick-btn" data-action="automation"><span>⎇</span><b>Automation<br/>Builder</b></button>
+                <button class="quick-btn" data-action="storage"><span>◉</span><b>Storage<br/>Settings</b></button>
+                <button class="quick-btn" data-action="export"><span>▤</span><b>Export<br/>Report</b></button>
+              </div>
+            </article>
+
+            <article class="panel chart-panel">
+              <div class="panel-head"><h2>RESOURCE HISTORY</h2><span class="time-chip">Last 60 seconds</span></div>
+              <div class="chart-legend"><span><i class="legend-cpu"></i>CPU</span><span><i class="legend-ram"></i>RAM</span></div>
+              <canvas id="resourceChart" width="760" height="250"></canvas>
+            </article>
+
+            <article class="panel activity-panel">
+              <div class="panel-head"><h2>RECENT ACTIVITY</h2><button class="small-btn" id="clearActivity">Clear local</button></div>
+              <div id="activityList" class="activity-list"></div>
+            </article>
+
+            <article class="panel monitor-panel">
+              <div class="panel-head"><h2>SYSTEM MONITOR</h2></div>
+              <div class="radar"><div class="radar-ring r1"></div><div class="radar-ring r2"></div><div class="radar-ring r3"></div><div class="radar-core"></div></div>
+              <div class="monitor-stats">
+                <div><strong id="coresStat">--</strong><span>LOGICAL CORES</span></div>
+                <div><strong id="ramStat">--</strong><span>RAM</span></div>
+                <div><strong id="storageStat">--</strong><span>SYSTEM DRIVE</span></div>
+                <div><strong id="platformStat">--</strong><span>PLATFORM</span></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-performance">
+          <div class="section-title performance-title">
+            <div><span class="eyebrow">PERFORMANCE+ · v2.0.1</span><h1>Performance & Hardware Center</h1><p>Live CPU, GPU, thermal, memory, disk, and network telemetry with a dedicated local hardware-sensor bridge.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshPerformance">Refresh Sensors</button><button class="primary-btn" data-open-system="taskmanager">Open Task Manager</button></div>
+          </div>
+
+          <div class="performance-metric-grid">
+            <article class="panel big-metric"><span>CPU LOAD</span><strong id="perfCpu">--%</strong><div class="metric-sub"><span id="perfCpuTemp">Temp --</span><span id="perfCpuClock">Clock --</span></div><div class="wide-bar"><i id="perfCpuBar"></i></div></article>
+            <article class="panel big-metric"><span>GPU LOAD</span><strong id="perfGpu">--</strong><div class="metric-sub"><span id="perfGpuTemp">Temp --</span><span id="perfGpuVram">VRAM --</span></div><div class="wide-bar"><i id="perfGpuBar"></i></div></article>
+            <article class="panel big-metric"><span>MEMORY LOAD</span><strong id="perfRam">--%</strong><div class="metric-sub"><span id="perfRamUsed">-- used</span><span id="perfRamTotal">-- total</span></div><div class="wide-bar"><i id="perfRamBar"></i></div></article>
+            <article class="panel big-metric"><span>SYSTEM DRIVE</span><strong id="perfStorage">--%</strong><div class="metric-sub"><span id="perfDiskReadMini">Read --</span><span id="perfDiskWriteMini">Write --</span></div><div class="wide-bar"><i id="perfStorageBar"></i></div></article>
+          </div>
+
+          <div class="performance-center-grid">
+            <article class="panel sensor-panel span-2">
+              <div class="panel-head"><h2>LIVE HARDWARE SENSORS</h2><span class="live-text"><i></i>Best effort</span></div>
+              <div class="sensor-grid">
+                <div class="sensor-tile cpu-temp-tile"><span>CPU TEMPERATURE</span><strong id="sensorCpuTemp">Unavailable</strong><small id="sensorCpuTempNote">CPU package sensor</small><button class="small-btn sensor-enable-btn" id="enableCpuSensor">Enable CPU Sensor</button></div>
+                <div class="sensor-tile"><span>CPU CLOCK</span><strong id="sensorCpuClock">--</strong><small>Average logical-core clock</small></div>
+                <div class="sensor-tile"><span>GPU TEMPERATURE</span><strong id="sensorGpuTemp">Unavailable</strong><small id="sensorGpuProvider">GPU telemetry provider</small></div>
+                <div class="sensor-tile"><span>GPU CORE CLOCK</span><strong id="sensorGpuClock">--</strong><small id="sensorGpuFan">Fan --</small></div>
+                <div class="sensor-tile"><span>GPU POWER</span><strong id="sensorGpuPower">--</strong><small id="sensorGpuPowerLimit">Limit --</small></div>
+                <div class="sensor-tile"><span>DISK BUSY</span><strong id="sensorDiskBusy">--%</strong><small>PhysicalDisk _Total</small></div>
+              </div>
+            </article>
+
+            <article class="panel io-panel">
+              <div class="panel-head"><h2>LIVE I/O</h2></div>
+              <div class="io-list">
+                <div><span>Disk read</span><strong id="diskReadRate">--</strong></div>
+                <div><span>Disk write</span><strong id="diskWriteRate">--</strong></div>
+                <div><span>Network down</span><strong id="networkDownRate">--</strong></div>
+                <div><span>Network up</span><strong id="networkUpRate">--</strong></div>
+              </div>
+            </article>
+
+            <article class="panel core-panel span-2">
+              <div class="panel-head"><h2>PER-CORE CPU LOAD</h2><span class="time-chip" id="coreCountChip">Detecting cores…</span></div>
+              <div class="core-grid" id="coreGrid"><div class="empty">Waiting for per-core telemetry…</div></div>
+            </article>
+
+            <article class="panel profile-panel">
+              <div class="panel-head"><h2>PERFORMANCE PROFILES</h2></div>
+              <div class="active-profile"><span>ACTIVE WINDOWS PLAN</span><strong id="activePowerPlan">Detecting…</strong></div>
+              <div class="profile-buttons">
+                <button class="profile-btn" data-profile="eco"><span>Eco</span><small>Windows Power saver</small></button>
+                <button class="profile-btn" data-profile="balanced"><span>Balanced</span><small>Default mixed workload</small></button>
+                <button class="profile-btn" data-profile="performance"><span>Performance</span><small>Windows High performance</small></button>
+              </div>
+              <button class="text-btn" data-open-system="poweroptions">Open Windows Power Options</button>
+            </article>
+
+            <article class="panel telemetry-card span-2">
+              <div class="panel-head"><h2>LOAD HISTORY</h2><span class="time-chip">CPU · GPU · RAM</span></div>
+              <div class="chart-legend"><span><i class="legend-cpu"></i>CPU</span><span><i class="legend-ram"></i>GPU</span><span><i class="legend-health"></i>RAM</span></div>
+              <canvas id="perfDetailChart" width="900" height="360"></canvas>
+            </article>
+
+            <article class="panel telemetry-card">
+              <div class="panel-head"><h2>THERMAL HISTORY</h2><span class="time-chip">°C normalized</span></div>
+              <div class="thermal-caption"><span id="thermalCpuNow">CPU --</span><span id="thermalGpuNow">GPU --</span></div>
+              <canvas id="thermalChart" width="520" height="360"></canvas>
+            </article>
+
+            <article class="panel hardware-panel span-3">
+              <div class="panel-head"><h2>HARDWARE IDENTITY</h2><button class="small-btn" id="refreshHardware">Refresh</button></div>
+              <div class="hardware-grid">
+                <div><span>Processor</span><strong id="hardwareCpu">Detecting…</strong><small id="hardwareCpuMeta">--</small></div>
+                <div><span>Graphics</span><strong id="hardwareGpu">Detecting…</strong><small id="hardwareGpuMeta">--</small></div>
+                <div><span>Motherboard</span><strong id="hardwareBoard">Detecting…</strong><small id="hardwareBoardMeta">--</small></div>
+                <div><span>BIOS</span><strong id="hardwareBios">Detecting…</strong><small id="hardwareBiosMeta">--</small></div>
+                <div><span>Memory</span><strong id="hardwareRam">Detecting…</strong><small id="hardwareRamMeta">--</small></div>
+                <div><span>Windows</span><strong id="hardwareOs">Detecting…</strong><small id="hardwareOsMeta">--</small></div>
+              </div>
+            </article>
+
+            <article class="panel tools-card span-3">
+              <div class="panel-head"><h2>WINDOWS PERFORMANCE TOOLS</h2></div>
+              <div class="action-list performance-actions"><button data-open-system="taskmanager">Task Manager <span>›</span></button><button data-open-system="resmon">Resource Monitor <span>›</span></button><button data-open-system="startup">Startup Apps <span>›</span></button><button data-open-system="apps">Installed Apps <span>›</span></button><button data-open-system="storage">Storage Sense <span>›</span></button><button data-open-system="network">Network Status <span>›</span></button></div>
+            </article>
+          </div>
+        </section>
+
+
+        <section class="view" id="view-system">
+          <div class="section-title system-title">
+            <div><span class="eyebrow">SYSTEM+ · v2.0.1</span><h1>System PowerTools</h1><p>Real Windows system identity, firmware security state, startup inventory, and one-click administrative utilities.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshSystemTools">Refresh System</button><button class="primary-btn" id="systemExport">Export Report</button></div>
+          </div>
+
+          <div class="system-summary-grid">
+            <article class="panel system-summary-card"><span>DEVICE NAME</span><strong id="sysDeviceName">Detecting…</strong><small id="sysDeviceModel">Reading computer identity</small></article>
+            <article class="panel system-summary-card"><span>WINDOWS</span><strong id="sysWindowsVersion">Detecting…</strong><small id="sysWindowsBuild">Reading Windows build</small></article>
+            <article class="panel system-summary-card"><span>BOOT MODE</span><strong id="sysBootMode">Detecting…</strong><small id="sysSecureBootSummary">Secure Boot status</small></article>
+            <article class="panel system-summary-card"><span>TPM</span><strong id="sysTpmStatus">Detecting…</strong><small id="sysTpmSummary">Trusted Platform Module</small></article>
+          </div>
+
+          <div class="system-center-grid">
+            <article class="panel system-details-panel span-2">
+              <div class="panel-head"><h2>SYSTEM INFORMATION</h2><span class="live-text"><i></i>Local Windows data</span></div>
+              <div class="system-details-grid">
+                <div><span>Computer</span><strong id="detailComputer">--</strong><small id="detailComputerMeta">--</small></div>
+                <div><span>Processor</span><strong id="detailCpu">--</strong><small id="detailCpuMeta">--</small></div>
+                <div><span>Graphics</span><strong id="detailGpu">--</strong><small id="detailGpuMeta">--</small></div>
+                <div><span>Motherboard</span><strong id="detailBoard">--</strong><small id="detailBoardMeta">--</small></div>
+                <div><span>BIOS</span><strong id="detailBios">--</strong><small id="detailBiosMeta">--</small></div>
+                <div><span>Memory</span><strong id="detailMemory">--</strong><small id="detailMemoryMeta">--</small></div>
+                <div><span>Operating System</span><strong id="detailOs">--</strong><small id="detailOsMeta">--</small></div>
+                <div><span>Architecture</span><strong id="detailArch">--</strong><small id="detailSystemType">--</small></div>
+                <div><span>Last Boot</span><strong id="detailLastBoot">--</strong><small id="detailUptime">--</small></div>
+                <div><span>Windows Installed</span><strong id="detailInstallDate">--</strong><small id="detailEdition">--</small></div>
+              </div>
+            </article>
+
+            <article class="panel firmware-panel">
+              <div class="panel-head"><h2>FIRMWARE & PLATFORM SECURITY</h2></div>
+              <div class="firmware-list">
+                <div><span>Boot mode</span><strong id="firmwareBootMode">--</strong></div>
+                <div><span>Secure Boot</span><strong id="firmwareSecureBoot">--</strong></div>
+                <div><span>TPM present</span><strong id="firmwareTpmPresent">--</strong></div>
+                <div><span>TPM ready</span><strong id="firmwareTpmReady">--</strong></div>
+                <div><span>TPM specification</span><strong id="firmwareTpmSpec">--</strong></div>
+                <div><span>Hypervisor</span><strong id="firmwareHypervisor">--</strong></div>
+              </div>
+            </article>
+
+            <article class="panel tools-card span-3 system-tools-panel">
+              <div class="panel-head"><h2>WINDOWS SYSTEM TOOLS</h2><span class="time-chip">Whitelisted local shortcuts</span></div>
+              <div class="system-tools-grid">
+                <button data-open-system="devicemanager"><b>Device Manager</b><small>Hardware devices & drivers</small><span>›</span></button>
+                <button data-open-system="taskmanager"><b>Task Manager</b><small>Processes & performance</small><span>›</span></button>
+                <button data-open-system="services"><b>Services</b><small>Windows services console</small><span>›</span></button>
+                <button data-open-system="eventviewer"><b>Event Viewer</b><small>System & application logs</small><span>›</span></button>
+                <button data-open-system="registry"><b>Registry Editor</b><small>Windows Registry</small><span>›</span></button>
+                <button data-open-system="diskmanagement"><b>Disk Management</b><small>Partitions & volumes</small><span>›</span></button>
+                <button data-open-system="resmon"><b>Resource Monitor</b><small>CPU, disk, memory, network</small><span>›</span></button>
+                <button data-open-system="systeminfo"><b>System Information</b><small>MSInfo32 hardware report</small><span>›</span></button>
+                <button data-open-system="computermanagement"><b>Computer Management</b><small>Combined management console</small><span>›</span></button>
+                <button data-open-system="poweroptions"><b>Power Options</b><small>Windows power plans</small><span>›</span></button>
+                <button data-open-system="defender"><b>Windows Security</b><small>Defender & device security</small><span>›</span></button>
+                <button data-open-system="updates"><b>Windows Update</b><small>Update settings</small><span>›</span></button>
+                <button data-open-system="network"><b>Network Settings</b><small>Adapters & connection status</small><span>›</span></button>
+                <button data-open-system="about"><b>About This PC</b><small>Windows device specifications</small><span>›</span></button>
+                <button data-open-system="controlpanel"><b>Control Panel</b><small>Classic Windows controls</small><span>›</span></button>
+              </div>
+            </article>
+
+            <article class="panel startup-panel span-3">
+              <div class="panel-head"><div><h2>STARTUP CENTER</h2><p class="panel-subtitle" id="startupSubtitle">Read-only inventory of programs configured to start with Windows.</p></div><div class="section-actions"><button class="small-btn" id="refreshStartup">Refresh</button><button class="small-btn" data-open-system="startup">Open Startup Apps</button></div></div>
+              <div class="startup-head"><span>APP</span><span>PUBLISHER</span><span>STATE</span><span>SOURCE</span><span>COMMAND</span></div>
+              <div class="startup-list" id="startupList"><div class="empty">Scanning Windows startup entries…</div></div>
+            </article>
+          </div>
+        </section>
+
+
+        <section class="view" id="view-featurelab">
+          <div class="section-title feature-lab-title">
+            <div><span class="eyebrow">WINDOWS FEATURE LAB · v2.0.1</span><h1>Windows Feature Lab</h1><p>Discover buried Windows 11 capabilities, see whether this PC actually supports them, and make only allowlisted changes with previews, UAC elevation, and restart warnings.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshFeatureLab">Refresh</button><button class="primary-btn" id="featureLabAdminScan">Scan as Administrator</button></div>
+          </div>
+
+          <div class="feature-lab-summary-grid">
+            <article class="panel feature-lab-summary-card"><span>WINDOWS</span><strong id="featureLabWindows">Detecting…</strong><small id="featureLabWindowsMeta">Build & edition compatibility</small></article>
+            <article class="panel feature-lab-summary-card"><span>SUPPORTED</span><strong id="featureLabSupported">--</strong><small id="featureLabSupportedMeta">Features compatible with this PC</small></article>
+            <article class="panel feature-lab-summary-card"><span>ENABLED</span><strong id="featureLabEnabled">--</strong><small id="featureLabEnabledMeta">Detected active features</small></article>
+            <article class="panel feature-lab-summary-card"><span>SCAN MODE</span><strong id="featureLabScanMode">Standard</strong><small id="featureLabScanMeta">No elevation requested yet</small></article>
+          </div>
+
+          <div class="feature-lab-safety panel">
+            <div class="feature-lab-safety-icon">✓</div>
+            <div><strong>Guarded Feature Changes</strong><small>PowerTools does not run arbitrary DISM, PowerShell, or Registry commands. Every change in Feature Lab is hard-coded and allowlisted. Changes require confirmation; administrator-only changes show the normal Windows UAC prompt.</small></div>
+            <span class="chip" id="featureLabRebootChip">No restart detected</span>
+          </div>
+
+          <article class="panel feature-lab-filter-panel">
+            <div class="feature-lab-filter-copy"><strong>FEATURE DISCOVERY</strong><small id="featureLabResultMeta">Open Feature Lab to scan this Windows installation.</small></div>
+            <div class="feature-lab-filters"><input id="featureLabSearch" type="search" placeholder="Search features…" /><select id="featureLabCategory"><option value="all">All categories</option><option value="virtualization">Virtualization & Dev</option><option value="developer">Developer & Remote</option><option value="performance">Performance</option><option value="security">Security</option><option value="windows">Windows Core</option></select><select id="featureLabStateFilter"><option value="all">All states</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option><option value="supported">Supported</option><option value="unsupported">Unsupported</option><option value="unknown">Needs review</option></select></div>
+          </article>
+
+          <div class="feature-lab-grid" id="featureLabGrid"><div class="panel empty feature-lab-empty">Feature Lab is lazy-loaded. Open this page to inspect Windows capabilities without slowing PowerTools startup.</div></div>
+        </section>
+
+        <section class="view" id="view-security">
+          <div class="section-title security-title">
+            <div><span class="eyebrow">SECURITY CENTER · v2.0.1</span><h1>Windows Security Center</h1><p>Local, read-only security posture for Defender, Firewall, Secure Boot, TPM, UAC, SmartScreen, BitLocker, Windows Update, and recent Defender activity.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="copySecuritySummary">Copy Summary</button><button class="secondary-btn" id="refreshSecurityCenter">Refresh</button><button class="primary-btn" data-open-system="defender">Open Windows Security</button></div>
+          </div>
+
+          <div class="security-summary-grid">
+            <article class="panel security-summary-card score"><span>SECURITY SCORE</span><strong id="securityScore">--</strong><small id="securityScoreDetail">Open Security Center to calculate</small></article>
+            <article class="panel security-summary-card"><span>MICROSOFT DEFENDER</span><strong id="defenderStatus">Checking…</strong><small id="defenderDetail">Reading protection state</small></article>
+            <article class="panel security-summary-card"><span>FIREWALL</span><strong id="firewallStatus">Checking…</strong><small id="firewallDetail">Reading Windows profiles</small></article>
+            <article class="panel security-summary-card"><span>PLATFORM SECURITY</span><strong id="platformSecurityStatus">Checking…</strong><small id="platformSecurityDetail">Secure Boot & TPM</small></article>
+            <article class="panel security-summary-card"><span>DEVICE ENCRYPTION</span><strong id="bitlockerSummary">Checking…</strong><small id="bitlockerSummaryDetail">System drive protection</small></article>
+            <article class="panel security-summary-card"><span>WINDOWS UPDATE</span><strong id="updateSecurityStatus">Checking…</strong><small id="updateSecurityDetail">Restart & latest hotfix status</small></article>
+          </div>
+
+          <div class="security-center-grid">
+            <article class="panel security-detail-panel span-2">
+              <div class="panel-head"><div><h2>PROTECTION STATUS</h2><p class="panel-subtitle">Microsoft Defender and core Windows protections.</p></div><span class="live-dot">● Local</span></div>
+              <div class="security-check-grid" id="securityProtectionChecks">
+                <div><span>Real-time protection</span><strong>Loading…</strong></div>
+                <div><span>Antivirus signatures</span><strong>Loading…</strong></div>
+                <div><span>Behavior monitor</span><strong>Loading…</strong></div>
+                <div><span>Network inspection</span><strong>Loading…</strong></div>
+                <div><span>Tamper protection</span><strong>Loading…</strong></div>
+                <div><span>Last quick scan</span><strong>Loading…</strong></div>
+              </div>
+            </article>
+
+            <article class="panel security-detail-panel">
+              <div class="panel-head"><h2>PLATFORM PROTECTION</h2></div>
+              <div class="security-key-list">
+                <div><span>Secure Boot</span><strong id="securitySecureBoot">Loading…</strong></div>
+                <div><span>TPM</span><strong id="securityTpm">Loading…</strong></div>
+                <div><span>UAC</span><strong id="securityUac">Loading…</strong></div>
+                <div><span>SmartScreen</span><strong id="securitySmartScreen">Loading…</strong></div>
+              </div>
+            </article>
+
+            <article class="panel security-detail-panel">
+              <div class="panel-head"><h2>FIREWALL PROFILES</h2></div>
+              <div class="security-key-list" id="securityFirewallProfiles"><div class="empty">Loading firewall profiles…</div></div>
+            </article>
+
+            <article class="panel security-detail-panel">
+              <div class="panel-head"><h2>DEVICE & UPDATE PROTECTION</h2></div>
+              <div class="security-key-list">
+                <div><span>System drive</span><strong id="securityBitlocker">Loading…</strong></div>
+                <div><span>Encryption</span><strong id="securityEncryption">Loading…</strong></div>
+                <div><span>Restart pending</span><strong id="securityRestartPending">Loading…</strong></div>
+                <div><span>Latest hotfix</span><strong id="securityLatestHotfix">Loading…</strong></div>
+              </div>
+            </article>
+
+            <article class="panel security-detail-panel">
+              <div class="panel-head"><h2>ANTIVIRUS PROVIDERS</h2></div>
+              <div class="security-provider-list" id="securityProviders"><div class="empty">Loading registered antivirus providers…</div></div>
+            </article>
+
+            <article class="panel security-events-panel span-2">
+              <div class="panel-head"><div><h2>RECENT SECURITY ACTIVITY</h2><p class="panel-subtitle">Selected Microsoft Defender Operational events from the last 7 days.</p></div><button class="small-btn" data-open-system="eventviewer">Open Event Viewer</button></div>
+              <div class="security-event-list" id="securityEventList"><div class="empty">Loading recent Defender activity…</div></div>
+            </article>
+
+            <article class="panel security-tools-panel">
+              <div class="panel-head"><h2>SECURITY SHORTCUTS</h2></div>
+              <div class="security-tool-grid">
+                <button data-open-system="defender"><b>Windows Security</b><small>Protection dashboard</small><span>›</span></button>
+                <button data-open-system="firewall"><b>Windows Firewall</b><small>Firewall control panel</small><span>›</span></button>
+                <button data-open-system="uac"><b>UAC Settings</b><small>User Account Control</small><span>›</span></button>
+                <button data-open-system="bitlocker"><b>BitLocker</b><small>Drive encryption controls</small><span>›</span></button>
+                <button data-open-system="updates"><b>Windows Update</b><small>Updates & restart status</small><span>›</span></button>
+                <button data-open-system="eventviewer"><b>Event Viewer</b><small>Windows security logs</small><span>›</span></button>
+              </div>
+              <div class="security-readonly-note"><strong>Read-only by design</strong><small>Security Center reports local Windows state. It does not disable protections, alter firewall rules, change BitLocker, or modify security policy.</small></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-settings">
+          <div class="section-title settings-title"><div><span class="eyebrow">PURPLE DRAGON FOUNDATION LTD · v2.0.1</span><h1>Command Center Settings</h1><p>Purple Dragon Foundation Ltd branding, Privacy & App Trust Intelligence, System-Aware AI controls, GitHub Release Center, Windows Feature Lab safety, Change Journal, fast boot, recovery diagnostics, and local-first controls.</p></div><div class="section-actions"><button class="secondary-btn" id="refreshReliability">Refresh Status</button><button class="primary-btn" id="copyReliability">Copy Reliability Summary</button></div></div>
+          <div class="settings-grid">
+            <article class="panel foundation-brand-card" aria-label="Purple Dragon Foundation Ltd official website banner">
+              <div class="foundation-brand-media">
+                <img loading="lazy" decoding="async" src="assets/purple-dragon-foundation-banner.png" alt="Purple Dragon Foundation Ltd — Software Development for the Future" />
+              </div>
+            </article>
+            <article class="panel settings-card"><h2>INTERFACE</h2><label class="setting-row"><span><strong>Glow intensity</strong><small>Adjust holographic edge lighting.</small></span><input id="glowRange" type="range" min="20" max="140" value="100" /></label><label class="setting-row"><span><strong>Motion effects</strong><small>Animated ambient background and radar. Respects reduced-motion preferences on first use.</small></span><input id="motionToggle" type="checkbox" checked /></label><label class="setting-row"><span><strong>Compact sidebar</strong><small>Reduce sidebar width for smaller screens.</small></span><input id="compactToggle" type="checkbox" /></label><div class="settings-actions"><button class="secondary-btn" id="resetUiSettings">Reset UI Defaults</button></div></article>
+            <article class="panel settings-card"><h2>SAMPLING</h2><label class="setting-row"><span><strong>Telemetry interval</strong><small>How often lightweight live metrics are refreshed.</small></span><select id="intervalSelect"><option value="750">0.75 sec</option><option value="1000" selected>1 sec</option><option value="1500">1.5 sec</option><option value="2000">2 sec</option></select></label><div class="reliability-inline-note"><strong>Fast boot stays enabled</strong><small>Security, storage, app, network, startup, and reliability detail remain lazy-loaded.</small></div><button class="secondary-btn" id="saveSettings">Save Settings</button></article>
+            <article class="panel settings-card reliability-card"><div class="panel-head"><div><h2>RELIABILITY CENTER</h2><p class="panel-subtitle">Lightweight session health. No Windows scan runs here.</p></div><span class="chip active" id="reliabilityStateChip">Checking…</span></div><div class="reliability-metrics"><div><span>UI READY</span><strong id="reliabilityBootTime">--</strong><small>First renderer handshake</small></div><div><span>RENDERER</span><strong id="reliabilityRenderer">--</strong><small id="reliabilityRendererDetail">Waiting</small></div><div><span>DIAGNOSTICS</span><strong id="reliabilityDiagnostics">--</strong><small id="reliabilityDiagnosticsDetail">Local log</small></div><div><span>HARDWARE CACHE</span><strong id="reliabilityCache">--</strong><small id="reliabilityCacheDetail">Lazy identity cache</small></div></div><div class="reliability-check-list" id="reliabilityChecks"><div class="empty">Open Settings to load reliability status.</div></div><div class="reliability-actions"><button class="small-btn" id="openReliabilityLogs">Open Log Folder</button><button class="small-btn" id="clearReliabilityLog">Clear Diagnostics</button><button class="small-btn" id="resetHardwareCache">Reset Hardware Cache</button></div></article>
+            <article class="panel settings-card reliability-card"><div class="panel-head"><div><h2>STABLE RELEASE READINESS</h2><p class="panel-subtitle">Local runtime/configuration preflight. No hardware or network scan is started.</p></div><span class="chip active" id="stableStateChip">Checking…</span></div><div class="reliability-metrics"><div><span>CHANNEL</span><strong id="stableChannel">Stable</strong><small>Production release line</small></div><div><span>VERSION</span><strong id="stableVersion">2.0.1</strong><small>Runtime package version</small></div><div><span>PREFLIGHT</span><strong id="stablePreflight">--</strong><small id="stablePreflightDetail">Waiting</small></div><div><span>PREVIOUS SESSION</span><strong id="stablePreviousSession">--</strong><small id="stablePreviousSessionDetail">Clean-shutdown marker</small></div></div><div class="reliability-check-list" id="stableChecks"><div class="empty">Open Settings to load Stable Release readiness.</div></div><div class="reliability-actions"><button class="small-btn" id="runStablePreflight">Run Stable Preflight</button><button class="small-btn" id="copyStableSummary">Copy Stable Summary</button></div></article>
+            <article class="panel settings-card foundation-about-card"><h2>ABOUT</h2><div class="about-block"><img class="about-foundation-logo" loading="lazy" decoding="async" src="assets/purple-dragon-foundation-logo.png" alt="Purple Dragon Foundation Ltd" /><div><strong>Purple Dragon PowerTools</strong><small>v2.0.1 · AI Command Center</small><small>Created by Purple Dragon Foundation Ltd</small></div></div><div class="about-release-note"><strong>Purple Dragon AI Command Center</strong><small>v2.0.1 unifies Direct Model, Dragon Router, Dragon Council, and System-Aware AI into one mission-oriented workspace.</small><ul class="settings-release-list"><li>Choose Direct, Router, or Council execution from one Command Deck</li><li>Use task presets for diagnostics, Windows troubleshooting, coding, security review, and deep analysis</li><li>See target, context, cloud exposure, latency, and session-only mission history</li><li>AI guidance never executes Windows or PowerTools changes automatically</li><li>Privacy & App Trust, Change Journal + Undo, GitHub Release Center, Feature Lab, and Foundation branding retained</li></ul></div></article>
+          </div>
+        </section>
+
+        <section class="view" id="view-models">
+          <div class="section-title model-title">
+            <div><span class="eyebrow">PURPLE DRAGON AI COMMAND CENTER · v2.0.1</span><h1>AI Command Center</h1><p>One mission-oriented workspace for Direct Model, Dragon Router, Dragon Council, and redacted System-Aware PC context.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshModels">Refresh AI Providers</button><button class="primary-btn" id="modelOpenAssistant">Open Assistant</button></div>
+          </div>
+
+          <div class="model-summary-grid">
+            <article class="panel model-summary-card"><span>PROVIDERS ONLINE</span><strong id="modelProviderCount">--</strong><small id="modelProviderDetail">Open AI Command Center to probe configured providers</small></article>
+            <article class="panel model-summary-card"><span>MODELS FOUND</span><strong id="modelCount">--</strong><small id="modelCountDetail">Local + configured cloud models</small></article>
+            <article class="panel model-summary-card"><span>ACTIVE MODEL</span><strong id="modelActiveSummary">None</strong><small id="modelActiveProvider">Select a discovered model</small></article>
+            <article class="panel model-summary-card"><span>PRIVACY MODE</span><strong id="modelPrivacyMode">LOCAL</strong><small id="modelPrivacyDetail">No cloud provider configured</small></article>
+          </div>
+
+          <article class="panel ai-command-center-panel">
+            <div class="panel-head"><div><h2>AI COMMAND DECK</h2><p class="panel-subtitle">Compose one mission, then execute it through a pinned model, Dragon Router, or Dragon Council. Nothing here performs Windows changes automatically.</p></div><span class="chip active" id="aiCommandState">Ready</span></div>
+            <div class="ai-command-center-grid">
+              <div class="ai-command-composer">
+                <div class="ai-command-selects">
+                  <label><span>MISSION PROFILE</span><select id="aiCommandPreset"><option value="general">General Assistant</option><option value="diagnostics">PC Diagnostics</option><option value="windows">Windows Troubleshooting</option><option value="coding">Coding / Development</option><option value="security">Security Review</option><option value="analysis">Deep Analysis</option></select></label>
+                  <label><span>EXECUTION MODE</span><select id="aiCommandMode"><option value="direct">Direct Model</option><option value="router">Dragon Router</option><option value="council">Dragon Council</option></select></label>
+                </div>
+                <div class="ai-command-quick"><button class="small-btn" data-ai-command-preset="diagnostics">Diagnose PC</button><button class="small-btn" data-ai-command-preset="windows">Windows Help</button><button class="small-btn" data-ai-command-preset="coding">Code</button><button class="small-btn" data-ai-command-preset="security">Security</button><button class="small-btn" data-ai-command-preset="analysis">Deep Analysis</button></div>
+                <label class="ai-command-prompt"><span>MISSION</span><textarea id="aiCommandPrompt" rows="6" maxlength="24000" placeholder="Describe what you want Purple Dragon AI Command Center to analyze..."></textarea></label>
+                <div class="ai-command-actions"><button class="secondary-btn" id="aiCommandPreviewContext">Preview Context</button><button class="secondary-btn" id="aiCommandClear">Clear</button><button class="primary-btn" id="aiCommandRun">Run Mission</button></div>
+                <div class="ai-command-guard"><strong>REVIEW-FIRST AI</strong><small>Command Center can analyze and recommend. It never runs Feature Lab changes, PowerShell, process actions, cleanup, GitHub writes, or other system mutations from an AI response.</small></div>
+              </div>
+              <div class="ai-command-console">
+                <div class="ai-command-metrics">
+                  <div><span>MODE</span><strong id="aiCommandModeSummary">Direct</strong><small id="aiCommandModeDetail">Pinned model</small></div>
+                  <div><span>TARGET</span><strong id="aiCommandTarget">None</strong><small id="aiCommandTargetDetail">Select a model below</small></div>
+                  <div><span>CONTEXT</span><strong id="aiCommandContext">Smart</strong><small id="aiCommandContextDetail">Cloud context blocked</small></div>
+                  <div><span>CLOUD PATH</span><strong id="aiCommandCloud">Guarded</strong><small id="aiCommandCloudDetail">Depends on execution mode</small></div>
+                </div>
+                <div class="ai-command-output-head"><span>MISSION OUTPUT</span><small id="aiCommandLastRun">No mission run this session</small></div>
+                <pre class="ai-command-output" id="aiCommandOutput">Choose a mission profile and execution mode, enter a prompt, then run the mission.</pre>
+              </div>
+            </div>
+            <div class="ai-command-history-wrap"><div class="ai-command-history-head"><strong>SESSION MISSION HISTORY</strong><small>Memory-only. Prompts are not persisted to disk or exported.</small></div><div class="ai-command-history" id="aiCommandHistory"><div class="empty">No missions run this session.</div></div></div>
+          </article>
+
+          <div class="model-center-grid">
+            <article class="panel span-3 dragon-council-panel">
+              <div class="panel-head"><div><h2>DRAGON COUNCIL</h2><p class="panel-subtitle">Send one prompt to 2–4 discovered models and compare their answers side by side. Council orchestration is local; no extra judge-model call is made.</p></div><span class="chip active" id="dragonCouncilState">Ready</span></div>
+              <div class="dragon-council-controls">
+                <label class="dragon-council-prompt"><span>COUNCIL PROMPT</span><textarea id="dragonCouncilPrompt" rows="3" placeholder="Ask the Council a question, or copy the prompt from the AI Playground..."></textarea></label>
+                <div class="dragon-council-options">
+                  <label class="dragon-router-switch"><span><strong>Allow configured cloud members</strong><small>Off by default. When disabled, OpenAI/Codex, Claude, and Gemini are excluded from Council runs.</small></span><input id="dragonCouncilCloud" type="checkbox" /></label>
+                  <div class="dragon-council-actions"><button class="secondary-btn" id="dragonCouncilUsePrompt">Use Playground Prompt</button><button class="secondary-btn" id="dragonCouncilRecommend">Select Recommended</button><button class="secondary-btn" id="dragonCouncilClear">Clear</button><button class="primary-btn" id="dragonCouncilRun">Run Council</button></div>
+                </div>
+              </div>
+              <div class="dragon-council-members" id="dragonCouncilMembers"><div class="empty">Open AI Command Center to discover Council members.</div></div>
+              <div class="dragon-council-summary" id="dragonCouncilSummary"><div><span>MEMBERS</span><strong>0 / 4</strong><small>Select at least two models</small></div><div><span>AGREEMENT</span><strong>--</strong><small>Local lexical heuristic</small></div><div><span>FASTEST</span><strong>--</strong><small>No Council run yet</small></div><div><span>CONTEXT</span><strong>Inherited</strong><small>Uses System-Aware AI controls below</small></div></div>
+              <div class="dragon-council-results" id="dragonCouncilResults"><div class="empty">Council responses will appear here after a run.</div></div>
+              <div class="dragon-council-note">Agreement measures simple word-overlap between completed answers. It does not determine truth, quality, safety, or factual correctness. Review each response independently.</div>
+            </article>
+
+            <article class="panel span-3 dragon-router-panel">
+              <div class="panel-head"><div><h2>DRAGON ROUTER</h2><p class="panel-subtitle">Transparent heuristic routing. No extra AI call is used to choose a model.</p></div><span class="chip active" id="dragonRouterState">Ready</span></div>
+              <div class="dragon-router-grid">
+                <div class="dragon-router-controls">
+                  <label><span>ROUTING PROFILE</span><select id="dragonRouterProfile"><option value="automatic">Automatic</option><option value="best-quality">Best Quality</option><option value="fastest">Fastest</option><option value="cheapest">Cheapest</option><option value="local-only">Local Only</option><option value="privacy-first">Privacy First</option></select></label>
+                  <label class="dragon-router-switch"><span><strong>Allow configured cloud providers</strong><small>When off, Router considers only Ollama, LM Studio, and custom local models.</small></span><input id="dragonRouterCloud" type="checkbox" checked /></label>
+                  <label class="dragon-router-switch"><span><strong>Use Dragon Router in PowerTools Assistant</strong><small>Routes each Assistant question independently using the selected profile.</small></span><input id="dragonRouterAssistant" type="checkbox" /></label>
+                  <div class="dragon-router-actions"><button class="secondary-btn" id="dragonRoutePrompt">Route Prompt</button><button class="primary-btn" id="dragonRouteSend">Route &amp; Send</button></div>
+                  <div class="dragon-router-note">Profiles use provider type, discovered model names, local-vs-cloud scope, and provider probe latency. “Cheapest” is a relative routing preference, not a live price quote.</div>
+                </div>
+                <div class="dragon-router-decision">
+                  <div class="dragon-router-result"><span>DETECTED TASK</span><strong id="dragonRouteTask">Waiting for a prompt</strong><small id="dragonRouteProfileDetail">Automatic profile</small></div>
+                  <div class="dragon-router-result"><span>ROUTED MODEL</span><strong id="dragonRouteModel">Not routed yet</strong><small id="dragonRouteProvider">Enter a prompt in the playground, then route it.</small></div>
+                  <div class="dragon-router-result"><span>ROUTE CONFIDENCE</span><strong id="dragonRouteConfidence">--</strong><small id="dragonRouteReason">Router decisions are explainable and reversible.</small></div>
+                  <div class="dragon-route-alternatives" id="dragonRouteAlternatives"><div class="empty">Alternative routes appear after a decision.</div></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel span-3 system-aware-panel">
+              <div class="panel-head"><div><h2>SYSTEM-AWARE AI</h2><p class="panel-subtitle">Task-aware PC context built from live telemetry plus already-loaded PowerTools modules. Missing heavy modules are never scanned just for AI.</p></div><span class="chip active" id="aiContextState">Local-only</span></div>
+              <div class="system-aware-grid">
+                <div class="system-aware-controls">
+                  <label><span>CONTEXT MODE</span><select id="aiContextMode"><option value="smart">Smart Context (recommended)</option><option value="full">Full Loaded Context</option><option value="off">Off</option></select></label>
+                  <label class="dragon-router-switch"><span><strong>Attach system context to AI requests</strong><small>On by default. Local models receive a redacted snapshot when relevant. Turn this off to use AI as a normal chat model.</small></span><input id="aiContextEnabled" type="checkbox" checked /></label>
+                  <label class="dragon-router-switch cloud-context-switch"><span><strong>Allow cloud AI to receive system context</strong><small>Off by default. When enabled, OpenAI/Codex, Claude, or Gemini may receive the same redacted snapshot with your prompt.</small></span><input id="aiContextCloud" type="checkbox" /></label>
+                  <div class="system-aware-actions"><button class="secondary-btn" id="aiContextRefresh">Refresh Context</button><button class="primary-btn" id="aiContextPreview">Preview Context</button></div>
+                  <div class="system-aware-privacy"><strong>PRIVACY GUARD</strong><small>Hostname, Windows username, IP/MAC addresses, file paths, API keys, and automation rule names/commands are omitted. Cloud context requires this separate opt-in.</small></div>
+                </div>
+                <div class="system-aware-summary">
+                  <div class="system-aware-metrics"><div><span>SECTIONS</span><strong id="aiContextSections">--</strong><small>Task-selected facts</small></div><div><span>SNAPSHOT</span><strong id="aiContextGenerated">Not built</strong><small>Generated only on demand</small></div><div><span>PRIVACY</span><strong id="aiContextPrivacy">Redacted</strong><small id="aiContextPrivacyDetail">Cloud sharing blocked</small></div></div>
+                  <pre class="system-aware-preview" id="aiContextPreviewText">System context has not been generated yet. Enter a question and use Preview Context, or send a prompt with System-Aware AI enabled.</pre>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel span-3 model-providers-panel">
+              <div class="panel-head"><div><h2>AI PROVIDERS</h2><p class="panel-subtitle">API keys are encrypted with Electron safeStorage (Windows DPAPI). Keys are never exposed to the renderer, reports, or activity log.</p></div><span class="live-text" id="modelCredentialSecurity"><i></i>Secure key vault</span></div>
+              <div class="model-cloud-grid">
+                <div class="model-provider-card cloud" id="modelProviderOpenAI"><div class="model-provider-icon">OA</div><div class="model-provider-copy"><strong>OpenAI / ChatGPT</strong><small>Responses API · your OpenAI API account</small><span id="modelOpenAIDetail">Not configured</span></div><div class="model-provider-actions"><span class="chip" id="modelOpenAIStatus">Setup</span><button class="small-btn" data-model-config="openai">Configure</button></div></div>
+                <div class="model-provider-card cloud" id="modelProviderCodex"><div class="model-provider-icon">CX</div><div class="model-provider-copy"><strong>Codex</strong><small>Uses the same encrypted OpenAI API key</small><span id="modelCodexDetail">Not configured</span></div><div class="model-provider-actions"><span class="chip" id="modelCodexStatus">Setup</span><button class="small-btn" data-model-config="openai">Configure</button></div></div>
+                <div class="model-provider-card cloud" id="modelProviderClaude"><div class="model-provider-icon">CL</div><div class="model-provider-copy"><strong>Claude</strong><small>Anthropic Messages API</small><span id="modelClaudeDetail">Not configured</span></div><div class="model-provider-actions"><span class="chip" id="modelClaudeStatus">Setup</span><button class="small-btn" data-model-config="anthropic">Configure</button></div></div>
+                <div class="model-provider-card cloud" id="modelProviderGemini"><div class="model-provider-icon">GM</div><div class="model-provider-copy"><strong>Gemini</strong><small>Google Gemini Interactions API</small><span id="modelGeminiDetail">Not configured</span></div><div class="model-provider-actions"><span class="chip" id="modelGeminiStatus">Setup</span><button class="small-btn" data-model-config="gemini">Configure</button></div></div>
+                <div class="model-provider-card" id="modelProviderOllama"><div class="model-provider-icon">OL</div><div class="model-provider-copy"><strong>Ollama</strong><small>http://127.0.0.1:11434</small><span id="modelOllamaDetail">Not checked</span></div><span class="chip" id="modelOllamaStatus">Idle</span></div>
+                <div class="model-provider-card" id="modelProviderLmStudio"><div class="model-provider-icon">LM</div><div class="model-provider-copy"><strong>LM Studio</strong><small>http://127.0.0.1:1234/v1</small><span id="modelLmStudioDetail">Not checked</span></div><span class="chip" id="modelLmStudioStatus">Idle</span></div>
+              </div>
+              <div class="model-custom-endpoint">
+                <div><strong>Custom local OpenAI-compatible endpoint</strong><small>Optional. Only localhost / 127.0.0.1 / ::1 endpoints are accepted.</small></div>
+                <div class="model-endpoint-controls"><input id="modelCustomEndpoint" type="text" placeholder="http://127.0.0.1:8080/v1" autocomplete="off" /><button class="small-btn" id="modelTestEndpoint">Test & Save</button><button class="small-btn" id="modelClearEndpoint">Clear</button></div>
+                <div class="model-endpoint-status" id="modelCustomStatus">No custom endpoint configured.</div>
+              </div>
+            </article>
+
+            <article class="panel model-readiness-panel">
+              <div class="panel-head"><div><h2>LOCAL AI READINESS</h2><p class="panel-subtitle">Advisory hardware snapshot — no benchmark is run.</p></div></div>
+              <div class="model-readiness-score"><strong id="modelReadiness">Checking…</strong><small id="modelReadinessDetail">Using already-collected RAM/GPU telemetry</small></div>
+              <div class="model-readiness-list">
+                <div><span>SYSTEM RAM</span><strong id="modelReadinessRam">--</strong></div>
+                <div><span>GPU VRAM</span><strong id="modelReadinessVram">--</strong></div>
+                <div><span>GPU</span><strong id="modelReadinessGpu">--</strong></div>
+              </div>
+              <div class="model-local-note">Cloud API usage may incur provider charges. PowerTools never downloads models or creates paid API requests until you explicitly send a prompt.</div>
+            </article>
+
+            <article class="panel span-2 model-library-panel">
+              <div class="panel-head"><div><h2>MODEL LIBRARY</h2><p class="panel-subtitle" id="modelLibrarySubtitle">Connected-provider models appear here.</p></div><div class="model-library-filter"><input id="modelSearch" type="search" placeholder="Filter models…" /><select id="modelProviderFilter"><option value="all">All providers</option><option value="openai">OpenAI</option><option value="codex">Codex</option><option value="claude">Claude</option><option value="gemini">Gemini</option><option value="ollama">Ollama</option><option value="lmstudio">LM Studio</option><option value="custom">Custom local</option></select></div></div>
+              <div class="model-list" id="modelList"><div class="empty">Open AI Command Center to discover models.</div></div>
+            </article>
+
+            <article class="panel span-3 model-playground-panel">
+              <div class="panel-head"><div><h2>UNIFIED AI PLAYGROUND</h2><p class="panel-subtitle">One interface for local and configured cloud models.</p></div><span class="chip" id="modelChatState">No model</span></div>
+              <div class="model-playground-grid">
+                <div>
+                  <div class="model-active-box"><span>SELECTED MODEL</span><strong id="modelSelectedName">None</strong><small id="modelSelectedMeta">Choose a model from the library.</small></div>
+                  <label class="model-field"><span>SYSTEM INSTRUCTION</span><textarea id="modelSystemPrompt" rows="2" maxlength="6000">You are a concise assistant running inside Purple Dragon PowerTools.</textarea></label>
+                  <label class="model-field"><span>PROMPT</span><textarea id="modelPrompt" rows="6" maxlength="24000" placeholder="Ask the selected model something…"></textarea></label>
+                  <label class="model-assistant-toggle"><span><strong>Use selected model in PowerTools Assistant</strong><small id="modelAssistantToggleNote">System-Aware AI can attach redacted PC context. Cloud models receive context only when the separate cloud-context opt-in is enabled.</small></span><input id="modelAssistantToggle" type="checkbox" /></label>
+                  <div class="model-chat-actions"><button class="secondary-btn" id="modelClearChat">Clear</button><button class="primary-btn" id="modelSend" disabled>Send</button></div>
+                </div>
+                <div><div class="model-cloud-warning" id="modelCloudWarning">LOCAL MODEL · Requests stay on this PC.</div><div class="model-response" id="modelResponse">Select a connected model to begin.</div></div>
+              </div>
+            </article>
+          </div>
+        </section>
+        <section class="view" id="view-data">
+          <div class="section-title data-title">
+            <div><span class="eyebrow">DATA HUB · v2.0.1</span><h1>Storage & Data Hub</h1><p>Drive inventory, user-folder analysis, large-file discovery, safe cleanup preview, and local reports. Heavy scans run only when you request them.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshDrives">Refresh Drives</button><button class="primary-btn" id="dataExport">Export System Report</button></div>
+          </div>
+
+          <div class="storage-summary-grid">
+            <article class="panel storage-summary-card"><span>DRIVES</span><strong id="storageDriveCount">--</strong><small>Mounted local volumes</small></article>
+            <article class="panel storage-summary-card"><span>TOTAL CAPACITY</span><strong id="storageTotalCapacity">--</strong><small id="storageTotalUsed">Waiting for Data Hub</small></article>
+            <article class="panel storage-summary-card"><span>FREE SPACE</span><strong id="storageTotalFree">--</strong><small id="storageFreeHealth">Local drives only</small></article>
+            <article class="panel storage-summary-card"><span>CLEANUP PREVIEW</span><strong id="storageCleanupReclaim">--</strong><small id="storageCleanupSummary">Run preview before deleting anything</small></article>
+          </div>
+
+          <div class="storage-center-grid">
+            <article class="panel span-3 drive-center-panel">
+              <div class="panel-head"><div><h2>DRIVE CENTER</h2><p class="panel-subtitle" id="driveCenterSubtitle">Storage inventory loads only when Data Hub is opened.</p></div><span class="live-text"><i></i>Local Windows data</span></div>
+              <div class="drive-list" id="driveList"><div class="empty">Open Data Hub to load drive information.</div></div>
+            </article>
+
+            <article class="panel span-2 folder-analysis-panel">
+              <div class="panel-head"><div><h2>USER STORAGE ANALYSIS</h2><p class="panel-subtitle">Downloads, Documents, Pictures, Videos, and Desktop. Nothing is uploaded.</p></div><div class="section-actions"><button class="small-btn" id="cancelStorageAnalysis" hidden>Cancel</button><button class="small-btn" id="analyzeStorage">Analyze Folders</button></div></div>
+              <div class="analysis-status" id="storageAnalysisStatus">Analysis is manual so it never slows PowerTools startup.</div>
+              <div class="folder-usage-grid" id="folderUsageGrid"><div class="empty">Run Analyze Folders to calculate usage.</div></div>
+            </article>
+
+            <article class="panel large-files-panel">
+              <div class="panel-head"><div><h2>LARGE FILES</h2><p class="panel-subtitle">Top files ≥ 250 MB from the analyzed user folders.</p></div><span class="time-chip" id="largeFileCount">Not scanned</span></div>
+              <div class="large-file-list" id="largeFileList"><div class="empty">Large-file results appear after analysis.</div></div>
+            </article>
+
+            <article class="panel span-2 cleanup-panel">
+              <div class="panel-head"><div><h2>SAFE CLEANUP CENTER</h2><p class="panel-subtitle">Preview first. Cleanup is limited to allowlisted local temporary/diagnostic files.</p></div><button class="small-btn" id="previewCleanup">Preview Cleanup</button></div>
+              <div class="cleanup-notice">PowerTools never blindly deletes files. User TEMP candidates must be at least 24 hours old, and cleanup requires a second Windows confirmation.</div>
+              <div class="cleanup-category-list" id="cleanupCategoryList"><div class="empty">Create a preview to see reclaimable space.</div></div>
+              <div class="cleanup-footer"><div><strong id="cleanupSelectedSize">0 B selected</strong><small id="cleanupPreviewTime">No preview yet</small></div><button class="primary-btn danger-soft" id="runCleanup" disabled>Clean Selected</button></div>
+            </article>
+
+            <article class="panel storage-shortcuts-panel">
+              <div class="panel-head"><h2>STORAGE SHORTCUTS</h2></div>
+              <div class="storage-shortcut-grid">
+                <button data-open-folder="downloads"><b>Downloads</b><small>Open your Downloads folder</small><span>›</span></button>
+                <button data-open-folder="documents"><b>Documents</b><small>Open your Documents folder</small><span>›</span></button>
+                <button data-open-folder="temp"><b>User TEMP</b><small>Review temporary files manually</small><span>›</span></button>
+                <button data-open-system="storage"><b>Storage Settings</b><small>Windows Storage settings</small><span>›</span></button>
+                <button data-open-system="diskmanagement"><b>Disk Management</b><small>Volumes and partitions</small><span>›</span></button>
+                <button data-open-folder="system"><b>System Drive</b><small>Open the Windows system drive</small><span>›</span></button>
+              </div>
+            </article>
+          </div>
+        </section>
+        <section class="view" id="view-apps">
+          <div class="section-title apps-title">
+            <div><span class="eyebrow">PROCESS & APP CENTER · v2.0.1</span><h1>Process & App Center</h1><p>On-demand process telemetry, installed-app inventory, guarded process controls, and Windows startup visibility. Nothing here scans during PowerTools boot.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshAppCenter">Refresh Center</button><button class="primary-btn" data-open-system="taskmanager">Open Task Manager</button></div>
+          </div>
+
+          <div class="app-summary-grid">
+            <article class="panel app-summary-card"><span>PROCESSES</span><strong id="processCount">--</strong><small id="processSummary">Open Process & Apps to scan</small></article>
+            <article class="panel app-summary-card"><span>PROCESS MEMORY</span><strong id="processMemory">--</strong><small>Working set across visible processes</small></article>
+            <article class="panel app-summary-card"><span>INSTALLED APPS</span><strong id="installedAppCount">--</strong><small id="installedAppSummary">Inventory loads on demand</small></article>
+            <article class="panel app-summary-card"><span>STARTUP ITEMS</span><strong id="appsStartupCount">--</strong><small id="appsStartupSummary">Windows startup visibility</small></article>
+          </div>
+
+          <div class="app-center-grid">
+            <article class="panel span-3 process-manager-panel">
+              <div class="panel-head"><div><h2>PROCESS MANAGER+</h2><p class="panel-subtitle" id="processManagerSubtitle">Process telemetry loads only while this page is open.</p></div><div class="section-actions"><input class="mini-search" id="processSearch" placeholder="Filter processes…"/><button class="small-btn" id="refreshProcesses">Refresh</button></div></div>
+              <div class="process-head"><span>PROCESS</span><span>CPU</span><span>MEMORY</span><span>I/O</span><span>PID</span><span>ACTIONS</span></div>
+              <div class="process-list" id="processList"><div class="empty">Open Process & Apps to load running processes.</div></div>
+            </article>
+
+            <article class="panel span-2 installed-apps-panel">
+              <div class="panel-head"><div><h2>APP MANAGER+</h2><p class="panel-subtitle" id="installedAppsSubtitle">Installed applications are read from Windows uninstall registry keys, not Win32_Product.</p></div><div class="section-actions"><input class="mini-search" id="appSearch" placeholder="Filter apps…"/><button class="small-btn" id="refreshInstalledApps">Refresh</button></div></div>
+              <div class="installed-app-head"><span>APPLICATION</span><span>PUBLISHER</span><span>VERSION</span><span>SIZE</span><span>ACTIONS</span></div>
+              <div class="installed-app-list" id="installedAppList"><div class="empty">Installed app inventory loads on demand.</div></div>
+            </article>
+
+            <article class="panel app-tools-panel">
+              <div class="panel-head"><h2>APP TOOLS</h2></div>
+              <div class="app-tool-grid">
+                <button data-open-system="taskmanager"><b>Task Manager</b><small>Windows process manager</small><span>›</span></button>
+                <button data-open-system="resmon"><b>Resource Monitor</b><small>CPU, disk & network details</small><span>›</span></button>
+                <button id="openInstalledApps"><b>Installed Apps</b><small>Windows uninstall/settings center</small><span>›</span></button>
+                <button data-open-system="startup"><b>Startup Apps</b><small>Enable/disable startup items in Windows</small><span>›</span></button>
+              </div>
+              <div class="app-safety-note"><strong>Guarded controls</strong><small>PowerTools blocks termination/restart of protected Windows processes and its own runtime. End/Restart always requires confirmation.</small></div>
+            </article>
+
+            <article class="panel span-3 apps-startup-panel">
+              <div class="panel-head"><div><h2>STARTUP MANAGER+</h2><p class="panel-subtitle">Inventory is local. Enable/disable changes remain delegated to Windows Startup Apps for reliability.</p></div><div class="section-actions"><button class="small-btn" id="refreshAppsStartup">Refresh</button><button class="small-btn" data-open-system="startup">Manage in Windows</button></div></div>
+              <div class="startup-head"><span>APP</span><span>PUBLISHER</span><span>STATE</span><span>SOURCE</span><span>COMMAND</span></div>
+              <div class="startup-list" id="appsStartupList"><div class="empty">Startup items load when this center opens.</div></div>
+            </article>
+          </div>
+        </section>
+
+
+        <section class="view" id="view-network">
+          <div class="section-title network-title">
+            <div><span class="eyebrow">NETWORK POWERTOOLS · v0.6.0</span><h1>Network PowerTools</h1><p>Live bandwidth, Windows adapter inventory, local IP/DNS details, diagnostics, optional Geo IPify geolocation, and guarded maintenance actions. External IP geolocation runs only when you explicitly request it.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="refreshNetwork">Refresh Network</button><button class="primary-btn" data-open-system="networkconnections">Network Connections</button></div>
+          </div>
+
+          <div class="network-summary-grid">
+            <article class="panel network-summary-card"><span>DOWNLOAD</span><strong id="networkCurrentDown">--</strong><small id="networkPeakDown">Live aggregate throughput</small></article>
+            <article class="panel network-summary-card"><span>UPLOAD</span><strong id="networkCurrentUp">--</strong><small id="networkPeakUp">Live aggregate throughput</small></article>
+            <article class="panel network-summary-card"><span>ACTIVE ADAPTER</span><strong id="networkActiveAdapter">--</strong><small id="networkActiveLink">Open Network PowerTools to detect</small></article>
+            <article class="panel network-summary-card"><span>LOCAL IPv4</span><strong id="networkLocalIp">--</strong><small id="networkProfileName">Local address only</small></article>
+          </div>
+
+          <div class="network-center-grid">
+            <article class="panel span-2 network-chart-panel">
+              <div class="panel-head"><div><h2>LIVE BANDWIDTH</h2><p class="panel-subtitle">Aggregate receive/send traffic from Performance+ telemetry. The graph scales to the recent peak.</p></div><div class="network-legend"><span><i class="rx"></i>Download</span><span><i class="tx"></i>Upload</span></div></div>
+              <canvas id="networkTrafficChart"></canvas>
+              <div class="network-chart-foot"><span id="networkChartScale">Scale: auto</span><span id="networkTrafficNow">--</span></div>
+            </article>
+
+            <article class="panel network-active-panel">
+              <div class="panel-head"><div><h2>ACTIVE CONNECTION</h2><p class="panel-subtitle" id="networkOverviewSubtitle">Adapter inventory is lazy-loaded.</p></div><span class="live-text"><i></i>Local Windows data</span></div>
+              <div class="network-detail-list">
+                <div><span>Adapter</span><strong id="netDetailAdapter">--</strong></div>
+                <div><span>Link speed</span><strong id="netDetailLink">--</strong></div>
+                <div><span>IPv4</span><strong id="netDetailIpv4">--</strong></div>
+                <div><span>Gateway</span><strong id="netDetailGateway">--</strong></div>
+                <div><span>DNS</span><strong id="netDetailDns">--</strong></div>
+                <div><span>Profile</span><strong id="netDetailProfile">--</strong></div>
+              </div>
+            </article>
+
+            <article class="panel span-3 adapter-center-panel">
+              <div class="panel-head"><div><h2>ADAPTER CENTER</h2><p class="panel-subtitle">Physical and virtual Windows adapters with address, link, DNS, gateway, and profile information.</p></div><button class="small-btn" id="copyIpConfig">Copy ipconfig /all</button></div>
+              <div class="adapter-head"><span>ADAPTER</span><span>STATUS</span><span>LINK</span><span>ADDRESSES</span><span>GATEWAY / DNS</span></div>
+              <div class="adapter-list" id="networkAdapterList"><div class="empty">Open Network PowerTools to load adapters.</div></div>
+            </article>
+
+            <article class="panel span-2 network-diagnostics-panel">
+              <div class="panel-head"><div><h2>NETWORK DIAGNOSTICS</h2><p class="panel-subtitle">Ping and DNS lookups run only when you request them. No background Internet probing.</p></div><button class="small-btn" id="runConnectivityTest">Test Internet</button></div>
+              <div class="diagnostic-input-row"><input id="networkTarget" class="diagnostic-input" placeholder="Hostname or IP — e.g. google.com or 1.1.1.1" autocomplete="off"/><button class="secondary-btn" id="runPing">Ping</button><button class="secondary-btn" id="runDnsLookup">DNS Lookup</button></div>
+              <div class="connectivity-strip" id="connectivityStrip"><div><span>DNS</span><strong id="connectivityDns">Not tested</strong></div><div><span>HTTPS 443</span><strong id="connectivityHttps">Not tested</strong></div><div><span>Gateway</span><strong id="connectivityGateway">Not tested</strong></div></div>
+              <div class="diagnostic-result" id="networkDiagnosticResult"><div class="empty">Run Ping, DNS Lookup, or Test Internet to see results.</div></div>
+            </article>
+
+            <article class="panel span-3 ipgeo-panel">
+              <div class="panel-head"><div><h2>IP GEOLOCATION</h2><p class="panel-subtitle">Optional Geo IPify lookup for a public IPv4/IPv6 address. Leave the field blank to locate this connection's public IP. No lookup runs automatically.</p></div><span class="chip" id="ipGeoProviderStatus">Not configured</span></div>
+              <div class="ipgeo-toolbar">
+                <input id="ipGeoAddress" class="diagnostic-input" placeholder="Public IPv4 / IPv6 — blank = my public IP" autocomplete="off" spellcheck="false"/>
+                <button class="secondary-btn" id="ipGeoLookup">Locate IP</button>
+                <button class="secondary-btn" id="ipGeoConfigure">Configure API</button>
+              </div>
+              <div class="ipgeo-result-grid" id="ipGeoResultGrid">
+                <div><span>PUBLIC IP</span><strong id="ipGeoIp">--</strong></div>
+                <div><span>LOCATION</span><strong id="ipGeoLocation">Not looked up</strong></div>
+                <div><span>COUNTRY</span><strong id="ipGeoCountry">--</strong></div>
+                <div><span>TIMEZONE</span><strong id="ipGeoTimezone">--</strong></div>
+                <div><span>ISP</span><strong id="ipGeoIsp">--</strong></div>
+                <div><span>ASN</span><strong id="ipGeoAsn">--</strong></div>
+                <div><span>NETWORK ROUTE</span><strong id="ipGeoRoute">--</strong></div>
+                <div><span>COORDINATES</span><strong id="ipGeoCoordinates">--</strong></div>
+              </div>
+              <div class="network-safety-note ipgeo-privacy"><strong>External lookup · explicit opt-in</strong><small id="ipGeoPrivacyNote">Geo IPify is contacted only when you press Locate IP. Your API key is encrypted with Windows-backed secure storage and never exposed to the page. IP geolocation is approximate and should not be treated as a physical address.</small></div>
+            </article>
+
+            <article class="panel network-tools-panel">
+              <div class="panel-head"><h2>NETWORK TOOLS</h2></div>
+              <div class="network-tool-grid">
+                <button data-open-system="network"><b>Network Status</b><small>Windows network settings</small><span>›</span></button>
+                <button data-open-system="advancednetwork"><b>Advanced Network</b><small>Adapters and hardware properties</small><span>›</span></button>
+                <button data-open-system="networkconnections"><b>Network Connections</b><small>Classic adapter control panel</small><span>›</span></button>
+                <button id="flushDns"><b>Flush DNS Cache</b><small>Runs ipconfig /flushdns</small><span>›</span></button>
+                <button id="renewDhcp"><b>Renew DHCP</b><small>May briefly interrupt connectivity</small><span>›</span></button>
+              </div>
+              <div class="network-safety-note"><strong>Manual diagnostics only</strong><small>PowerTools never scans nearby devices or public address ranges. Internet connectivity testing occurs only when you press Test Internet.</small></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-privacy">
+          <div class="section-title privacy-title">
+            <div><span class="eyebrow">PRIVACY & APP TRUST INTELLIGENCE · v2.0.1</span><h1>Privacy & App Trust Intelligence</h1><p>Self-audit your public identifiers and file metadata, then inspect local application trust signals with Authenticode, SHA-256, Windows reputation controls, and publisher intelligence.</p></div>
+            <div class="section-actions"><button class="secondary-btn" id="privacyClearSession">Clear Session</button><button class="primary-btn" id="privacyOpenNetwork">Public IP Intelligence</button></div>
+          </div>
+
+          <div class="privacy-summary-grid">
+            <article class="panel privacy-summary-card"><span>RISK SCORE</span><strong id="privacyRiskScore">0 / 100</strong><small id="privacyRiskDetail">No risky metadata findings this session</small></article>
+            <article class="panel privacy-summary-card"><span>APP TRUST</span><strong id="privacyTrustStatus">Not scanned</strong><small id="privacyTrustDetail">Select a local app or installed application</small></article>
+            <article class="panel privacy-summary-card"><span>APP INVENTORY</span><strong id="privacyAppInventoryStatus">Not loaded</strong><small id="privacyAppInventoryDetail">Publisher inventory is manual and on-demand</small></article>
+            <article class="panel privacy-summary-card"><span>METADATA</span><strong id="privacyMetadataStatus">Not scanned</strong><small id="privacyMetadataDetail">Select a file to inspect locally</small></article>
+            <article class="panel privacy-summary-card"><span>DOMAIN / DNS</span><strong id="privacyDnsStatus">Idle</strong><small id="privacyDnsDetail">Manual DNS inspection only</small></article>
+            <article class="panel privacy-summary-card"><span>SESSION MODE</span><strong>PRIVATE</strong><small>Identifiers are not persisted by this module</small></article>
+          </div>
+
+          <div class="privacy-safety panel">
+            <div class="privacy-safety-icon">@</div>
+            <div><strong>Self-audit boundary</strong><small>Privacy & App Trust Intelligence is designed for your own identifiers, files, and installed software. It does not discover private personal records or upload selected files. App trust scores are transparent local heuristics, not malware verdicts; external reputation checks occur only when you explicitly open a SHA-256 lookup.</small></div>
+            <span class="chip active">LOCAL-FIRST</span>
+          </div>
+
+          <div class="privacy-center-grid">
+            <article class="panel span-2 app-trust-scanner-panel">
+              <div class="panel-head"><div><h2>APP TRUST SCANNER</h2><p class="panel-subtitle">Inspect one local app/package at a time. SHA-256 and Authenticode are calculated locally; the selected path never appears in the renderer.</p></div><span class="chip" id="privacyTrustChip">Idle</span></div>
+              <div class="app-trust-actions"><button class="primary-btn" id="privacyTrustSelectFile">Select App / Package</button><span>EXE · MSI · MSIX · APPX · DLL · PowerShell / command scripts</span></div>
+              <div class="app-trust-result" id="privacyTrustResult"><div class="empty">No app inspected yet. A valid signature raises confidence; an unsigned file is a review signal, not proof of malware.</div></div>
+            </article>
+
+            <article class="panel app-protection-panel">
+              <div class="panel-head"><div><h2>WINDOWS APP PROTECTION</h2><p class="panel-subtitle">Read SmartScreen and Smart App Control state directly from Windows on demand.</p></div></div>
+              <button class="secondary-btn" id="privacyProtectionRefresh">Check Windows Trust</button>
+              <div class="app-protection-result" id="privacyProtectionResult"><div class="empty">Not checked. This does not change Windows settings.</div></div>
+            </article>
+
+            <article class="panel app-trust-inventory-panel">
+              <div class="panel-head"><div><h2>INSTALLED APP INTELLIGENCE</h2><p class="panel-subtitle">Review publisher coverage from Windows uninstall inventory. Signature/hash inspection runs only for the individual app you choose.</p></div><button class="secondary-btn" id="privacyAppInventoryRefresh">Load Apps</button></div>
+              <div class="app-trust-inventory-toolbar"><input id="privacyAppSearch" class="diagnostic-input" placeholder="Search installed apps or publishers…" autocomplete="off"/><span id="privacyAppCoverage">Inventory not loaded</span></div>
+              <div class="app-trust-app-list" id="privacyAppList"><div class="empty">Load the installed-app inventory when you want to review publisher coverage.</div></div>
+            </article>
+
+            <article class="panel span-2 privacy-exposure-panel">
+              <div class="panel-head"><div><h2>EXPOSURE SCANNER</h2><p class="panel-subtitle">Create public-profile shortcuts for a username you own or are authorized to check. PowerTools does not scrape or verify account ownership automatically.</p></div><span class="chip">Manual</span></div>
+              <div class="privacy-input-row"><input id="privacyUsername" class="diagnostic-input" placeholder="Username — letters, numbers, dots, _ or -" autocomplete="off" spellcheck="false"/><button class="secondary-btn" id="privacyBuildProfiles">Build Profile Shortcuts</button></div>
+              <div class="privacy-profile-grid" id="privacyProfileResults"><div class="empty">Enter a username to build public profile shortcuts for GitHub, Reddit, YouTube, TikTok, and Instagram.</div></div>
+            </article>
+
+            <article class="panel privacy-email-panel">
+              <div class="panel-head"><div><h2>EMAIL EXPOSURE</h2><p class="panel-subtitle">Validate your email locally, then open Have I Been Pwned manually.</p></div></div>
+              <label class="privacy-field"><span>EMAIL ADDRESS</span><input id="privacyEmail" type="email" placeholder="you@example.com" autocomplete="off" spellcheck="false"/></label>
+              <div class="privacy-email-state" id="privacyEmailState"><strong>Not checked</strong><small>Your email stays in this renderer session and is not inserted into an external URL.</small></div>
+              <button class="secondary-btn" id="privacyOpenHibp">Validate & Open HIBP</button>
+            </article>
+
+            <article class="panel span-2 privacy-domain-panel">
+              <div class="panel-head"><div><h2>DOMAIN & DNS INTELLIGENCE</h2><p class="panel-subtitle">Resolve public A, AAAA, MX, NS, and TXT records on demand using the system DNS resolver.</p></div><span class="chip" id="privacyDnsChip">Idle</span></div>
+              <div class="privacy-input-row"><input id="privacyDomain" class="diagnostic-input" placeholder="example.com" autocomplete="off" spellcheck="false"/><button class="secondary-btn" id="privacyInspectDomain">Inspect DNS</button></div>
+              <div class="privacy-dns-results" id="privacyDnsResults"><div class="empty">No domain inspected yet.</div></div>
+            </article>
+
+            <article class="panel privacy-metadata-panel">
+              <div class="panel-head"><div><h2>METADATA INSPECTOR</h2><p class="panel-subtitle">Inspect a file locally for common privacy signals such as GPS, author, comments, copyright, EXIF, and XMP metadata.</p></div></div>
+              <button class="primary-btn" id="privacyInspectFile">Select File</button>
+              <div class="privacy-metadata-result" id="privacyMetadataResult"><div class="empty">No file selected. File paths are never returned to the renderer or included in PowerTools reports.</div></div>
+            </article>
+
+            <article class="panel privacy-checklist-panel">
+              <div class="panel-head"><div><h2>PRIVACY CHECKLIST</h2><p class="panel-subtitle">Quick defensive checks that fit the current session.</p></div></div>
+              <div class="privacy-check-list">
+                <div><span>Public IP</span><strong>Use Network → IP Geolocation only when needed</strong></div>
+                <div><span>Email</span><strong>Check breach exposure manually</strong></div>
+                <div><span>Files</span><strong>Remove GPS/author metadata before sharing</strong></div>
+                <div><span>Usernames</span><strong>Review public profiles for unwanted exposure</strong></div>
+                <div><span>Domains</span><strong>Review DNS TXT/MX/NS records for stale configuration</strong></div>
+                <div><span>Apps</span><strong>Prefer valid Authenticode signatures and review unknown publishers before running new software</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-automation">
+          <div class="page-title automation-title">
+            <div><span class="eyebrow">AUTOMATION ENGINE</span><h1>RULES, TRIGGERS & SCHEDULES</h1><p>Local event automation with demand-driven monitoring and a fixed allowlist of safe PowerTools/Windows actions.</p></div>
+            <div class="page-actions"><button class="secondary-btn" id="newAutomation">New Rule</button><button class="small-btn" id="refreshAutomation">Refresh</button></div>
+          </div>
+
+          <div class="automation-summary-grid">
+            <article class="panel automation-summary-card engine"><span>ENGINE</span><strong id="automationEngineStatus">Loading…</strong><small id="automationEngineDetail">No background work until rules are enabled.</small><button class="automation-master-btn" id="automationMasterToggle" aria-pressed="true">Engine</button></article>
+            <article class="panel automation-summary-card"><span>ENABLED RULES</span><strong id="automationEnabledCount">0</strong><small id="automationRuleCount">0 rules total</small></article>
+            <article class="panel automation-summary-card"><span>LAST TRIGGER</span><strong id="automationLastRun">Never</strong><small>Local run history</small></article>
+            <article class="panel automation-summary-card"><span>NEXT SCHEDULE</span><strong id="automationNextSchedule">None</strong><small>Daily-time rules only</small></article>
+            <article class="panel automation-summary-card"><span>EVALUATION</span><strong id="automationTick">3 sec</strong><small>Only while enabled rules exist</small></article>
+          </div>
+
+          <div class="automation-center-grid">
+            <article class="panel automation-builder-panel span-2">
+              <div class="panel-head"><div><h2>RULE BUILDER</h2><p class="panel-subtitle">One trigger + one allowlisted action per rule. Continuous triggers use cooldown protection.</p></div><span class="chip active" id="automationBuilderMode">NEW RULE</span></div>
+              <div class="automation-form-grid">
+                <label class="automation-field span-2"><span>RULE NAME</span><input id="automationName" maxlength="80" placeholder="Example: High CPU warning"/></label>
+                <label class="automation-field"><span>WHEN</span><select id="automationTriggerType">
+                  <option value="cpuAbove">CPU usage is above</option><option value="gpuAbove">GPU usage is above</option><option value="ramAbove">RAM usage is above</option><option value="diskFreeBelow">System drive free space is below</option><option value="processStarted">Application starts</option><option value="processStopped">Application closes</option><option value="networkDisconnected">Network disconnects</option><option value="batteryBelow">Battery level is below</option><option value="dailyTime">Daily at a time</option><option value="systemStartup">PowerTools starts</option>
+                </select></label>
+                <div class="automation-config-box" id="automationTriggerConfig"></div>
+                <label class="automation-field"><span>THEN</span><select id="automationActionType">
+                  <option value="notification">Show Windows notification</option><option value="activity">Write Activity log entry</option><option value="profile">Change Performance profile</option><option value="navigate">Open PowerTools page</option><option value="windowsTool">Open allowlisted Windows tool</option>
+                </select></label>
+                <div class="automation-config-box" id="automationActionConfig"></div>
+                <label class="automation-field"><span>COOLDOWN</span><div class="automation-inline-input"><input id="automationCooldown" type="number" min="1" max="1440" value="5"/><em>minutes</em></div><small>Stops continuous conditions from firing repeatedly.</small></label>
+                <div class="automation-builder-actions"><button class="primary-btn" id="saveAutomationRule">Save Rule</button><button class="secondary-btn" id="resetAutomationBuilder">Reset</button></div>
+              </div>
+              <div class="automation-safety-note"><strong>Local & allowlisted</strong><small>Automation Engine cannot run arbitrary shell commands, scripts, downloads, registry edits, or remote actions. Process/network/battery checks are activated only when a matching enabled rule exists.</small></div>
+            </article>
+
+            <article class="panel automation-presets-panel">
+              <div class="panel-head"><h2>QUICK PRESETS</h2></div>
+              <div class="automation-preset-list">
+                <button data-automation-preset="cpu"><b>CPU Guard</b><small>CPU &gt; 85% for 30 sec → notification</small><span>›</span></button>
+                <button data-automation-preset="ram"><b>Memory Guard</b><small>RAM &gt; 85% for 30 sec → notification</small><span>›</span></button>
+                <button data-automation-preset="disk"><b>Low Disk Space</b><small>Free space &lt; 10% → notification</small><span>›</span></button>
+                <button data-automation-preset="network"><b>Network Watch</b><small>Disconnected 15 sec → notification</small><span>›</span></button>
+                <button data-automation-preset="daily"><b>Daily Dashboard</b><small>Scheduled time → open Dashboard</small><span>›</span></button>
+              </div>
+            </article>
+
+            <article class="panel automation-rules-panel span-3">
+              <div class="panel-head"><div><h2>RULE LIBRARY</h2><p class="panel-subtitle">Enable, edit, test, or remove local rules.</p></div><span class="time-chip" id="automationRulesMeta">0 rules</span></div>
+              <div id="automationRuleList" class="automation-rule-list"><div class="empty">No automation rules yet.</div></div>
+            </article>
+
+            <article class="panel automation-history-panel span-2">
+              <div class="panel-head"><div><h2>RUN HISTORY</h2><p class="panel-subtitle">Last 50 engine/manual executions retained locally.</p></div><button class="small-btn" id="clearAutomationHistory">Clear History</button></div>
+              <div id="automationHistoryList" class="automation-history-list"><div class="empty">No automation runs yet.</div></div>
+            </article>
+
+            <article class="panel automation-behavior-panel">
+              <div class="panel-head"><h2>ENGINE BEHAVIOR</h2></div>
+              <div class="automation-behavior-list">
+                <div><span>CPU/RAM/Disk</span><strong>Native lightweight sampling</strong></div>
+                <div><span>GPU</span><strong>NVIDIA cache / on demand</strong></div>
+                <div><span>Apps</span><strong>Only with app-event rules</strong></div>
+                <div><span>Network</span><strong>Local adapter state only</strong></div>
+                <div><span>Battery</span><strong>Only with battery rules</strong></div>
+                <div><span>Startup rule</span><strong>Next PowerTools launch</strong></div>
+              </div>
+              <div class="automation-safety-note compact"><strong>No cloud automation</strong><small>Rules, history, and settings are stored in the local PowerTools user-data directory.</small></div>
+            </article>
+          </div>
+        </section>
+        <section class="view" id="view-journal">
+          <div class="page-title journal-title">
+            <div><span class="eyebrow">CHANGE JOURNAL + UNDO · v2.0.1</span><h1>Change Journal</h1><p>Local audit history for changes made through PowerTools, with guarded one-step undo when a fixed inverse operation is known and safe to replay.</p></div>
+            <div class="page-actions"><button class="secondary-btn" id="refreshJournal">Refresh</button><button class="secondary-btn" id="clearJournal">Clear Journal</button></div>
+          </div>
+          <div class="journal-summary-grid">
+            <article class="panel journal-summary-card"><span>RECORDED CHANGES</span><strong id="journalCount">0</strong><small>Newest first · local only</small></article>
+            <article class="panel journal-summary-card"><span>READY TO UNDO</span><strong id="journalUndoCount">0</strong><small>Known guarded inverse actions</small></article>
+            <article class="panel journal-summary-card"><span>UNDONE</span><strong id="journalUndoneCount">0</strong><small>Retained as audit history</small></article>
+            <article class="panel journal-summary-card"><span>STORAGE</span><strong>LOCAL</strong><small>Never attached to AI or reports</small></article>
+          </div>
+          <article class="panel journal-safety-note"><div class="journal-shield">↶</div><div><strong>Guarded undo, not blind rollback</strong><small>PowerTools only enables Undo for supported reversible operations whose previous state was captured. GitHub writes and other external/non-reversible actions remain audit-only. Undo always requires confirmation.</small></div><span class="chip active">LOCAL-FIRST</span></article>
+          <div class="journal-toolbar panel">
+            <input id="journalSearch" placeholder="Search change history" />
+            <select id="journalCategory"><option value="all">All categories</option><option value="Windows Feature Lab">Feature Lab</option><option value="Performance">Performance</option><option value="Automation">Automation</option><option value="GitHub">GitHub</option><option value="Storage">Storage</option><option value="Network">Network</option><option value="Process & Apps">Process & Apps</option></select>
+            <select id="journalStateFilter"><option value="all">All states</option><option value="undoable">Undo available</option><option value="undone">Undone</option><option value="audit">Audit only</option></select>
+            <span class="time-chip" id="journalMeta">Not loaded</span>
+          </div>
+          <div class="journal-list" id="journalList"><div class="panel empty">Open Change Journal to load local history.</div></div>
+        </section>
+        <section class="view placeholder-view" id="view-experiments"><div class="panel placeholder"><span class="eyebrow">EXPERIMENTS</span><h1>Performance Experiments</h1><p>Create named test sessions so you can compare system conditions while tuning the PC.</p><button class="primary-btn" id="newExperiment">New Experiment</button><div id="experimentList" class="draft-list"></div></div></section>
+        <section class="view" id="view-integrations">
+          <div class="page-title github-title">
+            <div><span class="eyebrow">GITHUB RELEASE CENTER · v2.0.1</span><h1>GitHub Release Center</h1><p>Connect your own GitHub account, browse repositories, commit selected local updates, and publish release assets without leaving Purple Dragon PowerTools.</p></div>
+            <div class="page-actions"><button class="secondary-btn" id="githubRefresh">Refresh</button><button class="primary-btn" id="githubConfigure">Configure GitHub</button></div>
+          </div>
+          <div class="github-summary-grid">
+            <article class="panel github-summary-card"><span>ACCOUNT</span><strong id="githubAccount">Not connected</strong><small id="githubAccountMeta">Fine-grained PAT recommended</small></article>
+            <article class="panel github-summary-card"><span>REPOSITORIES</span><strong id="githubRepoCount">0</strong><small id="githubRepoCountMeta">Connect GitHub to load repositories</small></article>
+            <article class="panel github-summary-card"><span>SELECTED REPO</span><strong id="githubSelectedRepo">None</strong><small id="githubSelectedRepoMeta">Choose a repository below</small></article>
+            <article class="panel github-summary-card"><span>SECURE STORAGE</span><strong id="githubVaultState">Checking…</strong><small>Token never enters the renderer after saving</small></article>
+          </div>
+          <div class="github-grid">
+            <article class="panel github-repo-browser">
+              <div class="panel-head"><div><h2>REPOSITORIES</h2><p class="panel-subtitle" id="githubRepoSubtitle">GitHub is not connected.</p></div><input id="githubRepoSearch" class="github-search" placeholder="Search repositories" /></div>
+              <div class="github-repo-list" id="githubRepoList"><div class="empty">Configure GitHub to load repositories.</div></div>
+            </article>
+            <div class="github-workspace">
+              <article class="panel github-repo-workspace">
+                <div class="panel-head"><div><h2 id="githubWorkspaceTitle">REPOSITORY WORKSPACE</h2><p class="panel-subtitle" id="githubWorkspaceMeta">Select a repository to begin.</p></div><button class="small-btn" id="githubOpenRepo" disabled>Open Repository</button></div>
+                <div class="github-repo-controls"><label><span>BRANCH</span><select id="githubBranch" disabled><option>--</option></select></label><div class="github-access-box"><span>ACCESS</span><strong id="githubAccess">--</strong><small id="githubAccessMeta">No repository selected</small></div></div>
+                <div class="github-history-grid"><div><span>RECENT COMMITS</span><div id="githubRecentCommits" class="github-mini-list"><div class="empty">No repository selected.</div></div></div><div><span>RECENT RELEASES</span><div id="githubRecentReleases" class="github-mini-list"><div class="empty">No repository selected.</div></div></div></div>
+              </article>
+              <article class="panel github-source-panel">
+                <div class="panel-head"><div><h2>SOURCE UPDATE</h2><p class="panel-subtitle">Create a Git commit from selected local files. Empty repositories are initialized automatically; folder mode skips .git, node_modules, runtime, and dist.</p></div><div class="github-inline-actions"><button class="small-btn" id="githubSelectFiles">Select Files</button><button class="small-btn" id="githubSelectFolder">Select Folder</button><button class="small-btn" id="githubClearSource">Clear</button></div></div>
+                <div id="githubSourceFiles" class="github-file-list"><div class="empty">No source files selected.</div></div>
+                <div class="github-form-grid"><label><span>REPOSITORY DESTINATION</span><input id="githubDestination" placeholder="Optional, e.g. src" /></label><label class="span-2"><span>COMMIT MESSAGE</span><input id="githubCommitMessage" placeholder="Update PowerTools files" /></label></div>
+                <div class="github-action-row"><div><strong id="githubSourceSummary">0 files selected</strong><small>Existing repositories use one atomic Git Data commit. A truly empty repository may require one small bootstrap commit before the main upload.</small></div><button class="primary-btn" id="githubCommitUpload" disabled>Commit & Upload</button></div>
+              </article>
+              <article class="panel github-release-panel">
+                <div class="panel-head"><div><h2>RELEASE PUBLISHER</h2><p class="panel-subtitle">Create or update a GitHub Release and attach ZIPs, checksums, installers, or other selected assets.</p></div><div class="github-inline-actions"><button class="small-btn" id="githubSelectAssets">Select Assets</button><button class="small-btn" id="githubClearAssets">Clear</button></div></div>
+                <div class="github-release-form">
+                  <label><span>TAG</span><input id="githubReleaseTag" value="v2.0.1" /></label><label><span>RELEASE TITLE</span><input id="githubReleaseTitle" placeholder="Release title" /></label>
+                  <label class="span-2"><span>RELEASE NOTES</span><textarea id="githubReleaseNotes" rows="6" placeholder="Release notes"></textarea></label>
+                </div>
+                <div class="github-release-options"><label class="dragon-router-switch"><span><strong>Draft release</strong><small>Create without publishing publicly.</small></span><input id="githubReleaseDraft" type="checkbox" /></label><label class="dragon-router-switch"><span><strong>Pre-release</strong><small>Mark this release as unstable/testing.</small></span><input id="githubReleasePrerelease" type="checkbox" /></label><label class="dragon-router-switch"><span><strong>Update existing release</strong><small>Allow the same tag to be updated instead of rejected.</small></span><input id="githubUpdateExisting" type="checkbox" /></label><label class="dragon-router-switch"><span><strong>Replace same-named assets</strong><small>Delete matching assets before uploading replacements.</small></span><input id="githubReplaceAssets" type="checkbox" /></label></div>
+                <div id="githubReleaseAssets" class="github-file-list"><div class="empty">No release assets selected.</div></div>
+                <div class="github-action-row"><div><strong id="githubAssetSummary">0 assets selected</strong><small>GitHub API calls occur only when you explicitly request them.</small></div><div class="github-inline-actions"><button class="secondary-btn" id="githubGenerateNotes" disabled>Generate Notes</button><button class="primary-btn" id="githubPublishRelease" disabled>Publish Release</button></div></div>
+              </article>
+            </div>
+          </div>
+          <div class="panel github-safety"><strong>Private-use publishing guard</strong><span>Use a fine-grained personal access token limited to only the repositories you want Purple Dragon PowerTools to manage. Every commit and release requires a native confirmation before GitHub is modified.</span></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose">×</button>
+      <span class="eyebrow" id="modalEyebrow">COMMAND</span>
+      <h2 id="modalTitle">PowerTools</h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" role="status" aria-live="polite" aria-atomic="false"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+Purple Dragon PowerTools v2.0.1 — Purple Dragon AI Command Center
+Build verification date: 2026-09-10
+
+Version / packaging
+- package.json version: 2.0.1
+- Edition: AI Command Center
+- Author: Purple Dragon Foundation Ltd
+- Private / UNLICENSED project metadata retained
+- Electron runtime pin retained: 44.2.0
+
+AI Command Center
+- AI Command Deck present
+- Execution modes: Direct Model, Dragon Router, Dragon Council
+- Mission profiles: General Assistant, PC Diagnostics, Windows Troubleshooting, Coding / Development, Security Review, Deep Analysis
+- Quick mission starters present
+- Ctrl+Enter mission execution present
+- Unified mission output console present
+- Session mission history is renderer-memory only; Command Deck prompts are not persisted to disk
+- Direct/Router Command Deck implementation directly invokes only modelChat / routeModel AI APIs
+- Council delegated path invokes modelChat only
+- No Feature Lab, process, cleanup, PowerShell, GitHub write, or other mutation API is wired to runAiCommand
+- Dragon Council busy/results state is explicitly initialized before first render
+- Cloud model access and cloud System-Aware context remain separate controls
+- System-Aware context preview accepts the Command Deck mission text
+
+Validation executed
+- src/main.js: node --check PASS
+- src/preload.js: node --check PASS
+- src/renderer.js: node --check PASS
+- HTML IDs: 531 / 531 unique
+- IPC parity: 99 preload invoke channels / 99 main handlers; exact set match
+- AI Command execution modes: 3 / 3 validated
+- Mission profiles: 6 / 6 runtime metadata test PASS
+- createWindow startup block contains no getModelCenter, routeDragonModel, or cloudAiJson call
+- Electron safeStorage credential path retained
+- loopback-only local AI endpoint guard retained
+
+Environment limitation
+- Full Electron/Windows provider connectivity, Windows DPAPI behavior, and live System-Aware hardware context cannot be exercised in this Linux build environment and require the normal Windows smoke test.
+
+v2.0.1 GitHub empty-repository hotfix verification
+-------------------------------------------------
+- GitHub repository detail loading tolerates empty-repository HTTP 409 responses: PASS
+- Empty repository bootstrap via Contents API before Git Data API: PASS (mock runtime test)
+- Existing non-empty repository path still uses atomic Git Data commit flow: PASS (mock runtime test)
+- Non-force branch update preserved: PASS
+- JavaScript syntax validation: PASS
+- HTML ID uniqueness: 531/531
+- IPC parity: 99 invokes / 99 handlers
