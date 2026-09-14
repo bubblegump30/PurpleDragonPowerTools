@@ -33,6 +33,7 @@ let processCenterCache = { at: 0, data: [], pending: null, samples: new Map() };
 let installedAppsCache = { at: 0, data: [], pending: null };
 let processCenterLastSnapshot = null;
 let networkCenterCache = { at: 0, data: null, pending: null };
+let vpnCenterCache = { at: 0, data: null, pending: null, internal: new Map() };
 let networkLastDiagnostics = [];
 let networkIpGeoLastResult = null;
 let modelCenterCache = { at: 0, key: '', data: null, pending: null };
@@ -358,7 +359,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.0.1', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:userData },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
@@ -366,7 +367,7 @@ function getStableReleaseStatus() {
     { id:'automation-data', label:'Automation data', ok:automationDataHealthy, optional:automationChecked===0, detail:automationChecked ? `${automationChecked} local automation data file(s) parsed successfully.` : 'No persisted automation files yet.' },
     { id:'diagnostics', label:'Diagnostics rotation', ok:diagSize <= 2 * 1024 * 1024, detail:`Active diagnostics log: ${diagSize} bytes.` },
     { id:'sensor', label:'CPU sensor runtime', ok:sensorPresent, optional:true, detail:sensorPresent ? 'Optional LibreHardwareMonitor bridge is bundled.' : 'Optional CPU sensor bridge is not present.' },
-    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:!previousSessionState, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean shutdown; check diagnostics if unexpected.') : 'First session recorded by v2.0.1.' }
+    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:!previousSessionState, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean shutdown; check diagnostics if unexpected.') : 'First session recorded by v2.1.0.' }
   ];
   const blocking = checks.filter(c => !c.ok && !c.optional);
   const passed = checks.filter(c => c.ok).length;
@@ -437,7 +438,7 @@ function createWindow() {
     writeDiagnostic('render-process-gone', lastRendererError);
     setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload(); }, 650);
   });
-  addActivity('Application started', 'Purple Dragon PowerTools v2.0.1 AI Command Center is ready');
+  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 VPN Center is ready');
 }
 
 function timesTotal(times) {
@@ -1750,64 +1751,122 @@ async function getStorageInventory(force = false) {
   storageInventoryCache.pending = (async () => {
     let data = null;
     if (process.platform === 'win32') {
+      // v2.0.3: Win32_LogicalDisk is the primary volume enumerator. It reliably
+      // exposes secondary fixed disks and removable USB volumes on systems where
+      // the modern Storage cmdlets only report the system volume.
       const script = `
 $ErrorActionPreference='SilentlyContinue'
 $physicalRaw = @()
 $physical = @()
 try {
   $physicalRaw = @(Get-PhysicalDisk -ErrorAction Stop)
-  $physical = @($physicalRaw | Select-Object DeviceId,FriendlyName,MediaType,BusType,HealthStatus,OperationalStatus,Size)
+  $physical = @($physicalRaw | Select-Object DeviceId,FriendlyName,MediaType,BusType,HealthStatus,OperationalStatus,Size,SpindleSpeed)
 } catch {}
-$volumes = @()
+$volumeMap = @{}
 try {
-  $vols = @(Get-Volume -ErrorAction Stop | Where-Object { $_.DriveLetter -and $_.Size -gt 0 })
-  foreach ($v in $vols) {
-    $disk = $null; $pd = $null; $pdRaw = $null; $rel = $null; $diskNumber = $null; $temperature = $null
-    try {
-      $part = Get-Partition -DriveLetter $v.DriveLetter -ErrorAction Stop | Select-Object -First 1
-      if ($part) { $diskNumber = $part.DiskNumber; $disk = Get-Disk -Number $diskNumber -ErrorAction Stop }
-    } catch {}
-    if ($disk) {
-      $pd = $physical | Where-Object { $_.FriendlyName -eq $disk.FriendlyName } | Select-Object -First 1
-    }
-    if ($pd) {
-      try {
-        $pdRaw = $physicalRaw | Where-Object { $_.DeviceId -eq $pd.DeviceId } | Select-Object -First 1
-        if ($pdRaw) { $rel = Get-StorageReliabilityCounter -PhysicalDisk $pdRaw -ErrorAction Stop }
-        if ($rel -and $rel.Temperature -gt 0 -and $rel.Temperature -lt 130) { $temperature = [double]$rel.Temperature }
-      } catch {}
-    }
-    $size = [double]$v.Size
-    $free = [double]$v.SizeRemaining
-    $used = [math]::Max(0, $size - $free)
-    $pct = if ($size -gt 0) { [math]::Round(($used / $size) * 100, 1) } else { 0 }
-    $volumes += [PSCustomObject]@{
-      DriveLetter = [string]$v.DriveLetter
-      Label = [string]$v.FileSystemLabel
-      FileSystem = [string]$v.FileSystem
-      DriveType = [string]$v.DriveType
-      Size = $size
-      Free = $free
-      Used = $used
-      Percent = $pct
-      DiskNumber = $diskNumber
-      DiskModel = if ($disk) { [string]$disk.FriendlyName } else { $null }
-      MediaType = if ($pd) { [string]$pd.MediaType } else { $null }
-      BusType = if ($disk) { [string]$disk.BusType } elseif ($pd) { [string]$pd.BusType } else { $null }
-      HealthStatus = if ($disk) { [string]$disk.HealthStatus } elseif ($pd) { [string]$pd.HealthStatus } else { $null }
-      OperationalStatus = if ($disk) { [string]($disk.OperationalStatus -join ', ') } elseif ($pd) { [string]($pd.OperationalStatus -join ', ') } else { $null }
-      TemperatureC = $temperature
-    }
+  @(Get-Volume -ErrorAction Stop | Where-Object { $_.DriveLetter }) | ForEach-Object {
+    $volumeMap[([string]$_.DriveLetter).ToUpperInvariant()] = $_
   }
 } catch {}
+$logical = @()
+try {
+  # DriveType 2 = removable, 3 = local/fixed. USB HDDs/SSDs commonly report as 3.
+  $logical = @(Get-CimInstance Win32_LogicalDisk -ErrorAction Stop | Where-Object {
+    $_.DeviceID -match '^[A-Za-z]:$' -and ([int]$_.DriveType -eq 2 -or [int]$_.DriveType -eq 3) -and [double]$_.Size -gt 0
+  })
+} catch {}
+$volumes = @()
+foreach ($v in $logical) {
+  $letter = ([string]$v.DeviceID).TrimEnd(':').ToUpperInvariant()
+  $disk = $null; $pd = $null; $pdRaw = $null; $rel = $null; $diskDrive = $null; $diskNumber = $null; $temperature = $null
+  $volumeInfo = if ($volumeMap.ContainsKey($letter)) { $volumeMap[$letter] } else { $null }
+  try {
+    $part = Get-Partition -DriveLetter $letter -ErrorAction Stop | Select-Object -First 1
+    if ($part) {
+      $diskNumber = [int]$part.DiskNumber
+      $disk = Get-Disk -Number $diskNumber -ErrorAction Stop
+    }
+  } catch {}
+  # CIM association fallback covers USB/removable devices and older storage stacks.
+  try {
+    $partCim = Get-CimAssociatedInstance -InputObject $v -Association Win32_LogicalDiskToPartition -ErrorAction Stop | Select-Object -First 1
+    if ($partCim) {
+      $diskDrive = Get-CimAssociatedInstance -InputObject $partCim -Association Win32_DiskDriveToDiskPartition -ErrorAction Stop | Select-Object -First 1
+      if ($null -eq $diskNumber -and $diskDrive -and $null -ne $diskDrive.Index) { $diskNumber = [int]$diskDrive.Index }
+    }
+  } catch {}
+  if (-not $disk -and $null -ne $diskNumber) {
+    try { $disk = Get-Disk -Number $diskNumber -ErrorAction Stop } catch {}
+  }
+  if ($disk) {
+    $pd = $physical | Where-Object { $_.FriendlyName -eq $disk.FriendlyName } | Select-Object -First 1
+    if (-not $pd -and $null -ne $disk.Number) { $pd = $physical | Where-Object { [string]$_.DeviceId -eq [string]$disk.Number } | Select-Object -First 1 }
+  }
+  if (-not $pd -and $diskDrive) {
+    $pd = $physical | Where-Object { $_.FriendlyName -eq $diskDrive.Model } | Select-Object -First 1
+  }
+  if ($pd) {
+    try {
+      $pdRaw = $physicalRaw | Where-Object { [string]$_.DeviceId -eq [string]$pd.DeviceId } | Select-Object -First 1
+      if ($pdRaw) { $rel = Get-StorageReliabilityCounter -PhysicalDisk $pdRaw -ErrorAction Stop }
+      if ($rel -and $rel.Temperature -gt 0 -and $rel.Temperature -lt 130) { $temperature = [double]$rel.Temperature }
+    } catch {}
+  }
+  $size = [double]$v.Size
+  $free = [double]$v.FreeSpace
+  # Avoid Math.Max overload binding with multi-terabyte Double values.
+  # Explicit subtraction keeps Used/Percent accurate on large HDD/SSD/USB volumes.
+  $used = [double]$size - [double]$free
+  if ($used -lt 0) { $used = [double]0 }
+  $pct = if ($size -gt 0) { [math]::Round(([double]$used / [double]$size) * 100, 1) } else { 0 }
+  $model = if ($disk) { [string]$disk.FriendlyName } elseif ($diskDrive) { [string]$diskDrive.Model } else { $null }
+  $busType = if ($disk -and [string]$disk.BusType) { [string]$disk.BusType } elseif ($pd -and [string]$pd.BusType) { [string]$pd.BusType } elseif ($diskDrive) { [string]$diskDrive.InterfaceType } else { $null }
+  $interfaceType = if ($diskDrive) { [string]$diskDrive.InterfaceType } else { $null }
+  $pnpId = if ($diskDrive) { [string]$diskDrive.PNPDeviceID } else { $null }
+  $isUsb = ([string]$busType -match '(?i)USB') -or ([string]$interfaceType -match '(?i)USB') -or ([string]$pnpId -match '(?i)USB')
+  $isRemovable = ([int]$v.DriveType -eq 2)
+  $mediaRaw = if ($pd) { [string]$pd.MediaType } else { $null }
+  $spindle = if ($pd -and $null -ne $pd.SpindleSpeed) { [double]$pd.SpindleSpeed } else { $null }
+  $mediaClass = 'Unknown'
+  if ($mediaRaw -match '(?i)^SSD$|Solid State') { $mediaClass = 'SSD' }
+  elseif ($mediaRaw -match '(?i)^HDD$') { $mediaClass = 'HDD' }
+  elseif ($model -match '(?i)SSD|Solid State|NVMe') { $mediaClass = 'SSD' }
+  elseif ($null -ne $spindle -and $spindle -gt 0) { $mediaClass = 'HDD' }
+  $connectionType = if ($isUsb) { 'USB' } elseif ($busType) { [string]$busType } elseif ($interfaceType) { [string]$interfaceType } else { 'Internal' }
+  $health = if ($volumeInfo -and $volumeInfo.HealthStatus) { [string]$volumeInfo.HealthStatus } elseif ($disk -and $disk.HealthStatus) { [string]$disk.HealthStatus } elseif ($pd) { [string]$pd.HealthStatus } else { $null }
+  $operational = if ($volumeInfo -and $volumeInfo.OperationalStatus) { [string]($volumeInfo.OperationalStatus -join ', ') } elseif ($disk -and $disk.OperationalStatus) { [string]($disk.OperationalStatus -join ', ') } elseif ($pd) { [string]($pd.OperationalStatus -join ', ') } else { $null }
+  $volumes += [PSCustomObject]@{
+    DriveLetter = $letter
+    Label = [string]$v.VolumeName
+    FileSystem = [string]$v.FileSystem
+    DriveType = if ([int]$v.DriveType -eq 2) { 'Removable' } else { 'Fixed' }
+    DriveTypeCode = [int]$v.DriveType
+    Size = $size
+    Free = $free
+    Used = $used
+    Percent = $pct
+    DiskNumber = $diskNumber
+    DiskModel = $model
+    MediaType = $mediaRaw
+    MediaClass = $mediaClass
+    BusType = $busType
+    InterfaceType = $interfaceType
+    ConnectionType = $connectionType
+    IsUsb = [bool]$isUsb
+    IsRemovable = [bool]$isRemovable
+    HealthStatus = $health
+    OperationalStatus = $operational
+    TemperatureC = $temperature
+  }
+}
 
+# Last-chance provider if CIM logical-disk enumeration is unavailable.
 if ($volumes.Count -eq 0) {
   try {
-    $legacy = @(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3')
-    foreach ($v in $legacy) {
-      $size = [double]$v.Size; $free = [double]$v.FreeSpace; $used = [math]::Max(0,$size-$free)
-      $pct = if ($size -gt 0) { [math]::Round(($used/$size)*100,1) } else { 0 }
-      $volumes += [PSCustomObject]@{ DriveLetter=([string]$v.DeviceID).TrimEnd(':'); Label=[string]$v.VolumeName; FileSystem=[string]$v.FileSystem; DriveType='Fixed'; Size=$size; Free=$free; Used=$used; Percent=$pct; DiskNumber=$null; DiskModel=$null; MediaType=$null; BusType=$null; HealthStatus=$null; OperationalStatus=$null; TemperatureC=$null }
+    @(Get-Volume -ErrorAction Stop | Where-Object { $_.DriveLetter -and $_.Size -gt 0 -and ([string]$_.DriveType -match 'Fixed|Removable') }) | ForEach-Object {
+      $size=[double]$_.Size; $free=[double]$_.SizeRemaining; $used=[double]$size-[double]$free; if($used -lt 0){$used=[double]0}
+      $pct=if($size -gt 0){[math]::Round(([double]$used/[double]$size)*100,1)}else{0}
+      $volumes += [PSCustomObject]@{DriveLetter=[string]$_.DriveLetter;Label=[string]$_.FileSystemLabel;FileSystem=[string]$_.FileSystem;DriveType=[string]$_.DriveType;DriveTypeCode=$null;Size=$size;Free=$free;Used=$used;Percent=$pct;DiskNumber=$null;DiskModel=$null;MediaType=$null;MediaClass='Unknown';BusType=$null;InterfaceType=$null;ConnectionType=if([string]$_.DriveType -match 'Removable'){'USB / Removable'}else{'Internal'};IsUsb=$false;IsRemovable=([string]$_.DriveType -match 'Removable');HealthStatus=[string]$_.HealthStatus;OperationalStatus=[string]($_.OperationalStatus -join ', ');TemperatureC=$null}
     }
   } catch {}
 }
@@ -1815,9 +1874,9 @@ if ($volumes.Count -eq 0) {
 [PSCustomObject]@{
   volumes = @($volumes | Sort-Object DriveLetter)
   physicalDisks = @($physical)
-} | ConvertTo-Json -Depth 6 -Compress
+} | ConvertTo-Json -Depth 7 -Compress
 `;
-      const result = await runPowerShell(script, 9000);
+      const result = await runPowerShell(script, 12000);
       if (result && typeof result === 'object') data = result;
     }
 
@@ -1826,28 +1885,45 @@ if ($volumes.Count -eq 0) {
       const st = storageStats();
       volumes = [{
         DriveLetter: process.platform === 'win32' ? String(st.root || 'C:').replace(/[\\:]/g, '') : st.root,
-        Label: 'System', FileSystem: null, DriveType: 'Fixed', Size: st.total, Free: st.free,
-        Used: st.used, Percent: st.percent, DiskNumber: null, DiskModel: null, MediaType: null,
-        BusType: null, HealthStatus: null, OperationalStatus: null, TemperatureC: null
+        Label: 'System', FileSystem: null, DriveType: 'Fixed', DriveTypeCode: 3, Size: st.total, Free: st.free,
+        Used: st.used, Percent: st.percent, DiskNumber: null, DiskModel: null, MediaType: null, MediaClass: 'Unknown',
+        BusType: null, InterfaceType: null, ConnectionType: 'Internal', IsUsb: false, IsRemovable: false,
+        HealthStatus: null, OperationalStatus: null, TemperatureC: null
       }];
     }
-    volumes = volumes.map(v => ({
-      driveLetter: String(v.DriveLetter || '').replace(':', ''),
-      label: String(v.Label || ''),
-      fileSystem: String(v.FileSystem || ''),
-      driveType: String(v.DriveType || ''),
-      size: Number(v.Size) || 0,
-      free: Number(v.Free) || 0,
-      used: Number(v.Used) || 0,
-      percent: Math.max(0, Math.min(100, Number(v.Percent) || 0)),
-      diskNumber: v.DiskNumber === null || v.DiskNumber === undefined ? null : Number(v.DiskNumber),
-      model: v.DiskModel ? String(v.DiskModel) : null,
-      mediaType: v.MediaType ? String(v.MediaType) : null,
-      busType: v.BusType ? String(v.BusType) : null,
-      health: v.HealthStatus ? String(v.HealthStatus) : null,
-      operationalStatus: v.OperationalStatus ? String(v.OperationalStatus) : null,
-      temperatureC: Number.isFinite(Number(v.TemperatureC)) && Number(v.TemperatureC) > 0 ? Number(v.TemperatureC) : null
-    })).filter(v => v.size > 0);
+    volumes = volumes.map(v => {
+      // Capacity and free-space are the authoritative Windows values. Derive Used
+      // and Percent here instead of trusting provider-computed fields so one
+      // PowerShell/provider numeric quirk cannot render every drive as 0% used.
+      const size = Math.max(0, Number(v.Size) || 0);
+      const freeRaw = Number(v.Free);
+      const free = Number.isFinite(freeRaw) ? Math.max(0, Math.min(size, freeRaw)) : 0;
+      const used = Math.max(0, size - free);
+      const percent = size > 0 ? Math.max(0, Math.min(100, (used / size) * 100)) : 0;
+      return {
+        driveLetter: String(v.DriveLetter || '').replace(':', ''),
+        label: String(v.Label || ''),
+        fileSystem: String(v.FileSystem || ''),
+        driveType: String(v.DriveType || ''),
+        driveTypeCode: Number.isFinite(Number(v.DriveTypeCode)) ? Number(v.DriveTypeCode) : null,
+        size,
+        free,
+        used,
+        percent,
+        diskNumber: v.DiskNumber === null || v.DiskNumber === undefined ? null : Number(v.DiskNumber),
+        model: v.DiskModel ? String(v.DiskModel) : null,
+        mediaType: v.MediaType ? String(v.MediaType) : null,
+        mediaClass: ['SSD','HDD'].includes(String(v.MediaClass || '').toUpperCase()) ? String(v.MediaClass).toUpperCase() : 'Unknown',
+        busType: v.BusType ? String(v.BusType) : null,
+        interfaceType: v.InterfaceType ? String(v.InterfaceType) : null,
+        connectionType: v.ConnectionType ? String(v.ConnectionType) : null,
+        isUsb: Boolean(v.IsUsb),
+        isRemovable: Boolean(v.IsRemovable),
+        health: v.HealthStatus ? String(v.HealthStatus) : null,
+        operationalStatus: v.OperationalStatus ? String(v.OperationalStatus) : null,
+        temperatureC: Number.isFinite(Number(v.TemperatureC)) && Number(v.TemperatureC) > 0 ? Number(v.TemperatureC) : null
+      };
+    }).filter(v => v.size > 0 && v.driveLetter);
 
     const totalBytes = volumes.reduce((sum, v) => sum + v.size, 0);
     const freeBytes = volumes.reduce((sum, v) => sum + v.free, 0);
@@ -1855,11 +1931,15 @@ if ($volumes.Count -eq 0) {
     const sysLetter = process.platform === 'win32' ? path.parse(rootDrive()).root.replace(/[\\:]/g, '').toUpperCase() : rootDrive();
     const systemDrive = volumes.find(v => String(v.driveLetter).toUpperCase() === sysLetter) || volumes[0] || null;
     const lowSpaceDrives = volumes.filter(v => v.size > 0 && (v.free / v.size) < 0.10).length;
+    const usbDrives = volumes.filter(v => v.isUsb || /^usb/i.test(String(v.connectionType || ''))).length;
+    const removableDrives = volumes.filter(v => v.isRemovable).length;
+    const ssdDrives = volumes.filter(v => v.mediaClass === 'SSD').length;
+    const hddDrives = volumes.filter(v => v.mediaClass === 'HDD').length;
     const inventory = {
       generatedAt: new Date().toISOString(),
       volumes,
       physicalDisks: Array.isArray(data?.physicalDisks) ? data.physicalDisks : (data?.physicalDisks ? [data.physicalDisks] : []),
-      summary: { driveCount: volumes.length, totalBytes, freeBytes, usedBytes, systemDrive, lowSpaceDrives }
+      summary: { driveCount: volumes.length, totalBytes, freeBytes, usedBytes, systemDrive, lowSpaceDrives, usbDrives, removableDrives, ssdDrives, hddDrives }
     };
     storageInventoryCache.data = inventory;
     storageInventoryCache.at = Date.now();
@@ -2934,6 +3014,134 @@ async function networkCopyIpConfig() {
   return {ok:true};
 }
 
+// v2.1.0 — VPN Center
+// Detection is lazy and limited to two explicitly supported Windows clients.
+// Executable paths and Start-menu IDs stay in the main process and are never
+// exposed to the renderer, reports, diagnostics, or System-Aware AI context.
+const VPN_PROVIDER_META = Object.freeze({
+  nordvpn: {
+    id:'nordvpn', name:'NordVPN', shortName:'Nord', adapterPattern:'nord|nordlynx',
+    processPattern:'^nordvpn$|^nordvpn-service$|^nordvpnservice$',
+    downloadUrl:'https://nordvpn.com/download/', requiresElevation:false
+  },
+  expressvpn: {
+    id:'expressvpn', name:'ExpressVPN', shortName:'Express', adapterPattern:'expressvpn|lightway',
+    processPattern:'^expressvpn$|^expressvpn-ui$|^expressvpn-service$|^expressvpnd$',
+    downloadUrl:'https://www.expressvpn.com/setup#Windows', requiresElevation:true
+  }
+});
+
+function publicVpnProvider(provider) {
+  if (!provider) return null;
+  return {
+    id:provider.id, name:provider.name, installed:Boolean(provider.installed),
+    running:Boolean(provider.running), connected:Boolean(provider.connected),
+    state:provider.connected?'Connected':provider.running?'Client running':provider.installed?'Ready':'Not installed',
+    adapterName:provider.connected ? (provider.adapterName || 'VPN tunnel') : null,
+    cliAvailable:Boolean(provider.cliPath), launchAvailable:Boolean(provider.appId || provider.guiPath || provider.cliPath),
+    requiresElevation:Boolean(provider.requiresElevation), detection:provider.detection || 'Windows local inventory'
+  };
+}
+
+function fallbackVpnCenter() {
+  const providers=Object.values(VPN_PROVIDER_META).map(meta=>publicVpnProvider({...meta,installed:false,running:false,connected:false,cliPath:null,guiPath:null,appId:null}));
+  return {generatedAt:new Date().toISOString(),platform:process.platform,summary:{providerCount:providers.length,installedCount:0,runningCount:0,connectedCount:0},providers};
+}
+
+async function getVpnCenter(force=false) {
+  const now=Date.now();
+  if(!force&&vpnCenterCache.data&&now-vpnCenterCache.at<5000)return vpnCenterCache.data;
+  if(vpnCenterCache.pending)return vpnCenterCache.pending;
+  if(process.platform!=='win32')return fallbackVpnCenter();
+  const script=`
+$ErrorActionPreference='SilentlyContinue'
+$pf=$env:ProgramFiles
+$pf86=${'$'}{env:ProgramFiles(x86)}
+$local=$env:LOCALAPPDATA
+$starts=@(Get-StartApps)
+$processes=@(Get-Process | ForEach-Object {[string]$_.ProcessName})
+$adapters=@(Get-NetAdapter | Where-Object {$_.Status -eq 'Up'})
+function First-File([string[]]$Candidates){foreach($candidate in $Candidates){if($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)){return $candidate}};return $null}
+function Find-InRoots([string[]]$Roots,[string]$Name){foreach($root in $Roots){if($root -and (Test-Path -LiteralPath $root -PathType Container)){${'$'}hit=Get-ChildItem -LiteralPath $root -Filter $Name -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1;if($hit){return [string]$hit.FullName}}};return $null}
+$nordStart=$starts | Where-Object {$_.Name -match '^NordVPN'} | Select-Object -First 1
+$expressStart=$starts | Where-Object {$_.Name -match '^ExpressVPN'} | Select-Object -First 1
+$nordRoots=@((Join-Path $pf 'NordVPN'),(Join-Path $pf86 'NordVPN'),(Join-Path $local 'NordVPN'),(Join-Path $local 'Programs\\NordVPN'))
+$expressRoots=@((Join-Path $pf 'ExpressVPN'),(Join-Path $pf86 'ExpressVPN'),(Join-Path $local 'ExpressVPN'),(Join-Path $local 'Programs\\ExpressVPN'))
+$nordGui=First-File @((Join-Path $pf 'NordVPN\\NordVPN.exe'),(Join-Path $pf86 'NordVPN\\NordVPN.exe'),(Join-Path $local 'Programs\\NordVPN\\NordVPN.exe'))
+if(-not $nordGui){$nordGui=Find-InRoots $nordRoots 'NordVPN.exe'}
+$nordCli=First-File @((Join-Path $pf 'NordVPN\\nordvpn.exe'),(Join-Path $pf86 'NordVPN\\nordvpn.exe'))
+if(-not $nordCli){$nordCli=Find-InRoots $nordRoots 'nordvpn.exe'}
+$expressGui=Find-InRoots $expressRoots 'ExpressVPN.exe'
+$expressCli=First-File @((Join-Path $pf86 'ExpressVPN\\services\\expressvpnctl.exe'),(Join-Path $pf 'ExpressVPN\\expressvpnctl.exe'),(Join-Path $pf 'ExpressVPN\\services\\expressvpnctl.exe'))
+if(-not $expressCli){$expressCli=Find-InRoots $expressRoots 'expressvpnctl.exe'}
+function Adapter-Match([string]$Pattern){return $adapters | Where-Object {([string]$_.Name+' '+[string]$_.InterfaceDescription) -match $Pattern} | Select-Object -First 1}
+$nordAdapter=Adapter-Match 'nord|nordlynx'
+$expressAdapter=Adapter-Match 'expressvpn|lightway'
+[PSCustomObject]@{
+  generatedAt=(Get-Date).ToString('o')
+  providers=@(
+    [PSCustomObject]@{id='nordvpn';name='NordVPN';installed=[bool]($nordStart -or $nordGui -or $nordCli);running=[bool]($processes -match '^nordvpn$|^nordvpn-service$|^nordvpnservice$');connected=[bool]$nordAdapter;adapterName=if($nordAdapter){[string]$nordAdapter.Name}else{$null};appId=if($nordStart){[string]$nordStart.AppID}else{$null};guiPath=$nordGui;cliPath=$nordCli;requiresElevation=$false;detection='Windows app, process, and adapter inventory'}
+    [PSCustomObject]@{id='expressvpn';name='ExpressVPN';installed=[bool]($expressStart -or $expressGui -or $expressCli);running=[bool]($processes -match '^expressvpn$|^expressvpn-ui$|^expressvpn-service$|^expressvpnd$');connected=[bool]$expressAdapter;adapterName=if($expressAdapter){[string]$expressAdapter.Name}else{$null};appId=if($expressStart){[string]$expressStart.AppID}else{$null};guiPath=$expressGui;cliPath=$expressCli;requiresElevation=$true;detection='Windows app, process, and adapter inventory'}
+  )
+} | ConvertTo-Json -Depth 5 -Compress
+`;
+  vpnCenterCache.pending=(async()=>{
+    try{
+      const raw=await runPowerShell(script,10000);
+      const rows=Array.isArray(raw?.providers)?raw.providers:(raw?.providers?[raw.providers]:[]);
+      const internal=new Map();
+      for(const row of rows){const meta=VPN_PROVIDER_META[String(row?.id||'')];if(meta)internal.set(meta.id,{...meta,...row});}
+      for(const meta of Object.values(VPN_PROVIDER_META))if(!internal.has(meta.id))internal.set(meta.id,{...meta,installed:false,running:false,connected:false});
+      vpnCenterCache.internal=internal;
+      const providers=[...internal.values()].map(publicVpnProvider);
+      const data={generatedAt:raw?.generatedAt||new Date().toISOString(),platform:'win32',summary:{providerCount:providers.length,installedCount:providers.filter(x=>x.installed).length,runningCount:providers.filter(x=>x.running).length,connectedCount:providers.filter(x=>x.connected).length},providers};
+      vpnCenterCache.data=data;vpnCenterCache.at=Date.now();return data;
+    }catch(error){writeDiagnostic('VPN Center inventory',error);return fallbackVpnCenter();}
+    finally{vpnCenterCache.pending=null;}
+  })();
+  return vpnCenterCache.pending;
+}
+
+async function runElevatedVpnCli(file,args) {
+  const safeFile=String(file||'').replace(/'/g,"''");
+  const safeArgs=(args||[]).map(value=>`'${String(value).replace(/'/g,"''")}'`).join(',');
+  const script=`$ErrorActionPreference='Stop';$p=Start-Process -FilePath '${safeFile}' -ArgumentList @(${safeArgs}) -Verb RunAs -Wait -PassThru;[PSCustomObject]@{ok=($p.ExitCode -eq 0);exitCode=[int]$p.ExitCode}|ConvertTo-Json -Compress`;
+  const out=await runPowerShell(script,60000);
+  return out&&typeof out==='object'?{ok:Boolean(out.ok),exitCode:Number(out.exitCode)}:{ok:false,error:'Administrator approval was canceled or the VPN client did not complete.'};
+}
+
+async function vpnProviderAction(providerId,actionValue) {
+  const providerKey=String(providerId||'').toLowerCase();
+  const action=String(actionValue||'').toLowerCase();
+  if(!Object.hasOwn(VPN_PROVIDER_META,providerKey)||!['launch','connect','disconnect','install'].includes(action))return {ok:false,error:'Unsupported VPN provider or action.'};
+  await getVpnCenter(true);
+  const provider=vpnCenterCache.internal.get(providerKey);
+  if(action==='install'){
+    await shell.openExternal(VPN_PROVIDER_META[providerKey].downloadUrl);
+    addActivity(`${provider.name} setup opened`,'Official provider download page');return {ok:true};
+  }
+  if(!provider?.installed)return {ok:false,error:`${VPN_PROVIDER_META[providerKey].name} is not installed.`};
+  if(action==='launch'){
+    let result='';
+    if(provider.appId)result=(await runExec(windowsExecutable('explorer.exe'),[`shell:AppsFolder\\${provider.appId}`],8000)).stderr;
+    else result=await shell.openPath(provider.guiPath||provider.cliPath);
+    if(result)return {ok:false,error:String(result)};
+    addActivity(`${provider.name} opened`,'VPN Center client launcher');return {ok:true};
+  }
+  if(!provider.cliPath)return {ok:false,error:`${provider.name} command-line control was not detected. Open the client to ${action}.`};
+  if(action==='disconnect'){
+    const choice=await dialog.showMessageBox(mainWindow,{type:'warning',buttons:['Cancel','Disconnect VPN'],defaultId:0,cancelId:0,noLink:true,title:`Disconnect ${provider.name}?`,message:`Disconnect the active ${provider.name} tunnel?`,detail:'Your public network route may change immediately. If the provider kill switch is enabled, Internet access may stay blocked until you reconnect.'});
+    if(choice.response!==1)return {ok:false,canceled:true};
+  }
+  const args=providerKey==='nordvpn'?[action==='connect'?'--connect':'--disconnect']:[action];
+  const result=provider.requiresElevation?await runElevatedVpnCli(provider.cliPath,args):await runExec(provider.cliPath,args,45000);
+  if(!result.ok)return {ok:false,error:result.error||result.stderr||result.stdout||`${provider.name} did not accept the ${action} request.`};
+  vpnCenterCache.at=0;
+  addActivity(`${provider.name} ${action} requested`,'VPN Center · provider CLI');
+  addChangeJournalEntry({category:'Network',title:`${provider.name} ${action} requested`,summary:`Provider-approved command-line control requested VPN ${action}`,source:'VPN Center',risk:'Medium'});
+  return {ok:true,detail:`${provider.name} ${action} requested.`};
+}
+
 async function getPerformanceProfiles() {
   if (process.platform !== 'win32') {
     return { activeGuid: null, activeName: 'Unavailable', profiles: Object.entries(POWER_SCHEMES).map(([id, p]) => ({ id, ...p, available: false })) };
@@ -3362,7 +3570,7 @@ async function githubRequest(endpoint,options={}){
   try{
     const headers={
       'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':GITHUB_API_VERSION,
-      'User-Agent':'PurpleDragonPowerTools/2.0.1',...(options.headers||{})
+      'User-Agent':'PurpleDragonPowerTools/2.1.0',...(options.headers||{})
     };
     let body;
     if(Buffer.isBuffer(options.rawBody)){body=options.rawBody;headers['Content-Type']=options.contentType||'application/octet-stream';headers['Content-Length']=String(body.length);}
@@ -3529,7 +3737,7 @@ async function createGitHubSourceCommit(payload={}){
     writeDiagnostic('GitHub source commit',error);
     const status=Number(error?.status)||0;
     const raw=String(error?.message||error);
-    if(status===409)return {ok:false,error:'GitHub reported a repository conflict (HTTP 409). Refresh the repository and try again. Empty repositories are initialized automatically in v2.0.1.'};
+    if(status===409)return {ok:false,error:'GitHub reported a repository conflict (HTTP 409). Refresh the repository and try again. Empty repositories are initialized automatically.'};
     return {ok:false,error:raw};
   }
 }
@@ -3673,7 +3881,7 @@ async function probeGeminiCloud() {
   const key=loadAiCredential('gemini'); const started=Date.now();
   if(!key)return {provider:{id:'gemini',name:'Gemini',scope:'cloud',configured:false,online:false,modelsCount:0},models:[]};
   try{
-    const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',{headers:{'x-goog-api-key':key,'x-goog-api-client':'purple-dragon-powertools/2.0.1'}},12000);
+    const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',{headers:{'x-goog-api-key':key,'x-goog-api-client':'purple-dragon-powertools/2.1.0'}},12000);
     const rows=Array.isArray(data?.models)?data.models:[];
     const models=rows.map(m=>{const id=String(m.name||'').replace(/^models\//,'');return {key:`gemini::${id}`,provider:'gemini',providerName:'Gemini',scope:'cloud',id,name:String(m.displayName||id||'Gemini model'),description:m.description||null,inputTokenLimit:m.inputTokenLimit||null,outputTokenLimit:m.outputTokenLimit||null,endpoint:'https://generativelanguage.googleapis.com/v1beta'};}).filter(m=>isGeminiInteractiveModel(m.id)).slice(0,180);
     return {provider:{id:'gemini',name:'Gemini',scope:'cloud',configured:true,online:true,modelsCount:models.length,latencyMs:Date.now()-started},models};
@@ -3877,7 +4085,7 @@ async function runModelChat(payload) {
     if(provider==='lmstudio'||provider==='custom'){const endpoint=provider==='lmstudio'?'http://127.0.0.1:1234/v1':normalizeLocalModelEndpoint(payload?.customEndpoint||payload?.endpoint||'');const data=await localModelJson(openAiLocalUrl(endpoint,'chat/completions'),{method:'POST',body:JSON.stringify({model,messages:[...(effectiveSystem?[{role:'system',content:effectiveSystem}]:[]),{role:'user',content:prompt}],temperature:0.6,max_tokens:1600,stream:false})},180000);const text=String(data?.choices?.[0]?.message?.content||'');if(!text)throw new Error('Local OpenAI-compatible provider returned an empty response.');addActivity('Local AI request completed',`${provider==='lmstudio'?'LM Studio':'Custom local'} · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'local',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
     if(provider==='openai'||provider==='codex'){const apiKey=loadAiCredential('openai');if(!apiKey)throw new Error('OpenAI API key is not configured.');const body={model,input:prompt,max_output_tokens:1600};if(effectiveSystem)body.instructions=effectiveSystem;const data=await cloudAiJson('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:JSON.stringify(body)},180000);const text=openAiResponseText(data);if(!text)throw new Error('OpenAI returned an empty response.');addActivity('Cloud AI request completed',`${provider==='codex'?'Codex':'OpenAI'} · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
     if(provider==='claude'){const apiKey=loadAiCredential('anthropic');if(!apiKey)throw new Error('Claude API key is not configured.');const body={model,max_tokens:1600,messages:[{role:'user',content:prompt}]};if(effectiveSystem)body.system=effectiveSystem;const data=await cloudAiJson('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify(body)},180000);const text=(Array.isArray(data?.content)?data.content:[]).filter(x=>x?.type==='text').map(x=>String(x.text||'')).join('\n').trim();if(!text)throw new Error('Claude returned an empty response.');addActivity('Cloud AI request completed',`Claude · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
-    if(provider==='gemini'){const apiKey=loadAiCredential('gemini');if(!apiKey)throw new Error('Gemini API key is not configured.');const body={model,input:prompt};if(effectiveSystem)body.system_instruction=effectiveSystem;const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'x-goog-api-key':apiKey,'x-goog-api-client':'purple-dragon-powertools/2.0.1'},body:JSON.stringify(body)},180000);const text=geminiInteractionText(data);if(!text)throw new Error('Gemini returned an empty response.');addActivity('Cloud AI request completed',`Gemini · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
+    if(provider==='gemini'){const apiKey=loadAiCredential('gemini');if(!apiKey)throw new Error('Gemini API key is not configured.');const body={model,input:prompt};if(effectiveSystem)body.system_instruction=effectiveSystem;const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'x-goog-api-key':apiKey,'x-goog-api-client':'purple-dragon-powertools/2.1.0'},body:JSON.stringify(body)},180000);const text=geminiInteractionText(data);if(!text)throw new Error('Gemini returned an empty response.');addActivity('Cloud AI request completed',`Gemini · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
   }catch(error){writeDiagnostic(`${provider} model chat`,error);return {ok:false,error:String(error?.message||error),provider,model,scope:cloudProvider?'cloud':'local',latencyMs:Date.now()-started,systemContext};}
 }
 
@@ -4155,6 +4363,8 @@ ipcMain.handle('network:connectivityTest', networkConnectivityTest);
 ipcMain.handle('network:flushDns', networkFlushDns);
 ipcMain.handle('network:renewDhcp', networkRenewDhcp);
 ipcMain.handle('network:copyIpConfig', networkCopyIpConfig);
+ipcMain.handle('vpn:getCenter', (_, force) => getVpnCenter(Boolean(force)));
+ipcMain.handle('vpn:providerAction', (_, provider, action) => vpnProviderAction(provider, action));
 ipcMain.handle('network:ipGeoStatus', () => geoIpifyCredentialStatus());
 ipcMain.handle('network:saveIpGeoKey', (_, key) => saveGeoIpifyCredential(key));
 ipcMain.handle('network:removeIpGeoKey', () => removeGeoIpifyCredential());
@@ -4259,7 +4469,7 @@ ipcMain.handle('reliability:resetStaticCache', async () => {
 ipcMain.handle('app:getInfo', () => ({
   name: 'Purple Dragon PowerTools',
   version: app.getVersion(),
-  edition: 'AI Command Center',
+  edition: 'VPN Center',
   creator: 'Purple Dragon Foundation Ltd',
   company: 'Purple Dragon Foundation Ltd',
   tagline: 'Software Development · Innovation · Solutions',
@@ -4290,7 +4500,7 @@ ipcMain.handle('report:export', async () => {
       installedApps: installedAppsCache.data?.length ? { count: installedAppsCache.data.length, apps: installedAppsCache.data.slice(0, 250) } : null
     },
     storageHub: { inventory: storageInventory, analysis: storageAnalysisCache.data || null, cleanupPreview: publicCleanupPreview(cleanupPreviewCache.data) },
-    networkPowerTools: { overview: networkCenterCache.data || null, diagnostics: networkLastDiagnostics.slice(0,20), ipGeolocation: { provider:'Geo IPify', configured:geoIpifyCredentialStatus().configured, privacy:'Lookup results and public IP are intentionally excluded from exported reports.' } },
+    networkPowerTools: { overview: networkCenterCache.data || null, vpnCenter: vpnCenterCache.data || null, diagnostics: networkLastDiagnostics.slice(0,20), ipGeolocation: { provider:'Geo IPify', configured:geoIpifyCredentialStatus().configured, privacy:'Lookup results and public IP are intentionally excluded from exported reports.' } },
     privacyIntelligence: { mode:'Self-audit only', exportedPersonalData:false, note:'Entered identifiers, profile shortcuts, DNS query values, file names/paths, and metadata findings are intentionally excluded from reports.' },
     windowsFeatureLab: featureLabCache.data || null,
     modelCenter: modelCenterCache.data ? { generatedAt:modelCenterCache.data.generatedAt, localOnly:modelCenterCache.data.localOnly, providers:modelCenterCache.data.providers.map(p=>({id:p.id,name:p.name,scope:p.scope,configured:Boolean(p.configured),online:Boolean(p.online),modelsCount:p.modelsCount||0,latencyMs:p.latencyMs??null})), models:modelCenterCache.data.models.map(m=>({provider:m.provider,providerName:m.providerName,scope:m.scope,id:m.id,name:m.name,size:m.size||null,modifiedAt:m.modifiedAt||null})) } : null,

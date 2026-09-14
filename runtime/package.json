@@ -1,0 +1,9 @@
+{
+  "name": "purple-dragon-powertools-runtime",
+  "version": "1.6.4",
+  "private": true,
+  "description": "Minimal launch-time Electron runtime for Purple Dragon PowerTools by Purple Dragon Foundation Ltd.",
+  "dependencies": {
+    "electron": "44.2.0"
+  }
+}

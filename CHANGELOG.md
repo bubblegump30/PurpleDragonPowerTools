@@ -1,5 +1,38 @@
 # Changelog
 
+## v2.1.0 — NordVPN + ExpressVPN Center
+
+### Added
+- Added a VPN Center inside Network PowerTools for NordVPN and ExpressVPN.
+- Added lazy local detection of provider Start-menu entries, installed executables, running processes, command-line controls, and active provider adapters.
+- Added installed, running, CLI-ready, and connected status cards.
+- Added Open App and official provider setup actions.
+- Added provider-approved Quick Connect and Disconnect controls when a compatible CLI is detected.
+- Added an explicit confirmation before every VPN disconnect request.
+- Added ExpressVPN UAC elevation support for its administrator-required Windows CLI controls.
+- Added VPN Center state to local JSON reports only after the center has been opened; executable paths, Start-menu IDs, credentials, and public IP information are excluded.
+- Added VPN-aware PowerTools Assistant responses.
+
+### Privacy, safety, and performance
+- VPN credentials stay entirely inside the official NordVPN or ExpressVPN client.
+- Provider and action values are enforced by a fixed main-process allowlist.
+- Commands run with `execFile` or a fixed elevated `Start-Process` path; no arbitrary renderer command or argument is accepted.
+- VPN inventory is lazy-loaded and cached, so v2.1.0 adds no startup-critical scan.
+- Disconnect is audit-recorded but intentionally not auto-undoable because reconnect behavior and server selection belong to the provider client.
+
+## v2.0.3 — Storage Usage Calculation Hotfix
+- Fixed Drive Center cards incorrectly showing `0% used · 0 B` while free-space values were correct.
+- Replaced PowerShell `Math.Max` used-byte calculation with explicit Double subtraction/clamping for large-capacity drives.
+- Added a renderer-independent main-process safeguard that always derives used bytes and usage percentage from authoritative capacity and free-space values.
+- Retained v2.0.2 multi-drive HDD/SSD/USB discovery, media classification, health, temperature, and lazy-loading behavior.
+
+## v2.0.2 — Multi-Drive Storage Detection Hotfix
+- Rebuilt Storage & Data Hub drive enumeration around Win32_LogicalDisk so secondary fixed drives and removable USB volumes are discovered even when the modern Storage provider exposes only the system volume.
+- Added HDD / SSD / USB classification using PhysicalDisk, Disk, CIM association, bus/interface, model, and spindle hints.
+- Added removable-drive and external USB awareness without treating network or optical drives as local storage.
+- Drive Center now summarizes detected SSD, HDD, and USB volumes and shows transport/media details per drive.
+- Kept drive inventory lazy-loaded; no new storage scan runs during PowerTools startup.
+
 ## v2.0.1 — GitHub Empty Repository Upload Hotfix
 
 - Fixed `GitHub HTTP 409` when committing the first files to a newly created empty repository.

@@ -1,9 +1,9 @@
-Purple Dragon PowerTools v2.0.1 — Purple Dragon AI Command Center
-Build verification date: 2026-09-10
+Purple Dragon PowerTools v2.1.0 — VPN Center
+Build verification date: 2026-09-14
 
 Version / packaging
-- package.json version: 2.0.1
-- Edition: AI Command Center
+- package.json version: 2.1.0
+- Edition: VPN Center
 - Author: Purple Dragon Foundation Ltd
 - Private / UNLICENSED project metadata retained
 - Electron runtime pin retained: 44.2.0
@@ -23,12 +23,25 @@ AI Command Center
 - Cloud model access and cloud System-Aware context remain separate controls
 - System-Aware context preview accepts the Command Deck mission text
 
+VPN Center
+- NordVPN and ExpressVPN are the only accepted provider IDs
+- launch, install, connect, and disconnect are the only accepted actions
+- Local Start-menu, executable, process, CLI, and active-adapter detection is lazy
+- VPN scan starts only when Network PowerTools opens or the user refreshes it
+- Provider executable paths and Start-menu IDs remain in the Electron main process
+- VPN credentials, activation codes, tokens, public IP, and server history are not read or stored
+- Quick Connect uses the installed provider CLI only
+- Disconnect requires an explicit warning/confirmation
+- ExpressVPN connect/disconnect uses Windows UAC elevation as documented by the provider
+- Missing-client setup buttons open only official provider download pages
+- VPN report data contains sanitized status only
+
 Validation executed
 - src/main.js: node --check PASS
 - src/preload.js: node --check PASS
 - src/renderer.js: node --check PASS
-- HTML IDs: 531 / 531 unique
-- IPC parity: 99 preload invoke channels / 99 main handlers; exact set match
+- HTML IDs: 538 / 538 unique
+- IPC parity: 101 preload invoke channels / 101 main handlers; exact set match
 - AI Command execution modes: 3 / 3 validated
 - Mission profiles: 6 / 6 runtime metadata test PASS
 - createWindow startup block contains no getModelCenter, routeDragonModel, or cloudAiJson call
@@ -36,9 +49,9 @@ Validation executed
 - loopback-only local AI endpoint guard retained
 
 Environment limitation
-- Full Electron/Windows provider connectivity, Windows DPAPI behavior, and live System-Aware hardware context cannot be exercised in this Linux build environment and require the normal Windows smoke test.
+- Full Electron/Windows VPN client detection and control, Windows UAC/DPAPI behavior, and live System-Aware hardware context cannot be exercised in this Linux build environment and require the normal Windows smoke test.
 
-v2.0.1 GitHub empty-repository hotfix verification
+Inherited v2.0.1 GitHub empty-repository hotfix verification
 -------------------------------------------------
 - GitHub repository detail loading tolerates empty-repository HTTP 409 responses: PASS
 - Empty repository bootstrap via Contents API before Git Data API: PASS (mock runtime test)
@@ -47,3 +60,20 @@ v2.0.1 GitHub empty-repository hotfix verification
 - JavaScript syntax validation: PASS
 - HTML ID uniqueness: 531/531
 - IPC parity: 99 invokes / 99 handlers
+
+
+v2.0.2 Multi-Drive Storage Detection verification
+- Win32_LogicalDisk includes DriveType 2 (removable) and 3 (fixed), covering internal drives plus USB hard drives/SSDs.
+- Network drives and optical drives are excluded from local inventory totals.
+- Get-Partition/Get-Disk enrichment plus CIM association fallback is present.
+- Media classification uses explicit PhysicalDisk SSD/HDD, model/NVMe hints, and spindle data; unknown media remains Unknown.
+- USB classification uses BusType / InterfaceType / PNP hints and does not depend on DriveType alone.
+- Drive Center exposes SSD/HDD/USB summary counts.
+- Storage inventory remains lazy-loaded from Data Hub.
+
+v2.0.3 Storage Usage Calculation Hotfix verification
+- Win32_LogicalDisk Size and FreeSpace remain the authoritative volume byte values.
+- PowerShell used-byte calculation uses explicit Double subtraction/clamping; Math.Max overload path removed.
+- Main-process normalization derives used = size - free and percent = used / size for every mounted volume.
+- Multi-terabyte mock-drive calculations validated for C:, E:, F:, and G:-style capacities.
+- v2.0.2 HDD/SSD/USB discovery and lazy Data Hub loading retained.

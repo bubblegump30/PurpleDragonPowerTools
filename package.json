@@ -1,7 +1,7 @@
 {
   "name": "purple-dragon-powertools",
-  "version": "2.0.1",
-  "description": "Purple Dragon PowerTools - Purple Dragon AI Command Center, a private Windows command center by Purple Dragon Foundation Ltd with Direct AI, Dragon Router, Dragon Council, System-Aware AI, Privacy & App Trust Intelligence, Change Journal + Undo, GitHub Release Center, Windows Feature Lab, and fast boot.",
+  "version": "2.1.0",
+  "description": "Purple Dragon PowerTools - Purple Dragon AI Command Center, a private Windows command center by Purple Dragon Foundation Ltd with a lazy NordVPN and ExpressVPN Center, accurate multi-drive HDD/SSD/USB usage accounting, Direct AI, Dragon Router, Dragon Council, System-Aware AI, Privacy & App Trust Intelligence, Change Journal + Undo, GitHub Release Center, Windows Feature Lab, and fast boot.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
   "license": "UNLICENSED",

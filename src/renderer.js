@@ -33,6 +33,8 @@
   let networkOverview = null;
   let networkLoaded = false;
   let networkLoading = false;
+  let vpnCenterState = null;
+  let vpnCenterLoading = false;
   let ipGeoStatus = null;
   let ipGeoResult = null;
   let ipGeoBusy = false;
@@ -98,7 +100,7 @@
   let previewAutomationMaster = true;
 
   const fallbackApi = {
-    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.0.1',edition:'AI Command Center',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
+    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'VPN Center',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
     async getLiveMetrics() {
       const t = Date.now() / 1000;
       const cpu = Math.round(36 + Math.sin(t * .8) * 13 + Math.sin(t * .19) * 8);
@@ -195,11 +197,11 @@
     async publishGitHubRelease(){return {ok:false,error:'Desktop-only GitHub write'};},
     async openGitHubLink(){return {ok:false,error:'Desktop-only action'};},
     async openGitHubTokenSettings(){return {ok:false,error:'Desktop-only action'};},
-    async getChangeJournal(){return {generatedAt:new Date().toISOString(),count:3,reversibleCount:2,undoneCount:0,entries:[{id:'preview-1',at:new Date().toISOString(),category:'Automation',title:'Automation rule created',summary:'CPU Guard',source:'Automation Engine',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-2',at:new Date(Date.now()-120000).toISOString(),category:'Performance',title:'Power profile changed',summary:'Balanced → Performance',source:'Performance Center',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-3',at:new Date(Date.now()-300000).toISOString(),category:'GitHub',title:'GitHub release published',summary:'example/repo · v2.0.1 · 2 assets',source:'GitHub Release Center',reversible:false,undone:false,restartRequired:false,risk:'Medium'}]};},
+    async getChangeJournal(){return {generatedAt:new Date().toISOString(),count:3,reversibleCount:2,undoneCount:0,entries:[{id:'preview-1',at:new Date().toISOString(),category:'Automation',title:'Automation rule created',summary:'CPU Guard',source:'Automation Engine',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-2',at:new Date(Date.now()-120000).toISOString(),category:'Performance',title:'Power profile changed',summary:'Balanced → Performance',source:'Performance Center',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-3',at:new Date(Date.now()-300000).toISOString(),category:'GitHub',title:'GitHub release published',summary:'example/repo · v2.1.0 · 2 assets',source:'GitHub Release Center',reversible:false,undone:false,restartRequired:false,risk:'Medium'}]};},
     async undoChangeJournalEntry(){return {ok:false,error:'Desktop-only undo in browser preview'};},
     async clearChangeJournal(){return {ok:false,error:'Desktop-only action'};},
-    async getReliabilityStatus(){return {version:'2.0.1',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
-    async getStableReleaseStatus(){return {version:'2.0.1',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'0.9.0'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.0.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
+    async getReliabilityStatus(){return {version:'2.1.0',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
+    async getStableReleaseStatus(){return {version:'2.1.0',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.1.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
     async rendererReady(){return this.getReliabilityStatus();}, async reportRendererError(){return {ok:true};}, async copyReliabilitySummary(){return {ok:false,error:'Desktop-only action'};}, async openReliabilityLogs(){return {ok:false,error:'Desktop-only action'};}, async clearReliabilityDiagnostics(){return {ok:false,error:'Desktop-only action'};}, async resetHardwareCache(){return {ok:false,error:'Desktop-only action'};},
     async getAutomationState(){return {masterEnabled:previewAutomationMaster,running:previewAutomationMaster&&previewAutomationRules.some(r=>r.enabled),tickMs:3000,ruleCount:previewAutomationRules.length,enabledCount:previewAutomationRules.filter(r=>r.enabled).length,lastTriggeredAt:previewAutomationHistory[0]?.at||null,nextScheduledAt:null,rules:previewAutomationRules,history:previewAutomationHistory};},
     async saveAutomationRule(rule){const now=new Date().toISOString();const copy=JSON.parse(JSON.stringify(rule||{}));if(copy.id){const i=previewAutomationRules.findIndex(r=>r.id===copy.id);if(i>=0)previewAutomationRules[i]={...previewAutomationRules[i],...copy,updatedAt:now};}else{copy.id=`preview-${Date.now()}`;copy.enabled=true;copy.createdAt=now;copy.updatedAt=now;copy.runCount=0;copy.lastTriggeredAt=null;previewAutomationRules.unshift(copy);}return {ok:true,state:await this.getAutomationState(),rule:copy};},
@@ -237,6 +239,8 @@
     async networkDnsLookup(target){return {ok:true,target,addresses:['93.184.216.34'],raw:'Preview DNS lookup'};},
     async networkConnectivityTest(){return {ok:true,dnsOk:true,dnsAddress:'13.107.246.38',tcp443:true,gateway:'192.168.1.1',gatewayPingMs:1,testedAt:new Date().toISOString()};},
     async networkFlushDns(){return {ok:false,error:'Desktop-only action'};}, async networkRenewDhcp(){return {ok:false,error:'Desktop-only action'};}, async networkCopyIpConfig(){return {ok:false,error:'Desktop-only action'};},
+    async getVpnCenter(){return {generatedAt:new Date().toISOString(),platform:'browser',summary:{providerCount:2,installedCount:2,runningCount:1,connectedCount:1},providers:[{id:'nordvpn',name:'NordVPN',installed:true,running:true,connected:true,state:'Connected',adapterName:'NordLynx',cliAvailable:true,launchAvailable:true,requiresElevation:false,detection:'Preview Windows inventory'},{id:'expressvpn',name:'ExpressVPN',installed:true,running:false,connected:false,state:'Ready',adapterName:null,cliAvailable:true,launchAvailable:true,requiresElevation:true,detection:'Preview Windows inventory'}]};},
+    async vpnProviderAction(){return {ok:false,error:'Desktop-only VPN control'};},
     async getIpGeolocationStatus(){return {configured:false,encryptionAvailable:true,storage:'Preview secure storage',provider:'Geo IPify'};},
     async saveIpGeolocationKey(){return {ok:false,error:'Desktop-only secure credential storage'};}, async removeIpGeolocationKey(){return {ok:false,error:'Desktop-only secure credential storage'};},
     async lookupIpGeolocation(ip=''){return {ok:true,provider:'Geo IPify Preview',lookedUpAt:new Date().toISOString(),requestedIp:ip||null,ip:ip||'203.0.113.42',country:'CA',region:'Preview Region',city:'Preview City',latitude:47.5,longitude:-52.7,postalCode:'A1A 1A1',timezone:'-02:30',isp:'Preview ISP',asn:64500,asName:'Preview Network',route:'203.0.113.0/24',asType:'ISP'};},
@@ -246,13 +250,20 @@
     async privacyOpenProfile(){return {ok:false,error:'Desktop-only link'};},
     async privacyOpenResource(){return {ok:false,error:'Desktop-only link'};},
     async privacyGetAppTrustInventory(){return {ok:true,generatedAt:new Date().toISOString(),summary:{count:4,withPublisher:3,missingPublisher:1,inspectable:3,publisherCoverage:75},apps:[{id:0,name:'Google Chrome',version:'Preview',publisher:'Google LLC',scope:'Machine x64',inspectable:true},{id:1,name:'Discord',version:'Preview',publisher:'Discord Inc.',scope:'Current user',inspectable:true},{id:2,name:'Steam',version:'Preview',publisher:'Valve Corporation',scope:'Machine x86',inspectable:true},{id:3,name:'Unsigned Utility',version:'0.1',publisher:'',scope:'Current user',inspectable:false}]};},
-    async privacySelectAppTrustFile(){return {ok:true,source:'Selected local file',name:'preview-tool.exe',extension:'exe',sizeBytes:1843200,modifiedAt:new Date().toISOString(),sha256:'4f0dcb87f4a845b44385f7d0a8ac7a8c5bd13fa4e8c3b9e434cf9dfd59b3a8ad',signature:{status:'Valid',message:'Signature verified.',signer:'Purple Dragon Foundation Ltd',issuer:'Preview Code Signing CA',certificateNotAfter:new Date(Date.now()+365*86400000).toISOString()},fileInfo:{productName:'Preview Tool',fileVersion:'2.0.1',companyName:'Purple Dragon Foundation Ltd',originalFilename:'preview-tool.exe'},origin:{zoneId:null,zoneLabel:'No Mark of the Web detected',locationClass:'Program Files'},assessment:{score:88,verdict:'Higher confidence',tone:'trusted',reasons:['Windows reports a valid Authenticode signature.','This score is a local trust heuristic, not a malware verdict.']}};},
+    async privacySelectAppTrustFile(){return {ok:true,source:'Selected local file',name:'preview-tool.exe',extension:'exe',sizeBytes:1843200,modifiedAt:new Date().toISOString(),sha256:'4f0dcb87f4a845b44385f7d0a8ac7a8c5bd13fa4e8c3b9e434cf9dfd59b3a8ad',signature:{status:'Valid',message:'Signature verified.',signer:'Purple Dragon Foundation Ltd',issuer:'Preview Code Signing CA',certificateNotAfter:new Date(Date.now()+365*86400000).toISOString()},fileInfo:{productName:'Preview Tool',fileVersion:'2.1.0',companyName:'Purple Dragon Foundation Ltd',originalFilename:'preview-tool.exe'},origin:{zoneId:null,zoneLabel:'No Mark of the Web detected',locationClass:'Program Files'},assessment:{score:88,verdict:'Higher confidence',tone:'trusted',reasons:['Windows reports a valid Authenticode signature.','This score is a local trust heuristic, not a malware verdict.']}};},
     async privacyInspectInstalledApp(){return this.privacySelectAppTrustFile();},
     async privacyGetAppProtectionStatus(){return {ok:true,checkedAt:new Date().toISOString(),smartScreen:{explorer:'Warn',appHostEnabled:true,policyEnabled:null,policyLevel:null},smartAppControl:{state:2,label:'Evaluation'}};},
     async privacyOpenHashReputation(){return {ok:false,error:'Desktop-only external lookup'};},
     async getStorageInventory() {
-      const total=1024**4, free=0.34*total, used=total-free;
-      return {generatedAt:new Date().toISOString(),volumes:[{driveLetter:'C',label:'Preview Drive',fileSystem:'NTFS',driveType:'Fixed',size:total,free,used,percent:Math.round(used/total*100),model:'Preview NVMe SSD',mediaType:'SSD',busType:'NVMe',health:'Healthy',operationalStatus:'OK',temperatureC:41}],physicalDisks:[],summary:{driveCount:1,totalBytes:total,freeBytes:free,usedBytes:used,systemDrive:{driveLetter:'C',percent:Math.round(used/total*100)},lowSpaceDrives:0}};
+      const gib=1024**3;
+      const volumes=[
+        {driveLetter:'C',label:'System',fileSystem:'NTFS',driveType:'Fixed',driveTypeCode:3,size:232*gib,free:76*gib,used:156*gib,percent:67,model:'Preview NVMe SSD',mediaType:'SSD',mediaClass:'SSD',busType:'NVMe',interfaceType:'NVMe',connectionType:'NVMe',isUsb:false,isRemovable:false,health:'Healthy',operationalStatus:'OK',temperatureC:41},
+        {driveLetter:'E',label:'Archive',fileSystem:'NTFS',driveType:'Fixed',driveTypeCode:3,size:4.54*1024*gib,free:4.39*1024*gib,used:.15*1024*gib,percent:3,model:'Preview SATA HDD',mediaType:'HDD',mediaClass:'HDD',busType:'SATA',interfaceType:'IDE',connectionType:'SATA',isUsb:false,isRemovable:false,health:'Healthy',operationalStatus:'OK',temperatureC:34},
+        {driveLetter:'F',label:'External SSD',fileSystem:'NTFS',driveType:'Fixed',driveTypeCode:3,size:953*gib,free:311*gib,used:642*gib,percent:67,model:'Preview USB SSD',mediaType:'SSD',mediaClass:'SSD',busType:'USB',interfaceType:'USB',connectionType:'USB',isUsb:true,isRemovable:false,health:'Healthy',operationalStatus:'OK',temperatureC:null},
+        {driveLetter:'G',label:'USB Drive',fileSystem:'exFAT',driveType:'Removable',driveTypeCode:2,size:298*gib,free:263*gib,used:35*gib,percent:12,model:'Preview USB Storage',mediaType:null,mediaClass:'Unknown',busType:'USB',interfaceType:'USB',connectionType:'USB',isUsb:true,isRemovable:true,health:'Healthy',operationalStatus:'OK',temperatureC:null}
+      ];
+      const totalBytes=volumes.reduce((a,v)=>a+v.size,0),freeBytes=volumes.reduce((a,v)=>a+v.free,0),usedBytes=volumes.reduce((a,v)=>a+v.used,0);
+      return {generatedAt:new Date().toISOString(),volumes,physicalDisks:[],summary:{driveCount:volumes.length,totalBytes,freeBytes,usedBytes,systemDrive:volumes[0],lowSpaceDrives:0,usbDrives:2,removableDrives:1,ssdDrives:2,hddDrives:1}};
     },
     async analyzeUserFolders() { return {generatedAt:new Date().toISOString(),durationMs:820,categories:[{id:'downloads',label:'Downloads',path:'C:\\Users\\Preview\\Downloads',bytes:8.4*1024**3,files:482,folders:28,unreadable:0,incomplete:false},{id:'documents',label:'Documents',path:'C:\\Users\\Preview\\Documents',bytes:3.1*1024**3,files:1204,folders:93,unreadable:0,incomplete:false},{id:'pictures',label:'Pictures',path:'C:\\Users\\Preview\\Pictures',bytes:11.7*1024**3,files:642,folders:44,unreadable:0,incomplete:false}],largeFiles:[{name:'video-project.mp4',path:'C:\\Users\\Preview\\Downloads\\video-project.mp4',size:2.3*1024**3,category:'Downloads'},{name:'archive.zip',path:'C:\\Users\\Preview\\Documents\\archive.zip',size:780*1024**2,category:'Documents'}],totalBytes:23.2*1024**3,totalFiles:2328,incomplete:false,cancelled:false}; },
     async cancelStorageAnalysis() { return {ok:true}; },
@@ -762,11 +773,17 @@
 
 
   function storageMediaLabel(v) {
+    const mediaClass = String(v?.mediaClass || '').trim().toUpperCase();
     const media = String(v?.mediaType || '').trim();
     const bus = String(v?.busType || '').trim();
-    if (media && media.toLowerCase() !== 'unspecified') return media;
+    const connection = String(v?.connectionType || '').trim();
+    const usb = Boolean(v?.isUsb) || /^usb/i.test(connection) || /^usb/i.test(bus);
+    if (usb) return mediaClass === 'SSD' || mediaClass === 'HDD' ? `USB ${mediaClass}` : (v?.isRemovable ? 'USB removable' : 'USB storage');
+    if (mediaClass === 'SSD' || mediaClass === 'HDD') return mediaClass;
+    if (media && media.toLowerCase() !== 'unspecified' && media.toLowerCase() !== 'unknown') return media;
+    if (connection && connection.toLowerCase() !== 'internal') return connection;
     if (bus) return bus;
-    return 'Local storage';
+    return v?.isRemovable ? 'Removable storage' : 'Local storage';
   }
 
   function renderStorageInventory() {
@@ -774,10 +791,14 @@
     const summary = storageInventory?.summary || {};
     setText('#storageDriveCount', volumes.length ? String(volumes.length) : '--');
     setText('#storageTotalCapacity', volumes.length ? formatBytes(summary.totalBytes || 0, 1) : '--');
-    setText('#storageTotalUsed', volumes.length ? `${formatBytes(summary.usedBytes || 0)} used across local drives` : 'No drive inventory available');
+    setText('#storageTotalUsed', volumes.length ? `${formatBytes(summary.usedBytes || 0)} used across mounted drives` : 'No drive inventory available');
     setText('#storageTotalFree', volumes.length ? formatBytes(summary.freeBytes || 0, 1) : '--');
-    setText('#storageFreeHealth', summary.lowSpaceDrives ? `${summary.lowSpaceDrives} drive${summary.lowSpaceDrives===1?'':'s'} below 10% free` : (volumes.length ? 'No low-space warning' : 'Local drives only'));
-    setText('#driveCenterSubtitle', volumes.length ? `${volumes.length} mounted local volume${volumes.length===1?'':'s'} · refreshed ${new Date(storageInventory.generatedAt).toLocaleTimeString()}` : 'Windows did not expose local drive inventory.');
+    const typeBits = [];
+    if (summary.ssdDrives) typeBits.push(`${summary.ssdDrives} SSD`);
+    if (summary.hddDrives) typeBits.push(`${summary.hddDrives} HDD`);
+    if (summary.usbDrives) typeBits.push(`${summary.usbDrives} USB`);
+    setText('#storageFreeHealth', summary.lowSpaceDrives ? `${summary.lowSpaceDrives} drive${summary.lowSpaceDrives===1?'':'s'} below 10% free` : (volumes.length ? (typeBits.join(' · ') || 'No low-space warning') : 'No mounted storage detected'));
+    setText('#driveCenterSubtitle', volumes.length ? `${volumes.length} mounted volume${volumes.length===1?'':'s'}${typeBits.length?` · ${typeBits.join(' · ')}`:''} · refreshed ${new Date(storageInventory.generatedAt).toLocaleTimeString()}` : 'Windows did not expose mounted drive inventory.');
     const root = $('#driveList');
     if (!root) return;
     if (!volumes.length) { root.innerHTML='<div class="empty">No local storage volumes were detected.</div>'; return; }
@@ -788,7 +809,8 @@
       const healthy = healthRaw.includes('healthy') || String(v.operationalStatus || '').toLowerCase().includes('ok');
       const healthLabel = low ? 'Low space' : healthy ? 'Healthy' : (v.health || 'Status unavailable');
       const healthClass = low ? 'warn' : healthy ? '' : 'unknown';
-      const detail = [storageMediaLabel(v), v.busType, v.fileSystem].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(' · ');
+      const transport = (v.isUsb || /^usb/i.test(String(v.connectionType||''))) ? null : (v.connectionType || v.busType);
+      const detail = [storageMediaLabel(v), transport, v.fileSystem].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(' · ');
       return `<div class="drive-card"><div class="drive-card-head"><div class="drive-identity"><div class="drive-badge">${escapeHtml(v.driveLetter || '?')}:</div><div><strong>${escapeHtml(v.label || `${v.driveLetter || '?'}: Local Disk`)}</strong><small title="${escapeHtml(v.model || '')}">${escapeHtml(v.model || detail || 'Windows local volume')}</small></div></div><span class="drive-health ${healthClass}">${escapeHtml(healthLabel)}</span></div><div class="drive-meter"><i class="${low?'warn':''}" style="width:${pct}%"></i></div><div class="drive-stats"><span>${pct.toFixed(0)}% used · ${formatBytes(v.used)}</span><span>${formatBytes(v.free)} free</span></div><div class="drive-meta"><span>${escapeHtml(detail || 'Volume')}</span><span>${finite(v.temperatureC)?`${Math.round(v.temperatureC)}°C`:'Temp unavailable'}</span></div><button class="drive-open" data-open-drive="${escapeHtml(v.driveLetter)}">Open ${escapeHtml(v.driveLetter)}:\\</button></div>`;
     }).join('');
   }
@@ -1006,11 +1028,52 @@
     }).join('');
   }
 
+  function renderVpnCenter(){
+    const state=vpnCenterState,summary=state?.summary||{},providers=Array.isArray(state?.providers)?state.providers:[];
+    setText('#vpnSupportedCount',String(summary.providerCount??2));
+    setText('#vpnInstalledCount',state?String(summary.installedCount||0):'--');
+    setText('#vpnRunningCount',state?String(summary.runningCount||0):'--');
+    setText('#vpnConnectedCount',state?String(summary.connectedCount||0):'--');
+    setText('#vpnCenterSubtitle',state?`${Number(summary.connectedCount||0)} connected · ${Number(summary.runningCount||0)} running · refreshed ${new Date(state.generatedAt).toLocaleTimeString()}`:'NordVPN and ExpressVPN detection is lazy-loaded with Network PowerTools.');
+    const root=$('#vpnProviderGrid');if(!root)return;
+    if(!providers.length){root.innerHTML='<div class="empty">Supported VPN clients could not be detected on this platform.</div>';return;}
+    root.innerHTML=providers.map(provider=>{
+      const cls=provider.connected?'connected':provider.running?'running':provider.installed?'ready':'missing';
+      const mark=provider.id==='nordvpn'?'N':'E';
+      const statusDetail=provider.connected?`Tunnel: ${provider.adapterName||'Active VPN adapter'}`:provider.running?'Client is open; no active provider tunnel detected.':provider.installed?'Client is installed and ready.':'Client is not installed on this PC.';
+      const mainAction=provider.installed?`<button class="secondary-btn" data-vpn-provider="${escapeHtml(provider.id)}" data-vpn-action="launch" ${provider.launchAvailable?'':'disabled'}>Open App</button>`:`<button class="primary-btn" data-vpn-provider="${escapeHtml(provider.id)}" data-vpn-action="install">Get ${escapeHtml(provider.name)}</button>`;
+      const controls=provider.installed?`<button class="primary-btn" data-vpn-provider="${escapeHtml(provider.id)}" data-vpn-action="connect" ${provider.cliAvailable?'':'disabled'}>Quick Connect</button><button class="secondary-btn danger-soft" data-vpn-provider="${escapeHtml(provider.id)}" data-vpn-action="disconnect" ${provider.cliAvailable?'':'disabled'}>Disconnect</button>`:'';
+      const cliNote=provider.cliAvailable?(provider.requiresElevation?'CLI ready · UAC required for control':'CLI ready'):'Open the provider app to connect or disconnect';
+      return `<article class="vpn-provider-card ${cls}"><div class="vpn-provider-head"><div class="vpn-provider-mark">${mark}</div><div><strong>${escapeHtml(provider.name)}</strong><small>${escapeHtml(statusDetail)}</small></div><span class="vpn-state-chip">${escapeHtml(provider.state||'Unknown')}</span></div><div class="vpn-provider-meta"><span>${provider.installed?'INSTALLED':'NOT INSTALLED'}</span><span>${escapeHtml(cliNote)}</span><span>Credentials stay in ${escapeHtml(provider.name)}</span></div><div class="vpn-provider-actions">${mainAction}${controls}</div></article>`;
+    }).join('');
+  }
+
+  async function loadVpnCenter(force=false){
+    if(vpnCenterLoading)return;
+    vpnCenterLoading=true;setText('#vpnCenterSubtitle','Detecting NordVPN and ExpressVPN locally…');
+    try{vpnCenterState=await api.getVpnCenter?.(force);renderVpnCenter();}
+    catch(error){vpnCenterState=null;renderVpnCenter();setText('#vpnCenterSubtitle','VPN client inventory could not be loaded.');}
+    finally{vpnCenterLoading=false;}
+  }
+
+  async function runVpnProviderAction(providerId,action,button){
+    if(button)button.disabled=true;
+    let result;try{result=await api.vpnProviderAction?.(providerId,action);}catch(error){result={ok:false,error:String(error?.message||error||'VPN action failed')}}
+    if(button)button.disabled=false;
+    if(result?.canceled)return;
+    const provider=vpnCenterState?.providers?.find(x=>x.id===providerId);const name=provider?.name||'VPN client';
+    if(!result?.ok){toast(demoMode?'Desktop-only VPN control':`${name} action unavailable`,result?.error||'The provider client rejected the request.');return;}
+    toast(action==='launch'?`${name} opened`:action==='install'?`${name} setup opened`:`${name} ${action} requested`,result?.detail||'');
+    if(['connect','disconnect','launch'].includes(action)){await new Promise(resolve=>setTimeout(resolve,1200));await loadVpnCenter(true);}
+    await refreshActivity();
+  }
+
   async function loadNetworkCenter(force=false){
     if(networkLoading)return;
     if(networkLoaded&&!force){renderNetworkOverview();return;}
     networkLoading=true; setText('#networkOverviewSubtitle','Loading Windows adapter inventory…');
     if(!ipGeoStatus)loadIpGeoStatus();
+    if(!vpnCenterState||force)loadVpnCenter(force);
     try{networkOverview=await api.getNetworkOverview(force);networkLoaded=true;renderNetworkOverview();}
     catch{networkOverview=null;renderNetworkOverview();setText('#networkOverviewSubtitle','Network inventory could not be loaded.');}
     finally{networkLoading=false;}
@@ -1332,7 +1395,7 @@
     const st=stableReleaseState;
     if(!st)return;
     setText('#stableChannel', st.channel || 'Stable');
-    setText('#stableVersion', st.version || '2.0.1');
+    setText('#stableVersion', st.version || '2.1.0');
     setText('#stablePreflight', st.ready ? 'READY' : 'REVIEW');
     setText('#stablePreflightDetail', `${st.passed||0}/${st.total||0} checks passed${st.informational?` · ${st.informational} info`:''}`);
     const prev=st.previousSession;
@@ -1578,7 +1641,7 @@
   }
   async function loadGitHubRepoDetails(repo,force=true){
     if(!repo||githubRepoLoading)return;if(!force&&githubRepoDetails?.repository?.fullName===repo){renderGitHubRepoDetails();return;}githubRepoLoading=true;githubRepoDetails=null;renderGitHubRepoDetails();
-    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v2.0.1`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
+    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v2.1.0`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
   }
   function showGitHubSetup(){
     const configured=Boolean(githubCenterState?.configured||githubCenterState?.credential?.configured);const login=githubCenterState?.profile?.login||'';
@@ -1675,8 +1738,8 @@
   async function showAbout() {
     setProfileMenu(false);
     try { appInfo = await api.getAppInfo?.() || appInfo; } catch {}
-    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.0.1',edition:'AI Command Center',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
-    const version = escapeHtml(info.version || '2.0.1');
+    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'VPN Center',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
+    const version = escapeHtml(info.version || '2.1.0');
     const edition = escapeHtml(info.edition || 'AI Command Center');
     const creator = escapeHtml(info.creator || 'Purple Dragon Foundation Ltd');
     const arch = escapeHtml(architectureLabel(info.arch));
@@ -1708,7 +1771,7 @@
 
   function showAssistant() {
     const contextLabel=!aiContextEnabled()?'SYSTEM CONTEXT: OFF':aiContextCloudAllowed()?'SYSTEM CONTEXT: LOCAL + CLOUD OPT-IN':'SYSTEM CONTEXT: LOCAL-ONLY';
-    openModal('PowerTools AI Assistant', `<div class="assistant-chat"><div class="assistant-context-pill">${contextLabel}</div><p>v2.0.1 AI Command Center can use a pinned model or Dragon Router with redacted System-Aware context. Cloud AI receives system context only when you explicitly enable the separate cloud-context option in AI Command Center.</p><input id="assistantInput" placeholder="Try: Why does my PC feel slow right now?" /><button class="primary-btn" id="assistantAsk">Ask</button><div class="response" id="assistantResponse">Ready.</div></div>`, 'AI ASSISTANT');
+    openModal('PowerTools AI Assistant', `<div class="assistant-chat"><div class="assistant-context-pill">${contextLabel}</div><p>v2.1.0 AI Command Center can use a pinned model or Dragon Router with redacted System-Aware context. Cloud AI receives system context only when you explicitly enable the separate cloud-context option in AI Command Center.</p><input id="assistantInput" placeholder="Try: Why does my PC feel slow right now?" /><button class="primary-btn" id="assistantAsk">Ask</button><div class="response" id="assistantResponse">Ready.</div></div>`, 'AI ASSISTANT');
     setTimeout(()=>$('#assistantInput')?.focus(),50);
     $('#assistantAsk')?.addEventListener('click', answerAssistant);
     $('#assistantInput')?.addEventListener('keydown', e=>{ if(e.key==='Enter') answerAssistant(); });
@@ -1729,12 +1792,13 @@
     else if(q.includes('gpu') || q.includes('graphics')) answer = `Detected GPU: ${live.gpu?.name || staticInfo?.gpu?.Name || 'GPU information unavailable'}. Current GPU load: ${finite(live.gpu?.load)?`${Math.round(live.gpu.load)}%`:'unavailable'}, temperature: ${formatTemp(live.gpu?.temperatureC)}, VRAM: ${finite(live.gpu?.memoryUsedMB)?`${(live.gpu.memoryUsedMB/1024).toFixed(1)} GB used`:'unavailable'}.`;
     else if(q.includes('cpu') || q.includes('processor')) answer = `CPU load is ${live.cpu}% on ${staticInfo?.cpuModel || 'the detected processor'}. Average reported clock is ${formatClock(live.cpuClockMHz)}.`;
     else if(q.includes('memory') || q.includes('ram')) answer = `Memory usage is ${live.memory}% — ${formatBytes(live.usedMemory)} of ${formatBytes(live.totalMemory)} currently in use.`;
-    else if(q.includes('storage') || q.includes('disk')) answer = storageInventory?.summary ? `Data Hub sees ${storageInventory.summary.driveCount} local drive${storageInventory.summary.driveCount===1?'':'s'} with ${formatBytes(storageInventory.summary.freeBytes)} free of ${formatBytes(storageInventory.summary.totalBytes)}. The system drive is ${live.storage?.percent}% used. Current throughput is ${formatRate(live.diskReadBps)} read and ${formatRate(live.diskWriteBps)} write.` : `The system drive is ${live.storage?.percent}% used. Current disk throughput is ${formatRate(live.diskReadBps)} read and ${formatRate(live.diskWriteBps)} write. Open Data Hub for all-drive inventory.`;
+    else if(q.includes('storage') || q.includes('disk')) answer = storageInventory?.summary ? `Data Hub sees ${storageInventory.summary.driveCount} mounted drive${storageInventory.summary.driveCount===1?'':'s'} with ${formatBytes(storageInventory.summary.freeBytes)} free of ${formatBytes(storageInventory.summary.totalBytes)}. The system drive is ${live.storage?.percent}% used. Current throughput is ${formatRate(live.diskReadBps)} read and ${formatRate(live.diskWriteBps)} write.` : `The system drive is ${live.storage?.percent}% used. Current disk throughput is ${formatRate(live.diskReadBps)} read and ${formatRate(live.diskWriteBps)} write. Open Data Hub for all-drive inventory.`;
     else if(q.includes('network')) answer = networkOverview?.summary?.activeAdapter ? `Active network adapter: ${networkOverview.summary.activeAdapter.name || 'Windows adapter'} at ${networkOverview.summary.activeAdapter.linkSpeed || 'unknown link speed'}, IPv4 ${networkOverview.summary.activeAdapter.ipv4?.[0] || 'unavailable'}. Current traffic is ${formatNetworkRate(live.networkRxBps)} down and ${formatNetworkRate(live.networkTxBps)} up.` : `Current aggregate network traffic is ${formatNetworkRate(live.networkRxBps)} down and ${formatNetworkRate(live.networkTxBps)} up. Open Network PowerTools for adapter, IP, gateway, DNS, ping, connectivity diagnostics, and optional manual IP geolocation.`;
     else if(q.includes('reliability') || q.includes('diagnostic') || q.includes('crash') || q.includes('boot time')) answer = reliabilityState ? `Reliability Center reports renderer ${reliabilityState.renderer?.state || 'unknown'}, UI ready in ${formatMs(reliabilityState.boot?.uiReadyMs)}, ${reliabilityState.renderer?.crashCount || 0} renderer crash recoveries, and ${formatBytes(reliabilityState.diagnostics?.sizeBytes || 0)} of local diagnostics.` : 'Open Settings to load the local Reliability Center. It does not run Windows scans.';
     else if(q.includes('privacy') || q.includes('metadata') || q.includes('digital footprint') || q.includes('exposure')) answer = 'Open Privacy & App Trust Intelligence for self-auditing public identifiers, domain DNS exposure, file metadata, installed-app publisher coverage, and local SHA-256 / Authenticode trust signals. Privacy and App Trust findings stay out of System-Aware AI context and exported reports.';
     else if(q.includes('feature lab') || q.includes('sandbox') || q.includes('wsl') || q.includes('hyper-v') || q.includes('hyperv')) answer = featureLabState ? `Windows Feature Lab has discovered ${featureLabState.summary?.featureCount||0} capabilities on this PC, with ${featureLabState.summary?.supported||0} reported as supported and ${featureLabState.summary?.enabled||0} enabled. Open Feature Lab for compatibility details and guarded changes.` : 'Open Windows Feature Lab to inspect buried Windows capabilities. The scan is lazy and can optionally request administrator approval for deeper optional-feature state.';
-    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable Release preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.0.1 Stable Release preflight. It uses local runtime/configuration checks and does not trigger hardware scans.';
+    else if(q.includes('vpn') || q.includes('nord') || q.includes('expressvpn')) answer = vpnCenterState ? `VPN Center sees ${vpnCenterState.summary?.installedCount||0} supported client${vpnCenterState.summary?.installedCount===1?'':'s'} installed, ${vpnCenterState.summary?.runningCount||0} running, and ${vpnCenterState.summary?.connectedCount||0} active tunnel${vpnCenterState.summary?.connectedCount===1?'':'s'}. Open Network PowerTools to launch, connect, disconnect, or refresh NordVPN and ExpressVPN.` : 'Open Network PowerTools to detect NordVPN and ExpressVPN. VPN detection is local and lazy; credentials remain inside the official provider apps.';
+    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable Release preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.1.0 Stable Release preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
     else if(q.includes('automation') || q.includes('rule') || q.includes('schedule')) answer = automationState ? `Automation Engine is ${automationState.masterEnabled===false?'paused':automationState.running?'active':'ready'} with ${automationState.enabledCount||0} enabled rule${automationState.enabledCount===1?'':'s'} (${automationState.ruleCount||0} total).${automationState.nextScheduledAt?` Next daily schedule: ${formatAutomationSchedule(automationState.nextScheduledAt)}.`:''}` : 'Open Automation to load the local Automation Engine, rules, schedules, and run history.';
     else if(q.includes('process')) answer = processSnapshot?.summary ? `Process Manager+ currently sees ${processSnapshot.summary.count} processes using about ${formatBytes(processSnapshot.summary.totalMemoryBytes||0)} of working-set memory. Open Process & Apps for per-process CPU, memory and I/O.` : 'Open Process & Apps to load the on-demand process inventory.';
     else if(q.includes('installed app') || q.includes('program')) answer = installedAppsSnapshot?.summary ? `App Manager+ currently sees ${installedAppsSnapshot.summary.count} installed applications in Windows uninstall registry inventory.` : 'Open Process & Apps to load installed applications.';
@@ -1784,7 +1848,7 @@
     $('#profileMenu')?.addEventListener('click',e=>{const item=e.target.closest('[data-profile-action]');if(!item)return;const action=item.dataset.profileAction;setProfileMenu(false);if(action==='settings')navigate('settings');else if(action==='about')showAbout();});
     document.addEventListener('click',e=>{if(!e.target.closest('#profileAccount'))setProfileMenu(false);});
     $('#pulseBtn')?.addEventListener('click', async()=>{ await Promise.all([refreshLive(),refreshStatic(true),refreshSecurity(true),refreshActivity(),refreshPowerProfiles()]); toast('System refreshed'); });
-    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, Automation Engine, Reliability Center, and Stable Release readiness are online. v2.0.1 keeps GitHub, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
+    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, VPN Center, Automation Engine, Reliability Center, and Stable Release readiness are online. v2.1.0 keeps VPN detection, GitHub, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
     $('#assistantStart')?.addEventListener('click',showAssistant);
     $('#modalClose')?.addEventListener('click',closeModal); $('#modalBackdrop')?.addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
     $('#refreshSystem')?.addEventListener('click',async()=>{await refreshStatic(true);toast('System profile refreshed')});
@@ -1815,6 +1879,8 @@
     $('#processList')?.addEventListener('click',async e=>{const btn=e.target.closest('[data-process-action]');if(!btn)return;const row=btn.closest('[data-pid]');const pid=Number(row?.dataset.pid);const action=btn.dataset.processAction;let r=null;if(action==='reveal')r=await api.revealProcess(pid);else if(action==='copy')r=await api.copyProcessPath(pid);else if(action==='restart')r=await api.restartProcess(pid);else if(action==='end')r=await api.endProcess(pid);if(r?.ok){toast(action==='copy'?'Path copied':action==='reveal'?'File location opened':action==='restart'?'Process restarted':'Process ended');if(['restart','end'].includes(action))setTimeout(()=>refreshProcesses(true),800);await refreshActivity();}else if(!r?.canceled)toast('Process action unavailable',r?.error||'Windows rejected the action.');});
     $('#installedAppList')?.addEventListener('click',async e=>{const btn=e.target.closest('[data-app-action]');if(!btn)return;const row=btn.closest('[data-app-index]');const index=Number(row?.dataset.appIndex);let r;if(btn.dataset.appAction==='reveal')r=await api.revealInstalledApp(index);else r=await api.openInstalledAppsSettings();if(r?.ok)toast(btn.dataset.appAction==='reveal'?'Application location opened':'Windows Installed Apps opened');else toast('App action unavailable',r?.error||'Windows did not expose a usable location.');});
     $('#refreshNetwork')?.addEventListener('click',async()=>{await loadNetworkCenter(true);toast('Network inventory refreshed');});
+    $('#refreshVpnCenter')?.addEventListener('click',async()=>{await loadVpnCenter(true);toast('VPN status refreshed');});
+    $('#vpnProviderGrid')?.addEventListener('click',e=>{const btn=e.target.closest('[data-vpn-provider][data-vpn-action]');if(btn)runVpnProviderAction(btn.dataset.vpnProvider,btn.dataset.vpnAction,btn);});
     $('#runPing')?.addEventListener('click',runNetworkPing);
     $('#runDnsLookup')?.addEventListener('click',runNetworkDns);
     $('#runConnectivityTest')?.addEventListener('click',runConnectivity);
@@ -1935,7 +2001,7 @@
     setText('#greeting', `${hour<12?'GOOD MORNING':hour<18?'GOOD AFTERNOON':'GOOD EVENING'}, ADMIN`);
     setText('#assistantMessage','Ask about performance, automation, security, network, hardware, storage, or use a selected AI provider/model.');
     bindEvents(); applySettings(true); renderDrafts(); resetAutomationBuilder(); renderAiContext(); renderPrivacySummary(); if($('#modelCustomEndpoint'))$('#modelCustomEndpoint').value=modelCustomEndpoint();
-    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.0.1';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'AI Command Center'}`;}).catch(()=>{});
+    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.1.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'VPN Center'}`;}).catch(()=>{});
     window.addEventListener('error',event=>{nativeApi?.reportRendererError?.({message:event?.error?.stack||event?.message||'Renderer window error'});});
     window.addEventListener('unhandledrejection',event=>{nativeApi?.reportRendererError?.({message:event?.reason?.stack||event?.reason?.message||String(event?.reason||'Renderer unhandled rejection')});});
     if(nativeApi?.rendererReady) nativeApi.rendererReady().then(status=>{reliabilityState=status;reliabilityLoaded=Boolean(status);if($('#view-settings')?.classList.contains('active'))renderReliability();}).catch(()=>{});

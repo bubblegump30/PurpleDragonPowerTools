@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('powerTools', {
   networkFlushDns: () => ipcRenderer.invoke('network:flushDns'),
   networkRenewDhcp: () => ipcRenderer.invoke('network:renewDhcp'),
   networkCopyIpConfig: () => ipcRenderer.invoke('network:copyIpConfig'),
+  getVpnCenter: (force = false) => ipcRenderer.invoke('vpn:getCenter', force),
+  vpnProviderAction: (provider, action) => ipcRenderer.invoke('vpn:providerAction', provider, action),
   getNetworkDiagnosticsHistory: () => ipcRenderer.invoke('network:diagnosticsHistory'),
   getIpGeolocationStatus: () => ipcRenderer.invoke('network:ipGeoStatus'),
   saveIpGeolocationKey: (key) => ipcRenderer.invoke('network:saveIpGeoKey', key),
