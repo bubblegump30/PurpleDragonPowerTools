@@ -61,7 +61,7 @@ The following must be resolved or explicitly documented before v2.1.0 is promote
 
 - CI build must pass
 - root and runtime dependency lockfiles must be reviewed and committed
-- final software license must be selected
+- final software license selected: MIT
 - Windows standard-user and administrator smoke tests must pass
 - installer/uninstaller and portable-build tests must pass
 - VPN-present and VPN-absent tests must pass
@@ -70,9 +70,9 @@ The following must be resolved or explicitly documented before v2.1.0 is promote
 - real support-report exports must be inspected for privacy
 - final code-signing status must be documented
 
-## License status
+## License
 
-The final source license has not yet been selected. Until a `LICENSE` file is added, no additional source-code reuse or redistribution permission is being granted by this repository documentation.
+Purple Dragon PowerTools v2.1.0-rc.1 is released under the **MIT License**. See `LICENSE` in the repository.
 
 ## Reporting problems
 
