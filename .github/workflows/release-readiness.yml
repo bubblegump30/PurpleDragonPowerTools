@@ -78,7 +78,13 @@ jobs:
         shell: pwsh
         run: |
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          npm install --prefix runtime --package-lock-only --ignore-scripts --no-audit --no-fund
+          Push-Location runtime
+          try {
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
           if (-not (Test-Path package-lock.json)) { throw "Root package-lock.json was not generated." }
           if (-not (Test-Path runtime/package-lock.json)) { throw "Runtime package-lock.json was not generated." }
 
