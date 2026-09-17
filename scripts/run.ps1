@@ -196,8 +196,18 @@ try {
     $env:NODE_OPTIONS = ($previousNodeOptions + ' ' + $depFlag)
   }
 
-  & $electron $ProjectRoot
-  $exitCode = $LASTEXITCODE
+  # PowerShell can launch Windows GUI executables without populating
+  # $LASTEXITCODE. Wait on the actual Electron process so the launcher gets a
+  # real numeric exit code instead of falsely reporting "code .".
+  try {
+    $launchArgs = @("`"$ProjectRoot`"")
+    $process = Start-Process -FilePath $electron -ArgumentList $launchArgs -WorkingDirectory $ProjectRoot -PassThru -Wait
+    $exitCode = if ($null -ne $process.ExitCode) { [int]$process.ExitCode } else { 0 }
+  }
+  catch {
+    Write-Host ('PowerTools launch failed: ' + $_.Exception.Message) -ForegroundColor Red
+    $exitCode = 1
+  }
 }
 finally {
   $env:NODE_OPTIONS = $previousNodeOptions
