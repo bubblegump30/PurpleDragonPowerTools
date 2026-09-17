@@ -180,7 +180,7 @@ if (-not (Test-Path -LiteralPath $electron)) {
   exit 1
 }
 
-Write-Host 'Starting Purple Dragon PowerTools v2.1.0 VPN Center...' -ForegroundColor Green
+Write-Host 'Starting Purple Dragon PowerTools v2.1.0 Release Candidate...' -ForegroundColor Green
 Write-Host ('Runtime: Electron ' + $ExpectedElectronVersion + ' (isolated launch dependency set).') -ForegroundColor DarkGray
 Write-Host 'Fast boot is enabled. Heavy system modules remain lazy-loaded.' -ForegroundColor DarkGray
 
