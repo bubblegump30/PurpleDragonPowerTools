@@ -15,18 +15,18 @@ This document is the release gate for the first public-ready build. A checked it
 
 ## 2. Dependency and build reproducibility
 
-- [ ] Root package-lock.json generated and committed
-- [ ] runtime/package-lock.json generated and committed
-- [ ] Clean clone builds successfully on Windows
-- [ ] npm dependency audit reviewed
-- [ ] electron-builder produces NSIS and portable artifacts
+- [x] Root package-lock.json generated and committed
+- [x] runtime/package-lock.json generated and committed
+- [x] Clean clone builds successfully on Windows
+- [x] npm dependency audit reviewed
+- [x] electron-builder produces distinct NSIS and portable artifacts
 - [ ] Build artifacts launch on a clean Windows account
 - [ ] Installer uninstall path verified
-- [ ] Build SHA-256 hashes generated
+- [x] Build SHA-256 hashes generated and independently verified
 
 ## 3. Security and privacy
 
-- [ ] No API keys, GitHub tokens, provider credentials, or private keys tracked in Git history
+- [x] Git-history credential-pattern scan passes for supported key/token/private-key patterns
 - [x] Electron BrowserWindow security options reviewed
 - [x] contextIsolation remains enabled
 - [x] nodeIntegration remains disabled for renderer content
@@ -68,11 +68,11 @@ This document is the release gate for the first public-ready build. A checked it
 ## 6. Release automation
 
 - [x] Release-readiness CI workflow added
-- [ ] CI passes on the release branch
+- [x] Frozen read-only CI passes on the release branch
 - [x] GitHub issue templates added
 - [x] Pull-request template added
 - [x] Release notes prepared
-- [ ] Git tag naming convention confirmed
+- [x] Git tag naming convention confirmed: v2.1.0-rc.1 for the first prerelease
 - [ ] GitHub Release created as a prerelease first
 - [ ] Installer and portable artifacts attached to the prerelease (CI now builds both)
 - [ ] SHA-256 checksums attached to the prerelease (CI now generates SHA256SUMS.txt)
@@ -109,3 +109,34 @@ Support-report export now applies a redaction pass and omits detailed per-proces
 The renderer Content Security Policy remains: `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;`.
 
 Remaining security work is primarily Windows smoke testing, administrator/UAC behavior, and validating real exported reports across representative hardware.
+
+
+## CI verification — 2026-09-17
+
+Frozen read-only Release Readiness workflow run `35285512677` passed on commit `8006bd1c16afd4d78dbf81c8f24f619a3adb7d21`.
+
+Verified gates:
+
+- repository hygiene
+- Git-history credential-pattern scan
+- JavaScript syntax
+- package metadata
+- committed root/runtime lockfiles
+- root `npm ci`
+- runtime lock `npm ci --ignore-scripts`
+- root/runtime production dependency audits
+- NSIS + Portable Windows packaging
+- distinct Setup/Portable artifact assertion
+- SHA-256 checksum generation
+- release-candidate artifact upload
+
+The resulting CI archive contained:
+
+- `Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe`
+- `Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe`
+- `Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe.blockmap`
+- `SHA256SUMS.txt`
+
+The archive and both executable hashes were independently recomputed and matched the CI-published digests/checksum file.
+
+This verifies build reproducibility and artifact integrity at CI level; it does not replace real interactive Windows smoke testing.
