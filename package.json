@@ -34,7 +34,6 @@
         "nsis",
         "portable"
       ],
-      "artifactName": "Purple-Dragon-PowerTools-${version}-${arch}.${ext}",
       "requestedExecutionLevel": "asInvoker",
       "icon": "src/assets/purple-dragon-foundation-mark.ico"
     },
@@ -43,7 +42,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Purple Dragon PowerTools"
+      "shortcutName": "Purple Dragon PowerTools",
+      "artifactName": "Purple-Dragon-PowerTools-Setup-${version}-${arch}.${ext}"
     },
     "extraResources": [
       {
@@ -51,7 +51,10 @@
         "to": "sensor-bridge"
       }
     ],
-    "copyright": "Copyright © 2026 Purple Dragon Foundation Ltd"
+    "copyright": "Copyright © 2026 Purple Dragon Foundation Ltd",
+    "portable": {
+      "artifactName": "Purple-Dragon-PowerTools-Portable-${version}-${arch}.${ext}"
+    }
   },
   "engines": {
     "node": ">=22"
