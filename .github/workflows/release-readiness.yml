@@ -1,0 +1,72 @@
+name: Release Readiness
+
+on:
+  push:
+    branches:
+      - main
+      - "release/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Windows build inputs
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Repository hygiene
+        shell: pwsh
+        run: |
+          $blocked = git ls-files | Where-Object {
+            $_ -match '(^|/)(node_modules|dist|logs|diagnostics|crash-reports)/' -or
+            $_ -match '(^|/)\.env($|\.)' -or
+            $_ -match '\.(pfx|p12|pem|key)$'
+          }
+          if ($blocked) {
+            $blocked | ForEach-Object { Write-Error "Blocked release file tracked: $_" }
+            exit 1
+          }
+
+      - name: Validate JavaScript syntax
+        shell: pwsh
+        run: |
+          node --check src/main.js
+          node --check src/preload.js
+          node --check src/renderer.js
+
+      - name: Validate package metadata
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.0') { throw "Expected package version 2.1.0, found $($pkg.version)" }
+          if ($pkg.main -ne 'src/main.js') { throw "Unexpected Electron main entry: $($pkg.main)" }
+          if ($pkg.devDependencies.electron -ne '44.2.0') { throw "Electron pin changed unexpectedly." }
+
+      - name: Report dependency-lock status
+        shell: pwsh
+        run: |
+          if (-not (Test-Path package-lock.json)) {
+            Write-Warning "Root package-lock.json is missing. Reproducible packaging remains a release blocker."
+          }
+          if (-not (Test-Path runtime/package-lock.json)) {
+            Write-Warning "runtime/package-lock.json is missing. Reproducible runtime installation remains a release blocker."
+          }
+
+      - name: Install packaging dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Package application directory
+        run: npm run pack:win
