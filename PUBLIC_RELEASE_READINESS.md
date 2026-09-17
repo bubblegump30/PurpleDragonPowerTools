@@ -71,12 +71,12 @@ This document is the release gate for the first public-ready build. A checked it
 - [ ] CI passes on the release branch
 - [x] GitHub issue templates added
 - [x] Pull-request template added
-- [ ] Release notes prepared
+- [x] Release notes prepared
 - [ ] Git tag naming convention confirmed
 - [ ] GitHub Release created as a prerelease first
 - [ ] Installer and portable artifacts attached to the prerelease (CI now builds both)
 - [ ] SHA-256 checksums attached to the prerelease (CI now generates SHA256SUMS.txt)
-- [ ] Code-signing status clearly documented
+- [x] Code-signing status clearly documented
 
 ## 7. Windows smoke-test matrix
 
