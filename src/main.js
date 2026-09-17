@@ -2798,11 +2798,13 @@ async function getLiveMetrics() {
   // providers refresh their caches in the background and appear on the next sample.
   const gpu = nvidiaCache.data;
   const windowsPerf = winPerfCache.data;
-  const startupSettled = Date.now() - BOOT_AT >= 3000;
-  if (startupSettled && !nvidiaCache.pending && Date.now() - nvidiaCache.at >= 4000) {
+  const sinceBoot = Date.now() - BOOT_AT;
+  // Stagger optional providers so first paint/static identity are not competing
+  // with two extra Windows processes at the same time.
+  if (sinceBoot >= 2500 && !nvidiaCache.pending && Date.now() - nvidiaCache.at >= 4000) {
     queryNvidiaMetrics().catch(error => writeDiagnostic('NVIDIA telemetry', error));
   }
-  if (startupSettled && !winPerfCache.pending && Date.now() - winPerfCache.at >= 8000) {
+  if (sinceBoot >= 5000 && !winPerfCache.pending && Date.now() - winPerfCache.at >= 8000) {
     queryWindowsPerf().catch(error => writeDiagnostic('Windows perf telemetry', error));
   }
   const gpuLoad = gpu?.utilization ?? null;
