@@ -41,6 +41,23 @@ jobs:
             exit 1
           }
 
+      - name: Scan Git history for credential patterns
+        shell: pwsh
+        run: |
+          $history = git log -p --all --no-color
+          $patterns = @(
+            'github_pat_[A-Za-z0-9_]{60,}',
+            'gh[pousr]_[A-Za-z0-9]{30,}',
+            'sk-(?:proj-)?[A-Za-z0-9_-]{30,}',
+            'AIza[0-9A-Za-z_-]{30,}',
+            '-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'
+          )
+          foreach ($pattern in $patterns) {
+            if ([regex]::IsMatch($history, $pattern)) {
+              throw "Potential credential/private-key material was found in Git history. Review history before release."
+            }
+          }
+
       - name: Validate JavaScript syntax
         shell: pwsh
         run: |
