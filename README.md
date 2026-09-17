@@ -14,7 +14,7 @@ Purple Dragon PowerTools is a Windows Electron system utility and AI command cen
 - Runtime: **Electron 44.2.0**
 - Stable public release: **Not yet approved**
 - Code signing: **Pending**
-- License: **Pending final selection**
+- License: **MIT**
 
 ## Public-release priorities
 
@@ -110,6 +110,6 @@ Expected release outputs are created under `dist/`.
 
 Read [SECURITY.md](SECURITY.md) before reporting a vulnerability. Never post passwords, API keys, tokens, private keys, activation codes, or unsanitized diagnostic data in a public issue.
 
-## Current limitation
+## License
 
-The repository does not yet contain a final software license. Until a license is selected and added, redistribution and reuse rights have not been granted.
+Purple Dragon PowerTools is released under the **MIT License**. See [LICENSE](LICENSE).
