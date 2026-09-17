@@ -10,5 +10,11 @@ if (-not (Test-Path -LiteralPath (Join-Path $RuntimeRoot 'node_modules'))) {
   exit 1
 }
 Write-Host 'Auditing launch-time runtime dependencies only...' -ForegroundColor Cyan
-& npm audit --prefix $RuntimeRoot --omit=dev
-exit $LASTEXITCODE
+Push-Location $RuntimeRoot
+try {
+  & npm audit --omit=dev
+  $auditExit = $LASTEXITCODE
+} finally {
+  Pop-Location
+}
+exit $auditExit
