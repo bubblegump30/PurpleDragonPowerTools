@@ -11,7 +11,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate-and-build:
@@ -74,48 +74,53 @@ jobs:
           if ($pkg.devDependencies.electron -ne '44.2.0') { throw "Electron pin changed unexpectedly." }
           if ($pkg.private -ne $true) { throw "package.json private must remain true to prevent accidental npm publication." }
 
-      - name: Generate dependency lockfiles
+      - name: Verify committed dependency locks
         shell: pwsh
         run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          if (Test-Path runtime/package-lock.json) { Remove-Item runtime/package-lock.json -Force }
+          if (-not (Test-Path package-lock.json)) { throw "Committed root package-lock.json is missing." }
+          if (-not (Test-Path runtime/package-lock.json)) { throw "Committed runtime/package-lock.json is missing." }
+
+          $root = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+          $runtime = Get-Content runtime/package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+
+          if ($root.lockfileVersion -ne 3) { throw "Root lockfileVersion must be 3." }
+          if ($root.version -ne '2.1.0') { throw "Root lock version must be 2.1.0." }
+          if ($root.packages[''].devDependencies.electron -ne '44.2.0') { throw "Root Electron lock is not 44.2.0." }
+
+          if ($runtime.lockfileVersion -ne 3) { throw "Runtime lockfileVersion must be 3." }
+          if ($runtime.version -ne '1.6.4') { throw "Runtime lock version must be 1.6.4." }
+          if ($runtime.packages[''].dependencies.electron -ne '44.2.0') { throw "Runtime Electron lock is not 44.2.0." }
+          if ($runtime.packages.ContainsKey('..')) { throw "Runtime lock contains an unintended parent-package entry." }
+          if ($runtime.packages.Keys | Where-Object { $_ -match 'purple-dragon-powertools' -and $_ -ne '' }) {
+            throw "Runtime lock contains an unintended local PowerTools link."
+          }
+
+      - name: Install packaging dependencies from committed lock
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate runtime lock installation
+        shell: pwsh
+        run: |
           Push-Location runtime
           try {
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            npm ci --ignore-scripts --no-audit --no-fund
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally {
             Pop-Location
           }
-          if (-not (Test-Path package-lock.json)) { throw "Root package-lock.json was not generated." }
-          if (-not (Test-Path runtime/package-lock.json)) { throw "Runtime package-lock.json was not generated." }
-
-      - name: Commit generated lockfiles to release branch
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
-        shell: pwsh
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json runtime/package-lock.json
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Dependency lockfiles are already committed."
-          } else {
-            git commit -m "chore: lock v2.1.0 dependencies"
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            git push origin HEAD:${{ github.ref_name }}
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-
-      - name: Install packaging dependencies from generated lock
-        run: npm ci --no-audit --no-fund
 
       - name: Dependency audit
         shell: pwsh
         run: |
           npm audit --omit=dev --audit-level=high
-          if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Production dependency audit reported a high-severity issue."
-            exit $LASTEXITCODE
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          Push-Location runtime
+          try {
+            npm audit --omit=dev --audit-level=high
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
           }
 
       - name: Build NSIS installer and portable executable
@@ -128,8 +133,10 @@ jobs:
           if ($executables.Count -lt 2) { throw "Expected separate NSIS installer and portable executables; found $($executables.Count)." }
           if (-not ($executables.Name -match 'Setup')) { throw "NSIS Setup executable is missing." }
           if (-not ($executables.Name -match 'Portable')) { throw "Portable executable is missing." }
+
           $artifacts = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe','.msi','.zip' }
           if (-not $artifacts) { throw "No publishable Windows artifacts were produced." }
+
           $lines = foreach ($file in $artifacts) {
             $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($file.Name)"
@@ -147,15 +154,5 @@ jobs:
             dist/*.zip
             dist/*.blockmap
             dist/SHA256SUMS.txt
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload generated dependency locks
-        uses: actions/upload-artifact@v4
-        with:
-          name: v2.1.0-generated-lockfiles
-          path: |
-            package-lock.json
-            runtime/package-lock.json
           if-no-files-found: error
           retention-days: 14
