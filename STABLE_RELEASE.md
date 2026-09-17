@@ -9,7 +9,7 @@ This file defines the promotion rule from v2.1.0 Release Candidate to Stable. It
 
 1. Release Readiness CI passes on the exact candidate commit.
 2. Root and runtime package lockfiles are reviewed and committed.
-3. The final software license is selected and repository metadata matches it.
+3. The MIT software license is present and repository metadata matches it.
 4. NSIS installer and portable artifacts build successfully.
 5. Published SHA-256 checksums match the tested artifacts.
 6. Standard-user startup works without elevation.
