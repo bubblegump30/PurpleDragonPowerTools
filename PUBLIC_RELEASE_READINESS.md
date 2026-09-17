@@ -9,7 +9,7 @@ This document is the release gate for the first public-ready build. A checked it
 - [x] SECURITY.md added
 - [ ] Final software license selected and added as LICENSE
 - [ ] package.json license metadata matches LICENSE
-- [ ] README no longer describes the application as private
+- [x] README no longer describes the application as private
 - [ ] Repository description matches the public-release positioning
 - [ ] Copyright/organization naming reviewed for consistency
 
@@ -27,16 +27,16 @@ This document is the release gate for the first public-ready build. A checked it
 ## 3. Security and privacy
 
 - [ ] No API keys, GitHub tokens, provider credentials, or private keys tracked in Git history
-- [ ] Electron BrowserWindow security options reviewed
-- [ ] contextIsolation remains enabled
-- [ ] nodeIntegration remains disabled for renderer content
-- [ ] preload exposes only explicitly required APIs
+- [x] Electron BrowserWindow security options reviewed
+- [x] contextIsolation remains enabled
+- [x] nodeIntegration remains disabled for renderer content
+- [x] preload exposes only explicitly required APIs
 - [ ] IPC handlers validate caller-controlled identifiers and actions
-- [ ] Credential storage uses Electron safeStorage without plaintext fallback
-- [ ] Local AI endpoints remain loopback-only
-- [ ] Cloud system context remains separately opt-in
-- [ ] Diagnostics redact usernames, hostnames, addresses, paths, tokens, and secrets
-- [ ] External URLs are allowlisted or validated before opening
+- [x] Credential storage uses Electron safeStorage without plaintext fallback
+- [x] Local AI endpoints remain loopback-only
+- [x] Cloud system context remains separately opt-in
+- [x] Diagnostics redact usernames, hostnames, addresses, paths, tokens, and secrets
+- [x] External URLs are allowlisted or validated before opening
 - [ ] Dangerous system mutations require explicit user action
 
 ## 4. Reliability and compatibility
@@ -57,10 +57,10 @@ This document is the release gate for the first public-ready build. A checked it
 
 ## 5. Diagnostics and supportability
 
-- [ ] Global unhandled-error path reviewed
+- [x] Global unhandled-error path reviewed
 - [ ] User-facing errors avoid raw internal exceptions where possible
-- [ ] Diagnostic export contains version/runtime/platform details
-- [ ] Diagnostic export excludes secrets and unnecessary personal information
+- [x] Diagnostic export contains version/runtime/platform details
+- [x] Diagnostic export excludes secrets and unnecessary personal information
 - [ ] Log levels are consistent
 - [ ] Clear-log behavior verified
 - [ ] Troubleshooting instructions added to README/docs
@@ -69,13 +69,13 @@ This document is the release gate for the first public-ready build. A checked it
 
 - [x] Release-readiness CI workflow added
 - [ ] CI passes on the release branch
-- [ ] GitHub issue templates added
-- [ ] Pull-request template added
+- [x] GitHub issue templates added
+- [x] Pull-request template added
 - [ ] Release notes prepared
 - [ ] Git tag naming convention confirmed
 - [ ] GitHub Release created as a prerelease first
-- [ ] Installer and portable artifacts attached to the prerelease
-- [ ] SHA-256 checksums attached to the prerelease
+- [ ] Installer and portable artifacts attached to the prerelease (CI now builds both)
+- [ ] SHA-256 checksums attached to the prerelease (CI now generates SHA256SUMS.txt)
 - [ ] Code-signing status clearly documented
 
 ## 7. Windows smoke-test matrix
@@ -96,3 +96,16 @@ Run at minimum on:
 Do not mark v2.1.0 as Stable until all mandatory items above are complete or explicitly documented as deferred with a user-visible limitation.
 
 Current target channel: **Release Candidate / Prerelease**
+
+
+## Security review notes — 2026-09-17
+
+The v2.1.0 release branch explicitly blocks renderer-created windows and renderer navigation away from the bundled local UI. The main BrowserWindow uses context isolation, disables renderer Node integration, and enables the Electron sandbox.
+
+Credential stores for AI providers, GitHub, and Geo IPify require Electron safeStorage encryption and do not fall back to plaintext storage. Cloud AI endpoints, GitHub links, Geo IPify, VPN provider setup links, Privacy shortcuts, and Windows tools are constrained by fixed allowlists or validated identifiers.
+
+Support-report export now applies a redaction pass and omits detailed per-process names, installed-application names, activity details, and user-folder analysis. Local diagnostic logging redacts local host/user identifiers, common credential formats, MAC addresses, and valid IPv4 addresses before writing to disk.
+
+The renderer Content Security Policy remains: `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;`.
+
+Remaining security work is primarily Windows smoke testing, administrator/UAC behavior, and validating real exported reports across representative hardware.
