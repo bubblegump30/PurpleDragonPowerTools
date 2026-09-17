@@ -34,9 +34,9 @@ The authoritative release gate is [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_R
 - [x] SHA-256 generation configured
 - [x] Dependency lock generation configured
 - [x] Git-history credential-pattern scan configured
-- [ ] CI passes on final RC commit
-- [ ] Root lockfile committed
-- [ ] Runtime lockfile committed
+- [x] Frozen read-only CI passes on verified RC build commit
+- [x] Root lockfile committed
+- [x] Runtime lockfile committed
 - [ ] Installer tested
 - [ ] Uninstaller tested
 - [ ] Portable build tested
