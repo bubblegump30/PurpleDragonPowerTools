@@ -143,11 +143,17 @@ if (-not $electron) {
   Write-Host 'Packaging/build dependencies are not installed during normal launch.' -ForegroundColor DarkGray
   if (-not (Test-Path -LiteralPath $RuntimeRoot)) { New-Item -ItemType Directory -Path $RuntimeRoot | Out-Null }
 
-  & npm install --prefix $RuntimeRoot --no-audit --no-fund --loglevel=error
-  if ($LASTEXITCODE -ne 0) {
+  Push-Location $RuntimeRoot
+  try {
+    & npm install --no-audit --no-fund --loglevel=error
+    $runtimeInstallExit = $LASTEXITCODE
+  } finally {
+    Pop-Location
+  }
+  if ($runtimeInstallExit -ne 0) {
     Write-Host 'Minimal Electron runtime package install failed.' -ForegroundColor Red
     Read-Host 'Press Enter to close'
-    exit $LASTEXITCODE
+    exit $runtimeInstallExit
   }
 
   if (-not (Test-CompatibleRuntimePackage $RuntimeModule $RuntimePackage)) {
