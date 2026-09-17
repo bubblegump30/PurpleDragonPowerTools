@@ -34,10 +34,14 @@ jobs:
       - name: Refuse to overwrite existing prerelease
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Continue'
           gh release view "$env:TAG_NAME" --repo "$env:GITHUB_REPOSITORY" *> $null
-          if ($LASTEXITCODE -eq 0) {
+          $releaseExists = $LASTEXITCODE -eq 0
+          $ErrorActionPreference = 'Stop'
+          if ($releaseExists) {
             throw "Release $env:TAG_NAME already exists. Refusing to overwrite it."
           }
+          exit 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
