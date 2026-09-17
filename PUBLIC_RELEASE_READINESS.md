@@ -7,8 +7,8 @@ This document is the release gate for the first public-ready build. A checked it
 - [x] Public-release branch created
 - [x] .gitignore blocks local dependencies, build output, logs, environment files, and common credential containers
 - [x] SECURITY.md added
-- [ ] Final software license selected and added as LICENSE
-- [ ] package.json license metadata matches LICENSE
+- [x] Final software license selected and added as LICENSE (MIT)
+- [x] package.json license metadata matches LICENSE
 - [x] README no longer describes the application as private
 - [ ] Repository description matches the public-release positioning
 - [ ] Copyright/organization naming reviewed for consistency
