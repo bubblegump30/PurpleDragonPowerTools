@@ -516,23 +516,7 @@ function storageStats() {
 }
 
 function escapeRegExp(value) {
-  return String(value || '').replace(/[.*+?^$()|[\]\\{}]/g, '\\function writeDiagnostic(area, error) {
-  try {
-    const dir = app.getPath('userData');
-    fs.mkdirSync(dir, { recursive: true });
-    const file = path.join(dir, 'powertools-diagnostics.log');
-    const previous = path.join(dir, 'powertools-diagnostics.previous.log');
-    try {
-      if (fs.existsSync(file) && fs.statSync(file).size > 1024 * 1024) {
-        if (fs.existsSync(previous)) fs.unlinkSync(previous);
-        fs.renameSync(file, previous);
-      }
-    } catch { }
-    const line = `[${new Date().toISOString()}] ${area}: ${String(error?.stack || error?.message || error || 'unknown error')}\n`;
-    fs.appendFileSync(file, line, 'utf8');
-  } catch { }
-}
-');
+  return String(value || '').replace(/[.*+?^$()|[\]\\{}]/g, '\\$&');
 }
 
 function redactSensitiveText(value) {
