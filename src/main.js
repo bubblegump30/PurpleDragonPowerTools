@@ -406,6 +406,14 @@ function createWindow() {
     }
   });
 
+  // Public-release hardening: the renderer UI is bundled locally. External
+  // destinations must go through explicit, allowlisted main-process actions.
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
+    writeDiagnostic('blocked renderer navigation', 'Renderer navigation outside the bundled UI was blocked.');
+  });
+
   mainWindow.loadFile(path.join(__dirname, 'index.html')).catch(error => {
     writeDiagnostic('loadFile', error);
   });
@@ -507,7 +515,8 @@ function storageStats() {
   }
 }
 
-function writeDiagnostic(area, error) {
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^$()|[\]\\{}]/g, '\\function writeDiagnostic(area, error) {
   try {
     const dir = app.getPath('userData');
     fs.mkdirSync(dir, { recursive: true });
@@ -520,6 +529,65 @@ function writeDiagnostic(area, error) {
       }
     } catch { }
     const line = `[${new Date().toISOString()}] ${area}: ${String(error?.stack || error?.message || error || 'unknown error')}\n`;
+    fs.appendFileSync(file, line, 'utf8');
+  } catch { }
+}
+');
+}
+
+function redactSensitiveText(value) {
+  let text = String(value ?? '');
+  const localValues = [];
+  try { localValues.push(os.homedir()); } catch { }
+  try { localValues.push(os.hostname()); } catch { }
+  try { localValues.push(os.userInfo()?.username); } catch { }
+  for (const localValue of localValues.filter(Boolean).sort((a,b)=>String(b).length-String(a).length)) {
+    const pattern = escapeRegExp(localValue);
+    if (pattern) text = text.replace(new RegExp(pattern, 'gi'), '[REDACTED]');
+  }
+  text = text.replace(/([?&](?:api[_-]?key|key|token|access[_-]?token|password|secret)=)[^&\s]+/gi, '$1[REDACTED]');
+  text = text.replace(/\bBearer\s+[A-Za-z0-9._~+\/=:-]{8,}/gi, 'Bearer [REDACTED]');
+  text = text.replace(/\b(?:github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{20,})\b/g, '[REDACTED-CREDENTIAL]');
+  text = text.replace(/\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g, '[REDACTED-MAC]');
+  text = text.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, match => match.split('.').every(part => Number(part) >= 0 && Number(part) <= 255) ? '[REDACTED-IP]' : match);
+  return text;
+}
+
+const PUBLIC_REPORT_REDACTED_KEYS = new Set([
+  'hostname','computername','username','userdomain','mac','macaddress','ipv4','ipv6',
+  'gateway','gateways','dnsserver','dnsservers','ipaddress','publicip','localip',
+  'profilename','ssid','filepath','absolutepath','path','executablepath','commandline',
+  'installlocation','workingdirectory','homedirectory','token','apikey','secret',
+  'password','credential','ciphertext','serial','serialnumber','uuid','target'
+]);
+
+function sanitizePublicReportValue(value, key = '') {
+  const normalizedKey = String(key || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+  if (PUBLIC_REPORT_REDACTED_KEYS.has(normalizedKey)) return '[REDACTED]';
+  if (Array.isArray(value)) return value.map(item => sanitizePublicReportValue(item));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [childKey, childValue] of Object.entries(value)) out[childKey] = sanitizePublicReportValue(childValue, childKey);
+    return out;
+  }
+  if (typeof value === 'string') return redactSensitiveText(value);
+  return value;
+}
+
+function writeDiagnostic(area, error) {
+  try {
+    const dir = app.getPath('userData');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, 'powertools-diagnostics.log');
+    const previous = path.join(dir, 'powertools-diagnostics.previous.log');
+    try {
+      if (fs.existsSync(file) && fs.statSync(file).size > 1024 * 1024) {
+        if (fs.existsSync(previous)) fs.unlinkSync(previous);
+        fs.renameSync(file, previous);
+      }
+    } catch { }
+    const raw = String(error?.stack || error?.message || error || 'unknown error');
+    const line = `[${new Date().toISOString()}] ${redactSensitiveText(area)}: ${redactSensitiveText(raw).slice(0, 16000)}\n`;
     fs.appendFileSync(file, line, 'utf8');
   } catch { }
 }
@@ -4496,10 +4564,16 @@ ipcMain.handle('report:export', async () => {
     performanceProfiles: profiles,
     startupItems,
     processAppCenter: {
-      processSnapshot: processCenterLastSnapshot ? { generatedAt: processCenterLastSnapshot.generatedAt, summary: processCenterLastSnapshot.summary, processes: processCenterLastSnapshot.processes.slice(0, 80) } : null,
-      installedApps: installedAppsCache.data?.length ? { count: installedAppsCache.data.length, apps: installedAppsCache.data.slice(0, 250) } : null
+      processSnapshot: processCenterLastSnapshot ? { generatedAt: processCenterLastSnapshot.generatedAt, summary: processCenterLastSnapshot.summary } : null,
+      installedApps: installedAppsCache.data?.length ? { count: installedAppsCache.data.length } : null,
+      privacy: 'Per-process names/paths and installed-application names are omitted from exported support reports.'
     },
-    storageHub: { inventory: storageInventory, analysis: storageAnalysisCache.data || null, cleanupPreview: publicCleanupPreview(cleanupPreviewCache.data) },
+    storageHub: {
+      inventory: storageInventory,
+      analysisLoaded: Boolean(storageAnalysisCache.data),
+      cleanupPreviewLoaded: Boolean(cleanupPreviewCache.data),
+      privacy: 'User-folder analysis and cleanup file details are omitted from exported support reports.'
+    },
     networkPowerTools: { overview: networkCenterCache.data || null, vpnCenter: vpnCenterCache.data || null, diagnostics: networkLastDiagnostics.slice(0,20), ipGeolocation: { provider:'Geo IPify', configured:geoIpifyCredentialStatus().configured, privacy:'Lookup results and public IP are intentionally excluded from exported reports.' } },
     privacyIntelligence: { mode:'Self-audit only', exportedPersonalData:false, note:'Entered identifiers, profile shortcuts, DNS query values, file names/paths, and metadata findings are intentionally excluded from reports.' },
     windowsFeatureLab: featureLabCache.data || null,
@@ -4507,7 +4581,11 @@ ipcMain.handle('report:export', async () => {
     automationEngine: automationInitialized ? publicAutomationState() : { masterEnabled: true, running: false, ruleCount: 0, enabledCount: 0, rules: [], history: [] },
     reliability: getReliabilityStatus(),
     stableRelease: getStableReleaseStatus(),
-    activity: activityLog
+    activity: { count: activityLog.length, privacy: 'Activity titles/details are omitted from exported support reports.' },
+    exportPrivacy: {
+      sanitized: true,
+      omitted: ['host/user identity','IP/MAC addresses','file paths','credentials','serial numbers','per-process/app names','activity details','user-folder analysis']
+    }
   };
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export PowerTools Report',
@@ -4515,7 +4593,8 @@ ipcMain.handle('report:export', async () => {
     filters: [{ name: 'JSON Report', extensions: ['json'] }]
   });
   if (result.canceled || !result.filePath) return { ok: false };
-  fs.writeFileSync(result.filePath, JSON.stringify(report, null, 2), 'utf8');
+  const sanitizedReport = sanitizePublicReportValue(report);
+  fs.writeFileSync(result.filePath, JSON.stringify(sanitizedReport, null, 2), 'utf8');
   addActivity('System report exported', path.basename(result.filePath));
   return { ok: true, path: result.filePath };
 });
