@@ -1,6 +1,14 @@
 # Changelog
 
-## v2.1.0 — NordVPN + ExpressVPN Center
+## v2.1.0 — Public Release Readiness + NordVPN / ExpressVPN Center
+
+### Public release readiness
+- Added a dedicated public-release branch, release gate, SECURITY.md, issue templates, pull-request template, and repository hygiene rules.
+- Hardened the Electron renderer by denying renderer-created windows and navigation away from the bundled local UI.
+- Added diagnostic/support-export redaction for credentials and local identifying data, and reduced detailed process/application/activity data in exported support reports.
+- Added Windows CI validation, clean-run dependency lock generation, Git-history credential-pattern scanning, NSIS + portable packaging, and SHA-256 checksum generation.
+- Replaced private-development/stable labels with explicit Release Candidate / Public Release Readiness labeling for v2.1.0.
+- Added prerelease notes and unsigned-build/code-signing documentation.
 
 ### Added
 - Added a VPN Center inside Network PowerTools for NordVPN and ExpressVPN.
