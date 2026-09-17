@@ -1,0 +1,93 @@
+name: Publish v2.1.0 RC1
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "runtime/package-lock.json"
+      - "src/**"
+      - "RELEASE_NOTES_v2.1.0-rc.1.md"
+      - "LICENSE"
+      - ".github/workflows/publish-v2.1.0-rc.1.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build and publish v2.1.0-rc.1
+    if: github.repository == 'bubblegump30/PurpleDragonPowerTools'
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG_NAME: v2.1.0-rc.1
+
+    steps:
+      - name: Checkout merged main
+        uses: actions/checkout@v4
+
+      - name: Refuse to overwrite existing prerelease
+        shell: pwsh
+        run: |
+          gh release view "$env:TAG_NAME" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release $env:TAG_NAME already exists. Refusing to overwrite it."
+          }
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate release identity
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.0') { throw "Expected package version 2.1.0." }
+          if ($pkg.license -ne 'MIT') { throw "Expected MIT package license." }
+          if (-not (Test-Path LICENSE)) { throw "LICENSE is missing." }
+          if (-not (Test-Path RELEASE_NOTES_v2.1.0-rc.1.md)) { throw "RC release notes are missing." }
+          if (-not (Test-Path package-lock.json)) { throw "Root package lock is missing." }
+          if (-not (Test-Path runtime/package-lock.json)) { throw "Runtime package lock is missing." }
+
+      - name: Install from committed lock
+        run: npm ci --no-audit --no-fund
+
+      - name: Production dependency audit
+        shell: pwsh
+        run: |
+          npm audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Windows Setup and Portable
+        run: npm run dist:win
+
+      - name: Verify release artifacts and generate SHA-256
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist -File -Filter 'Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe'
+          $portable = Get-ChildItem dist -File -Filter 'Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe'
+          if (-not $setup) { throw "Setup executable is missing." }
+          if (-not $portable) { throw "Portable executable is missing." }
+          $artifacts = @($setup, $portable)
+          $lines = foreach ($file in $artifacts) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          $lines | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding utf8
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Publish GitHub prerelease
+        shell: pwsh
+        run: |
+          gh release create "$env:TAG_NAME" "dist/Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe" "dist/Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe" "dist/SHA256SUMS.txt" --repo "$env:GITHUB_REPOSITORY" --target "$env:GITHUB_SHA" --title "Purple Dragon PowerTools v2.1.0-rc.1" --notes-file "RELEASE_NOTES_v2.1.0-rc.1.md" --prerelease
+
+      - name: Verify published prerelease
+        shell: pwsh
+        run: |
+          gh release view "$env:TAG_NAME" --repo "$env:GITHUB_REPOSITORY" --json tagName,isPrerelease,url,assets

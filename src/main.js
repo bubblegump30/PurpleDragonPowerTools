@@ -328,9 +328,9 @@ function getReliabilityStatus() {
 function stableReleaseSummaryText(status) {
   const checks = Array.isArray(status?.checks) ? status.checks : [];
   return [
-    'Purple Dragon PowerTools Stable Release Readiness',
+    'Purple Dragon PowerTools Public Release Readiness',
     `Version: ${status?.version || app.getVersion()}`,
-    `Channel: ${status?.channel || 'Stable'}`,
+    `Channel: ${status?.channel || 'Release Candidate'}`,
     `Status: ${status?.ready ? 'READY' : 'REVIEW'}`,
     `Passed: ${status?.passed || 0}`,
     `Warnings: ${status?.warnings || 0}`,
@@ -359,21 +359,21 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Release candidate version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
-    { id:'userdata', label:'Local data directory', ok:writable, detail:userData },
+    { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
     { id:'single', label:'Single-instance guard', ok:true, detail:'Application owns the active single-instance lock.' },
     { id:'automation-data', label:'Automation data', ok:automationDataHealthy, optional:automationChecked===0, detail:automationChecked ? `${automationChecked} local automation data file(s) parsed successfully.` : 'No persisted automation files yet.' },
     { id:'diagnostics', label:'Diagnostics rotation', ok:diagSize <= 2 * 1024 * 1024, detail:`Active diagnostics log: ${diagSize} bytes.` },
     { id:'sensor', label:'CPU sensor runtime', ok:sensorPresent, optional:true, detail:sensorPresent ? 'Optional LibreHardwareMonitor bridge is bundled.' : 'Optional CPU sensor bridge is not present.' },
-    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:!previousSessionState, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean shutdown; check diagnostics if unexpected.') : 'First session recorded by v2.1.0.' }
+    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:true, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean-shutdown marker. Informational only; review diagnostics if unexpected.') : 'No previous v2.1.0 session marker yet.' }
   ];
   const blocking = checks.filter(c => !c.ok && !c.optional);
   const passed = checks.filter(c => c.ok).length;
   return {
     version: app.getVersion(),
-    channel: 'Stable',
+    channel: 'Release Candidate',
     generatedAt: new Date().toISOString(),
     ready: blocking.length === 0,
     passed,
@@ -406,6 +406,14 @@ function createWindow() {
     }
   });
 
+  // Public-release hardening: the renderer UI is bundled locally. External
+  // destinations must go through explicit, allowlisted main-process actions.
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
+    writeDiagnostic('blocked renderer navigation', 'Renderer navigation outside the bundled UI was blocked.');
+  });
+
   mainWindow.loadFile(path.join(__dirname, 'index.html')).catch(error => {
     writeDiagnostic('loadFile', error);
   });
@@ -418,7 +426,7 @@ function createWindow() {
   mainWindow.on('resize', queueWindowStateSave);
   mainWindow.on('maximize', queueWindowStateSave);
   mainWindow.on('unmaximize', queueWindowStateSave);
-  mainWindow.on('close', saveWindowStateNow);
+  mainWindow.on('close', () => { saveWindowStateNow(); finishSessionState(); });
   mainWindow.on('unresponsive', () => { rendererUnresponsiveCount += 1; writeDiagnostic('renderer unresponsive', `count=${rendererUnresponsiveCount}`); });
   mainWindow.on('responsive', () => addActivity('Renderer recovered', 'The PowerTools interface became responsive again'));
   mainWindow.webContents.on('did-fail-load', (_event, code, description, validatedURL, isMainFrame) => {
@@ -438,7 +446,7 @@ function createWindow() {
     writeDiagnostic('render-process-gone', lastRendererError);
     setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload(); }, 650);
   });
-  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 VPN Center is ready');
+  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 Release Candidate is ready');
 }
 
 function timesTotal(times) {
@@ -507,6 +515,49 @@ function storageStats() {
   }
 }
 
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^$()|[\]\\{}]/g, '\\$&');
+}
+
+function redactSensitiveText(value) {
+  let text = String(value ?? '');
+  const localValues = [];
+  try { localValues.push(os.homedir()); } catch { }
+  try { localValues.push(os.hostname()); } catch { }
+  try { localValues.push(os.userInfo()?.username); } catch { }
+  for (const localValue of localValues.filter(Boolean).sort((a,b)=>String(b).length-String(a).length)) {
+    const pattern = escapeRegExp(localValue);
+    if (pattern) text = text.replace(new RegExp(pattern, 'gi'), '[REDACTED]');
+  }
+  text = text.replace(/([?&](?:api[_-]?key|key|token|access[_-]?token|password|secret)=)[^&\s]+/gi, '$1[REDACTED]');
+  text = text.replace(/\bBearer\s+[A-Za-z0-9._~+\/=:-]{8,}/gi, 'Bearer [REDACTED]');
+  text = text.replace(/\b(?:github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{20,})\b/g, '[REDACTED-CREDENTIAL]');
+  text = text.replace(/\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g, '[REDACTED-MAC]');
+  text = text.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, match => match.split('.').every(part => Number(part) >= 0 && Number(part) <= 255) ? '[REDACTED-IP]' : match);
+  return text;
+}
+
+const PUBLIC_REPORT_REDACTED_KEYS = new Set([
+  'hostname','computername','username','userdomain','mac','macaddress','ipv4','ipv6',
+  'gateway','gateways','dnsserver','dnsservers','ipaddress','publicip','localip',
+  'profilename','ssid','filepath','absolutepath','path','executablepath','commandline',
+  'installlocation','workingdirectory','homedirectory','token','apikey','secret',
+  'password','credential','ciphertext','serial','serialnumber','uuid','target'
+]);
+
+function sanitizePublicReportValue(value, key = '') {
+  const normalizedKey = String(key || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+  if (PUBLIC_REPORT_REDACTED_KEYS.has(normalizedKey)) return '[REDACTED]';
+  if (Array.isArray(value)) return value.map(item => sanitizePublicReportValue(item));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [childKey, childValue] of Object.entries(value)) out[childKey] = sanitizePublicReportValue(childValue, childKey);
+    return out;
+  }
+  if (typeof value === 'string') return redactSensitiveText(value);
+  return value;
+}
+
 function writeDiagnostic(area, error) {
   try {
     const dir = app.getPath('userData');
@@ -519,7 +570,8 @@ function writeDiagnostic(area, error) {
         fs.renameSync(file, previous);
       }
     } catch { }
-    const line = `[${new Date().toISOString()}] ${area}: ${String(error?.stack || error?.message || error || 'unknown error')}\n`;
+    const raw = String(error?.stack || error?.message || error || 'unknown error');
+    const line = `[${new Date().toISOString()}] ${redactSensitiveText(area)}: ${redactSensitiveText(raw).slice(0, 16000)}\n`;
     fs.appendFileSync(file, line, 'utf8');
   } catch { }
 }
@@ -713,7 +765,7 @@ function getHardwareSensorStatus() {
 async function queryNvidiaMetrics(force = false) {
   if (process.platform !== 'win32') return null;
   const now = Date.now();
-  if (!force && now - nvidiaCache.at < 1500) return nvidiaCache.data;
+  if (!force && now - nvidiaCache.at < 3500) return nvidiaCache.data;
   if (nvidiaCache.pending) return nvidiaCache.pending;
 
   nvidiaCache.pending = new Promise((resolve) => {
@@ -761,7 +813,7 @@ async function queryNvidiaMetrics(force = false) {
 async function queryWindowsPerf(force = false) {
   if (process.platform !== 'win32') return null;
   const now = Date.now();
-  if (!force && now - winPerfCache.at < 2500) return winPerfCache.data;
+  if (!force && now - winPerfCache.at < 7000) return winPerfCache.data;
   if (winPerfCache.pending) return winPerfCache.pending;
 
   const script = `
@@ -2746,11 +2798,13 @@ async function getLiveMetrics() {
   // providers refresh their caches in the background and appear on the next sample.
   const gpu = nvidiaCache.data;
   const windowsPerf = winPerfCache.data;
-  const startupSettled = Date.now() - BOOT_AT >= 1200;
-  if (startupSettled && !nvidiaCache.pending && Date.now() - nvidiaCache.at >= 1500) {
+  const sinceBoot = Date.now() - BOOT_AT;
+  // Stagger optional providers so first paint/static identity are not competing
+  // with two extra Windows processes at the same time.
+  if (sinceBoot >= 2500 && !nvidiaCache.pending && Date.now() - nvidiaCache.at >= 4000) {
     queryNvidiaMetrics().catch(error => writeDiagnostic('NVIDIA telemetry', error));
   }
-  if (startupSettled && !winPerfCache.pending && Date.now() - winPerfCache.at >= 3000) {
+  if (sinceBoot >= 5000 && !winPerfCache.pending && Date.now() - winPerfCache.at >= 8000) {
     queryWindowsPerf().catch(error => writeDiagnostic('Windows perf telemetry', error));
   }
   const gpuLoad = gpu?.utilization ?? null;
@@ -4438,7 +4492,7 @@ ipcMain.handle('journal:clear', () => clearChangeJournal());
 
 ipcMain.handle('reliability:getStatus', () => getReliabilityStatus());
 ipcMain.handle('stable:getStatus', () => getStableReleaseStatus());
-ipcMain.handle('stable:copySummary', () => { const status=getStableReleaseStatus(); clipboard.writeText(stableReleaseSummaryText(status)); addActivity('Stable readiness summary copied', status.ready ? 'Release preflight is ready' : 'Release preflight has warnings'); return {ok:true,status}; });
+ipcMain.handle('stable:copySummary', () => { const status=getStableReleaseStatus(); clipboard.writeText(stableReleaseSummaryText(status)); addActivity('Release readiness summary copied', status.ready ? 'RC preflight is ready' : 'RC preflight has warnings'); return {ok:true,status}; });
 ipcMain.handle('reliability:copySummary', () => {
   const status = getReliabilityStatus();
   clipboard.writeText(reliabilitySummaryText(status));
@@ -4469,7 +4523,7 @@ ipcMain.handle('reliability:resetStaticCache', async () => {
 ipcMain.handle('app:getInfo', () => ({
   name: 'Purple Dragon PowerTools',
   version: app.getVersion(),
-  edition: 'VPN Center',
+  edition: 'Public Release Readiness',
   creator: 'Purple Dragon Foundation Ltd',
   company: 'Purple Dragon Foundation Ltd',
   tagline: 'Software Development · Innovation · Solutions',
@@ -4496,10 +4550,16 @@ ipcMain.handle('report:export', async () => {
     performanceProfiles: profiles,
     startupItems,
     processAppCenter: {
-      processSnapshot: processCenterLastSnapshot ? { generatedAt: processCenterLastSnapshot.generatedAt, summary: processCenterLastSnapshot.summary, processes: processCenterLastSnapshot.processes.slice(0, 80) } : null,
-      installedApps: installedAppsCache.data?.length ? { count: installedAppsCache.data.length, apps: installedAppsCache.data.slice(0, 250) } : null
+      processSnapshot: processCenterLastSnapshot ? { generatedAt: processCenterLastSnapshot.generatedAt, summary: processCenterLastSnapshot.summary } : null,
+      installedApps: installedAppsCache.data?.length ? { count: installedAppsCache.data.length } : null,
+      privacy: 'Per-process names/paths and installed-application names are omitted from exported support reports.'
     },
-    storageHub: { inventory: storageInventory, analysis: storageAnalysisCache.data || null, cleanupPreview: publicCleanupPreview(cleanupPreviewCache.data) },
+    storageHub: {
+      inventory: storageInventory,
+      analysisLoaded: Boolean(storageAnalysisCache.data),
+      cleanupPreviewLoaded: Boolean(cleanupPreviewCache.data),
+      privacy: 'User-folder analysis and cleanup file details are omitted from exported support reports.'
+    },
     networkPowerTools: { overview: networkCenterCache.data || null, vpnCenter: vpnCenterCache.data || null, diagnostics: networkLastDiagnostics.slice(0,20), ipGeolocation: { provider:'Geo IPify', configured:geoIpifyCredentialStatus().configured, privacy:'Lookup results and public IP are intentionally excluded from exported reports.' } },
     privacyIntelligence: { mode:'Self-audit only', exportedPersonalData:false, note:'Entered identifiers, profile shortcuts, DNS query values, file names/paths, and metadata findings are intentionally excluded from reports.' },
     windowsFeatureLab: featureLabCache.data || null,
@@ -4507,7 +4567,11 @@ ipcMain.handle('report:export', async () => {
     automationEngine: automationInitialized ? publicAutomationState() : { masterEnabled: true, running: false, ruleCount: 0, enabledCount: 0, rules: [], history: [] },
     reliability: getReliabilityStatus(),
     stableRelease: getStableReleaseStatus(),
-    activity: activityLog
+    activity: { count: activityLog.length, privacy: 'Activity titles/details are omitted from exported support reports.' },
+    exportPrivacy: {
+      sanitized: true,
+      omitted: ['host/user identity','IP/MAC addresses','file paths','credentials','serial numbers','per-process/app names','activity details','user-folder analysis']
+    }
   };
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export PowerTools Report',
@@ -4515,7 +4579,8 @@ ipcMain.handle('report:export', async () => {
     filters: [{ name: 'JSON Report', extensions: ['json'] }]
   });
   if (result.canceled || !result.filePath) return { ok: false };
-  fs.writeFileSync(result.filePath, JSON.stringify(report, null, 2), 'utf8');
+  const sanitizedReport = sanitizePublicReportValue(report);
+  fs.writeFileSync(result.filePath, JSON.stringify(sanitizedReport, null, 2), 'utf8');
   addActivity('System report exported', path.basename(result.filePath));
   return { ok: true, path: result.filePath };
 });

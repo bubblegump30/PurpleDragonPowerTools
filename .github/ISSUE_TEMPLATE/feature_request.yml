@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest an improvement for Purple Dragon PowerTools
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem would this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the user-visible behavior you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Security, privacy, or administrator impact
+      description: Note any system changes, elevated permissions, credentials, networking, or privacy considerations.

@@ -100,7 +100,7 @@
   let previewAutomationMaster = true;
 
   const fallbackApi = {
-    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'VPN Center',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
+    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'Public Release Readiness',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
     async getLiveMetrics() {
       const t = Date.now() / 1000;
       const cpu = Math.round(36 + Math.sin(t * .8) * 13 + Math.sin(t * .19) * 8);
@@ -201,7 +201,7 @@
     async undoChangeJournalEntry(){return {ok:false,error:'Desktop-only undo in browser preview'};},
     async clearChangeJournal(){return {ok:false,error:'Desktop-only action'};},
     async getReliabilityStatus(){return {version:'2.1.0',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
-    async getStableReleaseStatus(){return {version:'2.1.0',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.1.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
+    async getStableReleaseStatus(){return {version:'2.1.0',channel:'Release Candidate',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Release candidate version',ok:true,detail:'Runtime version 2.1.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
     async rendererReady(){return this.getReliabilityStatus();}, async reportRendererError(){return {ok:true};}, async copyReliabilitySummary(){return {ok:false,error:'Desktop-only action'};}, async openReliabilityLogs(){return {ok:false,error:'Desktop-only action'};}, async clearReliabilityDiagnostics(){return {ok:false,error:'Desktop-only action'};}, async resetHardwareCache(){return {ok:false,error:'Desktop-only action'};},
     async getAutomationState(){return {masterEnabled:previewAutomationMaster,running:previewAutomationMaster&&previewAutomationRules.some(r=>r.enabled),tickMs:3000,ruleCount:previewAutomationRules.length,enabledCount:previewAutomationRules.filter(r=>r.enabled).length,lastTriggeredAt:previewAutomationHistory[0]?.at||null,nextScheduledAt:null,rules:previewAutomationRules,history:previewAutomationHistory};},
     async saveAutomationRule(rule){const now=new Date().toISOString();const copy=JSON.parse(JSON.stringify(rule||{}));if(copy.id){const i=previewAutomationRules.findIndex(r=>r.id===copy.id);if(i>=0)previewAutomationRules[i]={...previewAutomationRules[i],...copy,updatedAt:now};}else{copy.id=`preview-${Date.now()}`;copy.enabled=true;copy.createdAt=now;copy.updatedAt=now;copy.runCount=0;copy.lastTriggeredAt=null;previewAutomationRules.unshift(copy);}return {ok:true,state:await this.getAutomationState(),rule:copy};},
@@ -366,11 +366,18 @@
   }
 
   function drawCharts() {
-    drawLineChart($('#performanceChart'), [{values:cpuHistory.slice(-30),width:1.4},{values:ramHistory.slice(-30),width:1.0}]);
-    drawLineChart($('#resourceChart'), [{values:cpuHistory},{values:ramHistory}]);
-    drawLineChart($('#perfDetailChart'), [{values:cpuHistory},{values:gpuHistory},{values:ramHistory}]);
-    drawLineChart($('#thermalChart'), [{values:cpuTempHistory},{values:gpuTempHistory}]);
-    drawNetworkChart();
+    const activeView = document.querySelector('.view.active')?.id || 'view-dashboard';
+    if (activeView === 'view-dashboard') {
+      drawLineChart($('#performanceChart'), [{values:cpuHistory.slice(-30),width:1.4},{values:ramHistory.slice(-30),width:1.0}]);
+      drawLineChart($('#resourceChart'), [{values:cpuHistory},{values:ramHistory}]);
+      return;
+    }
+    if (activeView === 'view-performance') {
+      drawLineChart($('#perfDetailChart'), [{values:cpuHistory},{values:gpuHistory},{values:ramHistory}]);
+      drawLineChart($('#thermalChart'), [{values:cpuTempHistory},{values:gpuTempHistory}]);
+      return;
+    }
+    if (activeView === 'view-network') drawNetworkChart();
   }
 
   function renderHardwareIdentity() {
@@ -727,8 +734,9 @@
     setText('#perfCpu', `${cpu}%`); setText('#perfRam', `${mem}%`); setText('#perfStorage', `${stor}%`);
     setWidth('#perfCpuBar', cpu); setWidth('#perfRamBar', mem); setWidth('#perfStorageBar', stor);
     setText('#securityHealth', `${health}%`);
-    renderPerformanceSensors();
-    renderNetworkLive();
+    const activeView = document.querySelector('.view.active')?.id || 'view-dashboard';
+    if (activeView === 'view-performance') renderPerformanceSensors();
+    if (activeView === 'view-network') renderNetworkLive();
     drawCharts();
   }
 
@@ -1378,7 +1386,7 @@
     if(root) root.innerHTML=checks.length?checks.map(c=>`<div class="reliability-check ${c.ok?'':c.optional?'info':'warn'}"><i></i><div><strong>${escapeHtml(c.label||c.id||'Check')}</strong><small>${escapeHtml(c.detail||'')}</small></div></div>`).join(''):'<div class="empty">No reliability checks returned.</div>';
     const hardWarnings=checks.filter(c=>!c.ok&&!c.optional).length;
     const chip=$('#reliabilityStateChip');
-    if(chip){chip.textContent=hardWarnings?'Review':'Stable';chip.classList.toggle('active',!hardWarnings);}
+    if(chip){chip.textContent=hardWarnings?'Review':'Healthy';chip.classList.toggle('active',!hardWarnings);}
   }
 
   async function loadReliability(force=false){
@@ -1394,18 +1402,18 @@
   function renderStableRelease() {
     const st=stableReleaseState;
     if(!st)return;
-    setText('#stableChannel', st.channel || 'Stable');
+    setText('#stableChannel', st.channel || 'Release Candidate');
     setText('#stableVersion', st.version || '2.1.0');
     setText('#stablePreflight', st.ready ? 'READY' : 'REVIEW');
     setText('#stablePreflightDetail', `${st.passed||0}/${st.total||0} checks passed${st.informational?` · ${st.informational} info`:''}`);
     const prev=st.previousSession;
-    setText('#stablePreviousSession', !prev?.available ? 'FIRST RUN' : prev.cleanShutdown ? 'CLEAN' : 'CHECK');
-    setText('#stablePreviousSessionDetail', !prev?.available ? 'No previous v1.0 session marker' : prev.cleanShutdown ? `Previous ${prev.version||''} session closed cleanly` : 'Previous clean shutdown was not recorded');
+    setText('#stablePreviousSession', !prev?.available ? 'FIRST RUN' : prev.cleanShutdown ? 'CLEAN' : 'NOTE');
+    setText('#stablePreviousSessionDetail', !prev?.available ? 'No previous v2.1.0 session marker yet' : prev.cleanShutdown ? `Previous ${prev.version||''} session closed cleanly` : 'Prior session has no clean-shutdown marker · informational only');
     const root=$('#stableChecks');
     const checks=Array.isArray(st.checks)?st.checks:[];
-    if(root)root.innerHTML=checks.length?checks.map(c=>`<div class="reliability-check ${c.ok?'':c.optional?'info':'warn'}"><i></i><div><strong>${escapeHtml(c.label||c.id||'Check')}</strong><small>${escapeHtml(c.detail||'')}</small></div></div>`).join(''):'<div class="empty">No stable-release checks returned.</div>';
+    if(root)root.innerHTML=checks.length?checks.map(c=>`<div class="reliability-check ${c.ok?'':c.optional?'info':'warn'}"><i></i><div><strong>${escapeHtml(c.label||c.id||'Check')}</strong><small>${escapeHtml(c.detail||'')}</small></div></div>`).join(''):'<div class="empty">No release-readiness checks returned.</div>';
     const chip=$('#stableStateChip');
-    if(chip){chip.textContent=st.ready?'Stable Ready':'Review';chip.classList.toggle('active',Boolean(st.ready));}
+    if(chip){chip.textContent=st.ready?'RC Ready':'Review';chip.classList.toggle('active',Boolean(st.ready));}
   }
 
   async function loadStableRelease(force=false){
@@ -1413,7 +1421,7 @@
     if(stableReleaseLoaded&&!force){renderStableRelease();return;}
     stableReleaseLoading=true;
     try{stableReleaseState=await api.getStableReleaseStatus?.();stableReleaseLoaded=Boolean(stableReleaseState);renderStableRelease();}
-    catch(error){toast('Stable preflight unavailable',String(error?.message||error||'Unknown error'));}
+    catch(error){toast('Release preflight unavailable',String(error?.message||error||'Unknown error'));}
     finally{stableReleaseLoading=false;}
   }
 
@@ -1738,14 +1746,14 @@
   async function showAbout() {
     setProfileMenu(false);
     try { appInfo = await api.getAppInfo?.() || appInfo; } catch {}
-    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'VPN Center',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
+    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'Public Release Readiness',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
     const version = escapeHtml(info.version || '2.1.0');
     const edition = escapeHtml(info.edition || 'AI Command Center');
     const creator = escapeHtml(info.creator || 'Purple Dragon Foundation Ltd');
     const arch = escapeHtml(architectureLabel(info.arch));
     const electron = escapeHtml(info.electronVersion || (demoMode ? 'Browser preview' : 'Unavailable'));
     const platform = escapeHtml(info.platform==='win32'?'Windows':info.platform || 'Windows');
-    openModal(info.name || 'Purple Dragon PowerTools', `<div class="about-dialog"><div class="about-dialog-hero"><img class="about-dialog-logo" src="assets/purple-dragon-foundation-logo.png" alt="Purple Dragon Foundation Ltd" /><div><strong class="about-dialog-product">Purple Dragon PowerTools</strong><span class="about-dialog-version">v${version} (${arch})</span><span class="about-dialog-edition">${edition}</span></div></div><div class="about-dialog-divider"></div><p class="about-dialog-copy"><strong>Created by ${creator}</strong><br>Local-first Windows command center for hardware, system, Windows Feature Lab, storage, process, network, Privacy & App Trust Intelligence, security, automation, reliability, and optional local/cloud AI tools.</p><div class="about-dialog-meta"><div><span>PLATFORM</span><strong>${platform}</strong></div><div><span>RUNTIME</span><strong>Electron ${electron}</strong></div><div><span>RELEASE CHANNEL</span><strong>Stable</strong></div><div><span>PRIVACY</span><strong>Local-first</strong></div></div><div class="about-dialog-divider"></div><p class="about-dialog-copy">Purple Dragon PowerTools is a private utility project by Purple Dragon Foundation Ltd. System actions remain guarded. Local AI endpoints stay loopback-only; cloud AI is contacted only for providers you explicitly configure and use.</p><div class="about-dialog-actions"><button class="secondary-btn" id="aboutSettings" type="button">Settings</button><button class="primary-btn" id="aboutClose" type="button">OK</button></div></div>`, 'ABOUT');
+    openModal(info.name || 'Purple Dragon PowerTools', `<div class="about-dialog"><div class="about-dialog-hero"><img class="about-dialog-logo" src="assets/purple-dragon-foundation-logo.png" alt="Purple Dragon Foundation Ltd" /><div><strong class="about-dialog-product">Purple Dragon PowerTools</strong><span class="about-dialog-version">v${version} (${arch})</span><span class="about-dialog-edition">${edition}</span></div></div><div class="about-dialog-divider"></div><p class="about-dialog-copy"><strong>Created by ${creator}</strong><br>Local-first Windows command center for hardware, system, Windows Feature Lab, storage, process, network, Privacy & App Trust Intelligence, security, automation, reliability, and optional local/cloud AI tools.</p><div class="about-dialog-meta"><div><span>PLATFORM</span><strong>${platform}</strong></div><div><span>RUNTIME</span><strong>Electron ${electron}</strong></div><div><span>RELEASE CHANNEL</span><strong>Release Candidate</strong></div><div><span>PRIVACY</span><strong>Local-first</strong></div></div><div class="about-dialog-divider"></div><p class="about-dialog-copy">Purple Dragon PowerTools is a public-release candidate Windows utility by Purple Dragon Foundation Ltd. System actions remain guarded. Local AI endpoints stay loopback-only; cloud AI is contacted only for providers you explicitly configure and use.</p><div class="about-dialog-actions"><button class="secondary-btn" id="aboutSettings" type="button">Settings</button><button class="primary-btn" id="aboutClose" type="button">OK</button></div></div>`, 'ABOUT');
     $('#aboutClose')?.addEventListener('click',closeModal);
     $('#aboutSettings')?.addEventListener('click',()=>{closeModal();navigate('settings');});
   }
@@ -1798,7 +1806,7 @@
     else if(q.includes('privacy') || q.includes('metadata') || q.includes('digital footprint') || q.includes('exposure')) answer = 'Open Privacy & App Trust Intelligence for self-auditing public identifiers, domain DNS exposure, file metadata, installed-app publisher coverage, and local SHA-256 / Authenticode trust signals. Privacy and App Trust findings stay out of System-Aware AI context and exported reports.';
     else if(q.includes('feature lab') || q.includes('sandbox') || q.includes('wsl') || q.includes('hyper-v') || q.includes('hyperv')) answer = featureLabState ? `Windows Feature Lab has discovered ${featureLabState.summary?.featureCount||0} capabilities on this PC, with ${featureLabState.summary?.supported||0} reported as supported and ${featureLabState.summary?.enabled||0} enabled. Open Feature Lab for compatibility details and guarded changes.` : 'Open Windows Feature Lab to inspect buried Windows capabilities. The scan is lazy and can optionally request administrator approval for deeper optional-feature state.';
     else if(q.includes('vpn') || q.includes('nord') || q.includes('expressvpn')) answer = vpnCenterState ? `VPN Center sees ${vpnCenterState.summary?.installedCount||0} supported client${vpnCenterState.summary?.installedCount===1?'':'s'} installed, ${vpnCenterState.summary?.runningCount||0} running, and ${vpnCenterState.summary?.connectedCount||0} active tunnel${vpnCenterState.summary?.connectedCount===1?'':'s'}. Open Network PowerTools to launch, connect, disconnect, or refresh NordVPN and ExpressVPN.` : 'Open Network PowerTools to detect NordVPN and ExpressVPN. VPN detection is local and lazy; credentials remain inside the official provider apps.';
-    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable Release preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.1.0 Stable Release preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
+    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Release Candidate preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.1.0 Release Candidate preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
     else if(q.includes('automation') || q.includes('rule') || q.includes('schedule')) answer = automationState ? `Automation Engine is ${automationState.masterEnabled===false?'paused':automationState.running?'active':'ready'} with ${automationState.enabledCount||0} enabled rule${automationState.enabledCount===1?'':'s'} (${automationState.ruleCount||0} total).${automationState.nextScheduledAt?` Next daily schedule: ${formatAutomationSchedule(automationState.nextScheduledAt)}.`:''}` : 'Open Automation to load the local Automation Engine, rules, schedules, and run history.';
     else if(q.includes('process')) answer = processSnapshot?.summary ? `Process Manager+ currently sees ${processSnapshot.summary.count} processes using about ${formatBytes(processSnapshot.summary.totalMemoryBytes||0)} of working-set memory. Open Process & Apps for per-process CPU, memory and I/O.` : 'Open Process & Apps to load the on-demand process inventory.';
     else if(q.includes('installed app') || q.includes('program')) answer = installedAppsSnapshot?.summary ? `App Manager+ currently sees ${installedAppsSnapshot.summary.count} installed applications in Windows uninstall registry inventory.` : 'Open Process & Apps to load installed applications.';
@@ -1848,7 +1856,7 @@
     $('#profileMenu')?.addEventListener('click',e=>{const item=e.target.closest('[data-profile-action]');if(!item)return;const action=item.dataset.profileAction;setProfileMenu(false);if(action==='settings')navigate('settings');else if(action==='about')showAbout();});
     document.addEventListener('click',e=>{if(!e.target.closest('#profileAccount'))setProfileMenu(false);});
     $('#pulseBtn')?.addEventListener('click', async()=>{ await Promise.all([refreshLive(),refreshStatic(true),refreshSecurity(true),refreshActivity(),refreshPowerProfiles()]); toast('System refreshed'); });
-    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, VPN Center, Automation Engine, Reliability Center, and Stable Release readiness are online. v2.1.0 keeps VPN detection, GitHub, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
+    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, VPN Center, Automation Engine, Reliability Center, and Public Release readiness are online. v2.1.0 keeps VPN detection, GitHub, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
     $('#assistantStart')?.addEventListener('click',showAssistant);
     $('#modalClose')?.addEventListener('click',closeModal); $('#modalBackdrop')?.addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
     $('#refreshSystem')?.addEventListener('click',async()=>{await refreshStatic(true);toast('System profile refreshed')});
@@ -1934,8 +1942,8 @@
     $('#openReliabilityLogs')?.addEventListener('click',async()=>{const out=await api.openReliabilityLogs?.();if(out?.ok)toast('PowerTools data folder opened');else toast(demoMode?'Desktop-only action':'Unable to open log folder',out?.error||'');});
     $('#clearReliabilityLog')?.addEventListener('click',async()=>{const out=await api.clearReliabilityDiagnostics?.();if(out?.ok){reliabilityState=out.status;renderReliability();toast('Diagnostics cleared');}else if(!out?.canceled)toast(demoMode?'Desktop-only action':'Unable to clear diagnostics',out?.error||'');});
     $('#resetHardwareCache')?.addEventListener('click',async()=>{const out=await api.resetHardwareCache?.();if(out?.ok){reliabilityState=out.status;staticInfo=null;renderReliability();toast('Hardware cache reset','Identity will rebuild lazily.');}else if(!out?.canceled)toast(demoMode?'Desktop-only action':'Unable to reset hardware cache',out?.error||'');});
-    $('#runStablePreflight')?.addEventListener('click',async()=>{stableReleaseLoaded=false;await loadStableRelease(true);toast(stableReleaseState?.ready?'Stable preflight passed':'Stable preflight needs review',stableReleaseState?`${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed`:'');});
-    $('#copyStableSummary')?.addEventListener('click',async()=>{const out=await api.copyStableReleaseSummary?.();if(out?.ok){stableReleaseState=out.status||stableReleaseState;renderStableRelease();toast('Stable readiness summary copied');await refreshActivity();}else toast(demoMode?'Desktop-only action':'Unable to copy Stable summary',out?.error||'');});
+    $('#runStablePreflight')?.addEventListener('click',async()=>{stableReleaseLoaded=false;await loadStableRelease(true);toast(stableReleaseState?.ready?'RC preflight passed':'RC preflight needs review',stableReleaseState?`${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed`:'');});
+    $('#copyStableSummary')?.addEventListener('click',async()=>{const out=await api.copyStableReleaseSummary?.();if(out?.ok){stableReleaseState=out.status||stableReleaseState;renderStableRelease();toast('Release readiness summary copied');await refreshActivity();}else toast(demoMode?'Desktop-only action':'Unable to copy release summary',out?.error||'');});
     $('#resetUiSettings')?.addEventListener('click',()=>{localStorage.removeItem('pt.settings');if($('#glowRange'))$('#glowRange').value='100';if($('#motionToggle'))$('#motionToggle').checked=!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;if($('#compactToggle'))$('#compactToggle').checked=false;if($('#intervalSelect'))$('#intervalSelect').value='1000';applySettings();startSampling();toast('UI defaults restored');});
 
     ['#glowRange','#motionToggle','#compactToggle'].forEach(id=>$(id)?.addEventListener('input',()=>applySettings()));
@@ -2001,7 +2009,7 @@
     setText('#greeting', `${hour<12?'GOOD MORNING':hour<18?'GOOD AFTERNOON':'GOOD EVENING'}, ADMIN`);
     setText('#assistantMessage','Ask about performance, automation, security, network, hardware, storage, or use a selected AI provider/model.');
     bindEvents(); applySettings(true); renderDrafts(); resetAutomationBuilder(); renderAiContext(); renderPrivacySummary(); if($('#modelCustomEndpoint'))$('#modelCustomEndpoint').value=modelCustomEndpoint();
-    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.1.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'VPN Center'}`;}).catch(()=>{});
+    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.1.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Public Release Readiness'}`;}).catch(()=>{});
     window.addEventListener('error',event=>{nativeApi?.reportRendererError?.({message:event?.error?.stack||event?.message||'Renderer window error'});});
     window.addEventListener('unhandledrejection',event=>{nativeApi?.reportRendererError?.({message:event?.reason?.stack||event?.reason?.message||String(event?.reason||'Renderer unhandled rejection')});});
     if(nativeApi?.rendererReady) nativeApi.rendererReady().then(status=>{reliabilityState=status;reliabilityLoaded=Boolean(status);if($('#view-settings')?.classList.contains('active'))renderReliability();}).catch(()=>{});
@@ -2020,7 +2028,7 @@
         demoMode?'Browser preview opened':'Dashboard initialized',
         demoMode?'Desktop integrations are simulated in preview mode':'System PowerTools and Performance+ telemetry connected'
       ));
-    }, 2400);
+    }, 900);
 
     if(demoMode) toast('Browser preview mode','Run with Electron on Windows for real hardware telemetry and Windows actions.');
   }

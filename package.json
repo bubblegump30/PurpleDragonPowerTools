@@ -1,14 +1,15 @@
 {
   "name": "purple-dragon-powertools",
   "version": "2.1.0",
-  "description": "Purple Dragon PowerTools - Purple Dragon AI Command Center, a private Windows command center by Purple Dragon Foundation Ltd with a lazy NordVPN and ExpressVPN Center, accurate multi-drive HDD/SSD/USB usage accounting, Direct AI, Dragon Router, Dragon Council, System-Aware AI, Privacy & App Trust Intelligence, Change Journal + Undo, GitHub Release Center, Windows Feature Lab, and fast boot.",
+  "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd, currently in v2.1.0 public-release readiness.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
+    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
     "dist:win": "electron-builder --win nsis portable",
     "pack:win": "electron-builder --win dir"
   },
@@ -33,7 +34,6 @@
         "nsis",
         "portable"
       ],
-      "artifactName": "Purple-Dragon-PowerTools-${version}-${arch}.${ext}",
       "requestedExecutionLevel": "asInvoker",
       "icon": "src/assets/purple-dragon-foundation-mark.ico"
     },
@@ -42,7 +42,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Purple Dragon PowerTools"
+      "shortcutName": "Purple Dragon PowerTools",
+      "artifactName": "Purple-Dragon-PowerTools-Setup-${version}-${arch}.${ext}"
     },
     "extraResources": [
       {
@@ -50,7 +51,10 @@
         "to": "sensor-bridge"
       }
     ],
-    "copyright": "Copyright \u00a9 2026 Purple Dragon Foundation Ltd"
+    "copyright": "Copyright © 2026 Purple Dragon Foundation Ltd",
+    "portable": {
+      "artifactName": "Purple-Dragon-PowerTools-Portable-${version}-${arch}.${ext}"
+    }
   },
   "engines": {
     "node": ">=22"

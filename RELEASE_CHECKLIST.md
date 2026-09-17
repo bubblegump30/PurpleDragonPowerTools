@@ -1,25 +1,48 @@
-# Purple Dragon PowerTools v2.1.0 — VPN Center Release Checklist
+# Purple Dragon PowerTools v2.1.0 — Release Candidate Checklist
 
-- [x] application package/UI version aligned to 2.1.0; minimal Electron runtime remains independently pinned
-- [x] NordVPN and ExpressVPN provider IDs/actions enforced by a main-process allowlist
-- [x] provider app, process, CLI, and active-adapter detection remains lazy
-- [x] executable paths and Start-menu IDs excluded from renderer state and reports
-- [x] provider credentials and account details are not read or stored
-- [x] Quick Connect uses provider-approved installed command-line controls
-- [x] Disconnect requires explicit user confirmation
-- [x] ExpressVPN control uses a Windows UAC prompt as required by its CLI
-- [x] official setup links available when a supported client is missing
-- [x] AI Command Deck present with Direct, Router, and Council execution modes
-- [x] six mission profiles present
-- [x] Command Center session history is memory-only
-- [x] Dragon Council state variables initialized before first render
-- [x] System-Aware context controls inherited without bypassing cloud-context opt-in
-- [x] review-first AI guard documented in UI
-- [x] no AI provider discovery added to startup-critical path
-- [x] JavaScript syntax validation passed
-- [x] unique HTML IDs validated
-- [x] preload invoke/main IPC handler sets validated
-- [x] multi-drive used-byte/percentage derivation validated
-- [x] ZIP integrity validated
+The authoritative release gate is [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md).
 
-NordVPN/ExpressVPN live detection and CLI behavior, Windows UAC, local-model runtime behavior, and live hardware/System-Aware context still require the normal Windows smoke test.
+## Repository
+
+- [x] Public-release branch exists
+- [x] README uses Release Candidate / prerelease wording
+- [x] SECURITY.md exists
+- [x] .gitignore includes build/dependency/credential hygiene
+- [x] Bug-report template exists
+- [x] Feature-request template exists
+- [x] Pull-request template exists
+- [x] Release notes prepared
+- [x] Code-signing status documented
+- [x] Final LICENSE selected (MIT)
+
+## Security / privacy
+
+- [x] BrowserWindow isolation reviewed
+- [x] Renderer navigation/new-window hardening added
+- [x] CSP retained
+- [x] safeStorage-only credential policy reviewed
+- [x] External destinations use allowlists/validation
+- [x] Diagnostics redaction added
+- [x] Support-report privacy reduction added
+- [ ] Real Windows exported report manually reviewed
+
+## Build / distribution
+
+- [x] Windows release-readiness workflow configured
+- [x] NSIS installer build configured
+- [x] Portable build configured
+- [x] SHA-256 generation configured
+- [x] Dependency lock generation configured
+- [x] Git-history credential-pattern scan configured
+- [x] Frozen read-only CI passes on verified RC build commit
+- [x] Root lockfile committed
+- [x] Runtime lockfile committed
+- [ ] Installer tested
+- [ ] Uninstaller tested
+- [ ] Portable build tested
+- [ ] Windows smoke-test matrix completed
+- [ ] GitHub prerelease published and tested
+
+## Promotion rule
+
+Do not merge/publish as Stable until the mandatory unchecked items in PUBLIC_RELEASE_READINESS.md are resolved or explicitly documented as deferred.

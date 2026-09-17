@@ -143,11 +143,17 @@ if (-not $electron) {
   Write-Host 'Packaging/build dependencies are not installed during normal launch.' -ForegroundColor DarkGray
   if (-not (Test-Path -LiteralPath $RuntimeRoot)) { New-Item -ItemType Directory -Path $RuntimeRoot | Out-Null }
 
-  & npm install --prefix $RuntimeRoot --no-audit --no-fund --loglevel=error
-  if ($LASTEXITCODE -ne 0) {
+  Push-Location $RuntimeRoot
+  try {
+    & npm install --no-audit --no-fund --loglevel=error
+    $runtimeInstallExit = $LASTEXITCODE
+  } finally {
+    Pop-Location
+  }
+  if ($runtimeInstallExit -ne 0) {
     Write-Host 'Minimal Electron runtime package install failed.' -ForegroundColor Red
     Read-Host 'Press Enter to close'
-    exit $LASTEXITCODE
+    exit $runtimeInstallExit
   }
 
   if (-not (Test-CompatibleRuntimePackage $RuntimeModule $RuntimePackage)) {
@@ -180,7 +186,7 @@ if (-not (Test-Path -LiteralPath $electron)) {
   exit 1
 }
 
-Write-Host 'Starting Purple Dragon PowerTools v2.1.0 VPN Center...' -ForegroundColor Green
+Write-Host 'Starting Purple Dragon PowerTools v2.1.0 Release Candidate...' -ForegroundColor Green
 Write-Host ('Runtime: Electron ' + $ExpectedElectronVersion + ' (isolated launch dependency set).') -ForegroundColor DarkGray
 Write-Host 'Fast boot is enabled. Heavy system modules remain lazy-loaded.' -ForegroundColor DarkGray
 

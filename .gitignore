@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+runtime/node_modules/
+
+# Build output
+dist/
+out/
+release/
+*.blockmap
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+*.cer
+*.crt
+
+# Logs and diagnostics
+*.log
+logs/
+diagnostics/
+crash-reports/
+
+# Runtime/local state
+.cache/
+temp/
+tmp/
+*.tmp
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test/coverage output
+coverage/
+.nyc_output/
+
+# Keep reproducible dependency locks tracked
+!package-lock.json
+!runtime/package-lock.json
