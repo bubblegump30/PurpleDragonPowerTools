@@ -330,7 +330,7 @@ function stableReleaseSummaryText(status) {
   return [
     'Purple Dragon PowerTools Public Release Readiness',
     `Version: ${status?.version || app.getVersion()}`,
-    `Channel: ${status?.channel || 'Stable'}`,
+    `Channel: ${status?.channel || 'Release Candidate'}`,
     `Status: ${status?.ready ? 'READY' : 'REVIEW'}`,
     `Passed: ${status?.passed || 0}`,
     `Warnings: ${status?.warnings || 0}`,
@@ -359,15 +359,15 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Release candidate version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
-    { id:'userdata', label:'Local data directory', ok:writable, detail:userData },
+    { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
     { id:'single', label:'Single-instance guard', ok:true, detail:'Application owns the active single-instance lock.' },
     { id:'automation-data', label:'Automation data', ok:automationDataHealthy, optional:automationChecked===0, detail:automationChecked ? `${automationChecked} local automation data file(s) parsed successfully.` : 'No persisted automation files yet.' },
     { id:'diagnostics', label:'Diagnostics rotation', ok:diagSize <= 2 * 1024 * 1024, detail:`Active diagnostics log: ${diagSize} bytes.` },
     { id:'sensor', label:'CPU sensor runtime', ok:sensorPresent, optional:true, detail:sensorPresent ? 'Optional LibreHardwareMonitor bridge is bundled.' : 'Optional CPU sensor bridge is not present.' },
-    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:!previousSessionState, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean shutdown; check diagnostics if unexpected.') : 'First session recorded by v2.1.0.' }
+    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:true, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean-shutdown marker. Informational only; review diagnostics if unexpected.') : 'No previous v2.1.0 session marker yet.' }
   ];
   const blocking = checks.filter(c => !c.ok && !c.optional);
   const passed = checks.filter(c => c.ok).length;
@@ -426,7 +426,7 @@ function createWindow() {
   mainWindow.on('resize', queueWindowStateSave);
   mainWindow.on('maximize', queueWindowStateSave);
   mainWindow.on('unmaximize', queueWindowStateSave);
-  mainWindow.on('close', saveWindowStateNow);
+  mainWindow.on('close', () => { saveWindowStateNow(); finishSessionState(); });
   mainWindow.on('unresponsive', () => { rendererUnresponsiveCount += 1; writeDiagnostic('renderer unresponsive', `count=${rendererUnresponsiveCount}`); });
   mainWindow.on('responsive', () => addActivity('Renderer recovered', 'The PowerTools interface became responsive again'));
   mainWindow.webContents.on('did-fail-load', (_event, code, description, validatedURL, isMainFrame) => {
@@ -765,7 +765,7 @@ function getHardwareSensorStatus() {
 async function queryNvidiaMetrics(force = false) {
   if (process.platform !== 'win32') return null;
   const now = Date.now();
-  if (!force && now - nvidiaCache.at < 1500) return nvidiaCache.data;
+  if (!force && now - nvidiaCache.at < 3500) return nvidiaCache.data;
   if (nvidiaCache.pending) return nvidiaCache.pending;
 
   nvidiaCache.pending = new Promise((resolve) => {
@@ -813,7 +813,7 @@ async function queryNvidiaMetrics(force = false) {
 async function queryWindowsPerf(force = false) {
   if (process.platform !== 'win32') return null;
   const now = Date.now();
-  if (!force && now - winPerfCache.at < 2500) return winPerfCache.data;
+  if (!force && now - winPerfCache.at < 7000) return winPerfCache.data;
   if (winPerfCache.pending) return winPerfCache.pending;
 
   const script = `
@@ -2798,11 +2798,11 @@ async function getLiveMetrics() {
   // providers refresh their caches in the background and appear on the next sample.
   const gpu = nvidiaCache.data;
   const windowsPerf = winPerfCache.data;
-  const startupSettled = Date.now() - BOOT_AT >= 1200;
-  if (startupSettled && !nvidiaCache.pending && Date.now() - nvidiaCache.at >= 1500) {
+  const startupSettled = Date.now() - BOOT_AT >= 3000;
+  if (startupSettled && !nvidiaCache.pending && Date.now() - nvidiaCache.at >= 4000) {
     queryNvidiaMetrics().catch(error => writeDiagnostic('NVIDIA telemetry', error));
   }
-  if (startupSettled && !winPerfCache.pending && Date.now() - winPerfCache.at >= 3000) {
+  if (startupSettled && !winPerfCache.pending && Date.now() - winPerfCache.at >= 8000) {
     queryWindowsPerf().catch(error => writeDiagnostic('Windows perf telemetry', error));
   }
   const gpuLoad = gpu?.utilization ?? null;
@@ -4490,7 +4490,7 @@ ipcMain.handle('journal:clear', () => clearChangeJournal());
 
 ipcMain.handle('reliability:getStatus', () => getReliabilityStatus());
 ipcMain.handle('stable:getStatus', () => getStableReleaseStatus());
-ipcMain.handle('stable:copySummary', () => { const status=getStableReleaseStatus(); clipboard.writeText(stableReleaseSummaryText(status)); addActivity('Stable readiness summary copied', status.ready ? 'Release preflight is ready' : 'Release preflight has warnings'); return {ok:true,status}; });
+ipcMain.handle('stable:copySummary', () => { const status=getStableReleaseStatus(); clipboard.writeText(stableReleaseSummaryText(status)); addActivity('Release readiness summary copied', status.ready ? 'RC preflight is ready' : 'RC preflight has warnings'); return {ok:true,status}; });
 ipcMain.handle('reliability:copySummary', () => {
   const status = getReliabilityStatus();
   clipboard.writeText(reliabilitySummaryText(status));
