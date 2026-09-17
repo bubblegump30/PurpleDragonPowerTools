@@ -78,6 +78,7 @@ jobs:
         shell: pwsh
         run: |
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          if (Test-Path runtime/package-lock.json) { Remove-Item runtime/package-lock.json -Force }
           Push-Location runtime
           try {
             npm install --package-lock-only --ignore-scripts --no-audit --no-fund
