@@ -117,6 +117,10 @@ jobs:
       - name: Generate SHA-256 checksums
         shell: pwsh
         run: |
+          $executables = @(Get-ChildItem dist -File -Filter '*.exe')
+          if ($executables.Count -lt 2) { throw "Expected separate NSIS installer and portable executables; found $($executables.Count)." }
+          if (-not ($executables.Name -match 'Setup')) { throw "NSIS Setup executable is missing." }
+          if (-not ($executables.Name -match 'Portable')) { throw "Portable executable is missing." }
           $artifacts = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe','.msi','.zip' }
           if (-not $artifacts) { throw "No publishable Windows artifacts were produced." }
           $lines = foreach ($file in $artifacts) {
