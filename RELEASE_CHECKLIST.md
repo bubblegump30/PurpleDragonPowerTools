@@ -13,7 +13,7 @@ The authoritative release gate is [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_R
 - [x] Pull-request template exists
 - [x] Release notes prepared
 - [x] Code-signing status documented
-- [ ] Final LICENSE selected
+- [x] Final LICENSE selected (MIT)
 
 ## Security / privacy
 
