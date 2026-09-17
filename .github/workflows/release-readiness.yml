@@ -1,6 +1,7 @@
 name: Release Readiness
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -13,10 +14,10 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate Windows build inputs
+  validate-and-build:
+    name: Validate and build Windows release candidate
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -54,19 +55,62 @@ jobs:
           if ($pkg.version -ne '2.1.0') { throw "Expected package version 2.1.0, found $($pkg.version)" }
           if ($pkg.main -ne 'src/main.js') { throw "Unexpected Electron main entry: $($pkg.main)" }
           if ($pkg.devDependencies.electron -ne '44.2.0') { throw "Electron pin changed unexpectedly." }
+          if ($pkg.private -ne $true) { throw "package.json private must remain true to prevent accidental npm publication." }
 
-      - name: Report dependency-lock status
+      - name: Generate dependency lockfiles
         shell: pwsh
         run: |
-          if (-not (Test-Path package-lock.json)) {
-            Write-Warning "Root package-lock.json is missing. Reproducible packaging remains a release blocker."
-          }
-          if (-not (Test-Path runtime/package-lock.json)) {
-            Write-Warning "runtime/package-lock.json is missing. Reproducible runtime installation remains a release blocker."
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm install --prefix runtime --package-lock-only --ignore-scripts --no-audit --no-fund
+          if (-not (Test-Path package-lock.json)) { throw "Root package-lock.json was not generated." }
+          if (-not (Test-Path runtime/package-lock.json)) { throw "Runtime package-lock.json was not generated." }
+
+      - name: Install packaging dependencies from generated lock
+        run: npm ci --no-audit --no-fund
+
+      - name: Dependency audit
+        shell: pwsh
+        run: |
+          npm audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Production dependency audit reported a high-severity issue."
+            exit $LASTEXITCODE
           }
 
-      - name: Install packaging dependencies
-        run: npm install --no-audit --no-fund
+      - name: Build NSIS installer and portable executable
+        run: npm run dist:win
 
-      - name: Package application directory
-        run: npm run pack:win
+      - name: Generate SHA-256 checksums
+        shell: pwsh
+        run: |
+          $artifacts = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe','.msi','.zip' }
+          if (-not $artifacts) { throw "No publishable Windows artifacts were produced." }
+          $lines = foreach ($file in $artifacts) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          $lines | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding utf8
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Upload Windows release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: Purple-Dragon-PowerTools-v2.1.0-Release-Candidate
+          path: |
+            dist/*.exe
+            dist/*.msi
+            dist/*.zip
+            dist/*.blockmap
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload generated dependency locks
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2.1.0-generated-lockfiles
+          path: |
+            package-lock.json
+            runtime/package-lock.json
+          if-no-files-found: error
+          retention-days: 14
