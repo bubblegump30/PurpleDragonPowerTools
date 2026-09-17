@@ -4,7 +4,7 @@
   "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd, currently in v2.1.0 public-release readiness.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "start": "electron .",
