@@ -328,7 +328,7 @@ function getReliabilityStatus() {
 function stableReleaseSummaryText(status) {
   const checks = Array.isArray(status?.checks) ? status.checks : [];
   return [
-    'Purple Dragon PowerTools Stable Release Readiness',
+    'Purple Dragon PowerTools Public Release Readiness',
     `Version: ${status?.version || app.getVersion()}`,
     `Channel: ${status?.channel || 'Stable'}`,
     `Status: ${status?.ready ? 'READY' : 'REVIEW'}`,
@@ -373,7 +373,7 @@ function getStableReleaseStatus() {
   const passed = checks.filter(c => c.ok).length;
   return {
     version: app.getVersion(),
-    channel: 'Stable',
+    channel: 'Release Candidate',
     generatedAt: new Date().toISOString(),
     ready: blocking.length === 0,
     passed,
@@ -446,7 +446,7 @@ function createWindow() {
     writeDiagnostic('render-process-gone', lastRendererError);
     setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload(); }, 650);
   });
-  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 VPN Center is ready');
+  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 Release Candidate is ready');
 }
 
 function timesTotal(times) {
@@ -4521,7 +4521,7 @@ ipcMain.handle('reliability:resetStaticCache', async () => {
 ipcMain.handle('app:getInfo', () => ({
   name: 'Purple Dragon PowerTools',
   version: app.getVersion(),
-  edition: 'VPN Center',
+  edition: 'Public Release Readiness',
   creator: 'Purple Dragon Foundation Ltd',
   company: 'Purple Dragon Foundation Ltd',
   tagline: 'Software Development · Innovation · Solutions',
