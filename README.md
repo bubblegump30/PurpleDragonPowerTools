@@ -9,11 +9,14 @@ The earlier `v2.1.0-rc.1` prerelease remains available as the public release-can
 ## Release status
 
 - Version: **2.1.0**
-- Release channel: **Stable**
+- Release channel: **Stable / Latest**
 - Platform: **Windows x64**
 - Runtime: **Electron 44.2.0**
-- Stable public release: **Approved**
-- Code signing: **Pending**
+- Stable public release: **Published**
+- Git tag: **v2.1.0**
+- Git tag signing: **Verified (SSH signature)**
+- Release integrity: **SHA-256 checksums published**
+- Windows executable signing: **Pending (unsigned binaries)**
 - License: **MIT**
 
 ## Stable release foundation
@@ -31,7 +34,7 @@ The v2.1.0 stable release is built on:
 - SHA-256 release checksums
 - explicit documentation of unsigned-build limitations until code signing is available
 
-See [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md) for the active release gate and [SECURITY.md](SECURITY.md) for security-reporting guidance.
+See [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md) for the completed v2.1.0 readiness record and [SECURITY.md](SECURITY.md) for security-reporting guidance.
 
 ## VPN Center
 
