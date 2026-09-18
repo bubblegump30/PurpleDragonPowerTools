@@ -100,7 +100,7 @@ function publicRelease(release) {
   };
 }
 
-function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addActivity = () => {} }) {
+function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addActivity = () => {}, notify = () => {} }) {
   let cache = null;
   let pending = null;
 
@@ -256,6 +256,9 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
         });
         cache = state;
         addActivity('Update check completed', latest ? `Latest ${settings.channel} release: v${latest.version}` : 'No eligible GitHub release found');
+        if (!force && state.updateAvailable && settings.showNotifications && latest?.version && latest.version !== settings.lastKnownVersion) {
+          try { notify('Purple Dragon PowerTools Update', `v${latest.version} is available on the ${settings.channel} channel.`); } catch {}
+        }
         return state;
       } catch (error) {
         logDiagnostic('update release check', error);
@@ -288,7 +291,8 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
       keepRollbackPackage: input.keepRollbackPackage ?? current.keepRollbackPackage,
       showNotifications: input.showNotifications ?? current.showNotifications
     });
-    cache = stateFromSettings(next);
+    const previousReleases = Array.isArray(cache?.releases) ? cache.releases : [];
+    cache = stateFromSettings(next, { releases: previousReleases });
     addActivity('Update settings changed', `${next.channel} channel · ${next.checkPolicy} checks`);
     return { ok: true, settings: cache.settings, state: cache };
   }
