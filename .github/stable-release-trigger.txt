@@ -4,3 +4,5 @@ Requested: 2026-09-17
 Expected tag: v2.1.0
 Expected release: Purple Dragon PowerTools v2.1.0
 Verification gate: GitHub must report the annotated tag signature as verified before release creation.
+
+Retry after switching to authoritative GitHub tag verification gate: 2026-09-17
