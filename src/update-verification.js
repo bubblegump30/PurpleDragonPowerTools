@@ -147,6 +147,12 @@ function validateManifest(manifest, release, packageAsset) {
   if (String(manifest.version || '') !== String(release.version || '')) errors.push('Manifest version does not match the GitHub release tag.');
   if (!['stable','preview'].includes(String(manifest.channel || ''))) errors.push('Manifest channel is invalid.');
   if (!/^[0-9a-f]{40}$/i.test(String(manifest.commit || ''))) errors.push('Manifest commit must be a 40-character Git SHA.');
+  if (!manifest.signature || typeof manifest.signature !== 'object') errors.push('Manifest signature metadata is required for an official signed release.');
+  else {
+    if (manifest.signature.algorithm !== 'ssh-ed25519') errors.push('Manifest signature algorithm must be ssh-ed25519.');
+    if (manifest.signature.file !== 'release-manifest.json.sig') errors.push('Manifest signature filename must be release-manifest.json.sig.');
+    if (!String(manifest.signature.keyId || '').trim()) errors.push('Manifest signature keyId is required.');
+  }
   const assets = Array.isArray(manifest.assets) ? manifest.assets : [];
   const item = assets.find(function(entry) { return entry && entry.name === packageAsset.name; }) || null;
   if (!item) errors.push('Manifest does not contain the selected package.');
