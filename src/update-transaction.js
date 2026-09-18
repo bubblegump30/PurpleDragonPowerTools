@@ -113,7 +113,7 @@ function Restore-Backup {
   }
   Remove-InstallTree -InstallDir $tx.installDir
   New-Item -ItemType Directory -Path $tx.installDir -Force | Out-Null
-  Copy-Item -LiteralPath (Join-Path $tx.backupDir '*') -Destination $tx.installDir -Recurse -Force
+  Copy-Item -Path (Join-Path $tx.backupDir '*') -Destination $tx.installDir -Recurse -Force
   if (-not (Test-Path -LiteralPath $tx.appExePath)) { throw 'Restored application executable is missing.' }
   $restoredHash = (Get-FileHash -LiteralPath $tx.appExePath -Algorithm SHA256).Hash.ToLowerInvariant()
   if ($restoredHash -ne $tx.sourceExeSha256) { throw 'Restored application executable hash does not match the rollback snapshot.' }
