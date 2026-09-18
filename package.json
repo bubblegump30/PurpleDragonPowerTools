@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/update-release.js",
     "dist:win": "electron-builder --win nsis portable",
     "pack:win": "electron-builder --win dir"
   },
