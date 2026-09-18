@@ -43,7 +43,15 @@ let aiSystemContextCache = { at: 0, key: '', data: null };
 let githubCenterCache = { at: 0, data: null, pending: null };
 let githubSourceSelection = [];
 let githubReleaseAssets = [];
-const updateReleaseCenter = createUpdateReleaseCenter({ app, shell, logDiagnostic: writeDiagnostic, addActivity });
+const updateReleaseCenter = createUpdateReleaseCenter({
+  app,
+  shell,
+  logDiagnostic: writeDiagnostic,
+  addActivity,
+  notify: (title, body) => {
+    try { if (Notification.isSupported()) new Notification({ title, body }).show(); } catch {}
+  }
+});
 
 // v1.7.0 — Change Journal + Undo. The journal is local-only, capped, and
 // intentionally excludes credentials, prompts, IP/geolocation data, and file contents.
