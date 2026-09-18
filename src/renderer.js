@@ -76,6 +76,8 @@
   let featureLabLoaded = false;
   let featureLabLoading = false;
   let featureLabBusy = false;
+  let updateReleaseState = null;
+  let updateReleaseLoading = false;
   let githubCenterState = null;
   let githubCenterLoaded = false;
   let githubCenterLoading = false;
@@ -183,6 +185,10 @@
     async modelChat(payload){const cloud=['openai','codex','claude','gemini'].includes(payload?.provider);const requested=payload?.systemAware?.enabled===true&&payload?.systemAware?.mode!=='off';const attached=requested&&(!cloud||payload?.systemAware?.allowCloud===true);return {ok:true,text:`Browser preview response from ${payload?.model||'local model'}${attached?' with System-Aware context':''}: ${String(payload?.prompt||'').slice(0,180)}`,provider:payload?.provider||'preview',model:payload?.model||'preview',scope:cloud?'cloud':'local',latencyMs:120,systemContext:{attached,requested,mode:payload?.systemAware?.mode||'smart',sections:attached?['system','performance','hardware']:[],generatedAt:attached?new Date().toISOString():null,reason:attached?'Preview redacted context attached.':cloud&&requested?'Cloud privacy guard blocked context.':'System-Aware AI disabled.'}};},
     async routeModel(payload){const center=await this.getModelCenter(false,payload?.customEndpoint||'');const prompt=String(payload?.prompt||'').toLowerCase();const profile=String(payload?.profile||'automatic');let models=center.models.slice();if(profile==='local-only'||payload?.allowCloud===false)models=models.filter(m=>m.scope!=='cloud');if(!models.length)return {ok:false,error:'No models available in preview.'};const coding=/code|script|javascript|python|powershell|debug/.test(prompt);const picked=(coding?models.find(m=>/qwen|coder|code/i.test(m.id||m.name)):null)||models[0];return {ok:true,profile,profileLabel:{automatic:'Automatic','best-quality':'Best Quality',fastest:'Fastest',cheapest:'Cheapest','local-only':'Local Only','privacy-first':'Privacy First'}[profile]||'Automatic',task:{id:coding?'coding':'general',label:coding?'Coding / Development':'General Assistant',confidence:coding?'medium':'normal'},selected:{...picked},confidence:coding?88:74,reason:[coding?'Coding terms detected.':'General task detected.','Local preview model available.','Runs through a local provider.'],alternatives:models.filter(m=>m.key!==picked.key).slice(0,3).map(m=>({model:{...m},score:50,reasons:['Available local alternative']})),considered:models.length,routedAt:new Date().toISOString()};},
     async getAISystemContext(payload={}){const mode=payload?.mode==='full'?'full':'smart';const generatedAt=new Date().toISOString();const sections=['system','performance','hardware'];if(mode==='full')sections.push('security','storage','processes','network','reliability','featureLab');return {ok:true,generatedAt,mode,sections,sectionLabels:sections.map(x=>x.toUpperCase()),sources:['preview live metrics','preview hardware identity'],unavailable:[],privacy:{level:'redacted-safe',omitted:['hostname','username','IP/MAC','paths','API keys']},text:`PURPLE DRAGON SYSTEM CONTEXT — BROWSER PREVIEW\nGenerated: ${generatedAt}\nMode: ${mode}\n\n[SYSTEM]\nOS: Windows 11 Preview build 26100 (x64)\nSecure Boot enabled; TPM ready\n\n[LIVE PERFORMANCE]\nCPU load ${live.cpu||36}%; Memory ${live.memory||58}%; CPU temperature ${live.cpuTemperatureC||58} C\nGPU ${live.gpu?.name||'Preview GPU'}; load ${live.gpu?.load||42}%; temperature ${live.gpu?.temperatureC||64} C\n\n[HARDWARE]\nCPU: Preview Processor; RAM 32 GB; GPU Preview GPU\n\nPrivacy: hostname, username, IP/MAC addresses, paths and API keys omitted.`};},
+    async getUpdateReleaseState(){return {ok:true,repository:'bubblegump30/PurpleDragonPowerTools',currentVersion:'2.2.0',channel:'stable',checkPolicy:'daily',updateAvailable:false,latestVersion:'2.1.0',latestReleaseUrl:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',latestPublishedAt:new Date(Date.now()-86400000).toISOString(),lastCheckAt:new Date().toISOString(),build:{packaged:false,type:'Browser preview build',platform:'win32',arch:'x64'},trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false},settings:{channel:'stable',checkPolicy:'daily',autoDownload:false,autoInstall:false,verifySha256:true,requireReleaseSignature:true,keepRollbackPackage:true,showNotifications:true},releases:[{tag:'v2.1.0',version:'2.1.0',name:'Purple Dragon PowerTools v2.1.0',publishedAt:new Date(Date.now()-86400000).toISOString(),url:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',prerelease:false,trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false}}]};},
+    async checkForAppUpdates(){return this.getUpdateReleaseState();},
+    async saveUpdateReleaseSettings(payload={}){const st=await this.getUpdateReleaseState();st.settings={...st.settings,...payload};st.channel=st.settings.channel;st.checkPolicy=st.settings.checkPolicy;return {ok:true,settings:st.settings,state:st};},
+    async openUpdateRelease(){return {ok:false,error:'Desktop-only external link'};},
     async getGitHubStatus(){return {configured:false,encryptionAvailable:true,storage:'Preview secure storage',provider:'GitHub'};},
     async saveGitHubToken(){return {ok:false,error:'Desktop-only secure GitHub connection'};},
     async removeGitHubToken(){return {ok:false,error:'Desktop-only secure GitHub connection'};},
@@ -1615,6 +1621,43 @@
 
 
 
+  function updateCheckPolicyLabel(value){
+    return ({manual:'Manual only',startup:'Every startup','6h':'Every 6 hours','12h':'Every 12 hours',daily:'Daily',weekly:'Weekly'})[value]||'Daily';
+  }
+  function renderUpdateReleaseCenter(){
+    const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.2.0';const latest=st.latestVersion||null;const trust=st.trust||{};
+    setText('#updateCurrentVersion',\`v\${current}\`);setText('#updateBuildType',st.build?.type||'Build origin unavailable');
+    setText('#updateLatestVersion',latest?\`v\${latest}\`:'Not checked');
+    setText('#updateLatestMeta',st.error?\`Check failed · \${st.error}\`:st.updateAvailable?'New release available':latest?'Installed version is current or newer':'Run an update check to query official releases');
+    setText('#updateChannelSummary',(st.channel||settings.channel)==='preview'?'Preview':'Stable');
+    setText('#updateCheckMeta',\`\${updateCheckPolicyLabel(st.checkPolicy||settings.checkPolicy)} update checks\${st.lastCheckAt?\` · last \${relativeTime(st.lastCheckAt)}\`:''}\`);
+    const trustParts=[trust.manifestAvailable?'Manifest':null,trust.checksumAvailable?'SHA-256':null,trust.signatureAvailable?'Signature':null].filter(Boolean);
+    setText('#updateTrustSummary',trustParts.length?trustParts.join(' + '):latest?'Verification material incomplete':'Pending');
+    setText('#updateTrustMeta',latest?\`\${trust.manifestAvailable?'Manifest found':'No manifest'} · \${trust.checksumAvailable?'Checksum found':'No checksum'} · \${trust.signatureAvailable?'Signature found':'No signature'}\`:'Manifest, checksum and signature presence');
+    setText('#updateStatusText',st.error?\`Official update source unavailable · \${st.error}\`:\`Official repository: \${st.repository||'bubblegump30/PurpleDragonPowerTools'}\${st.updateAvailable?' · update available':''}\`);
+    const open=$('#updateOpenRelease');if(open)open.disabled=!st.latestReleaseUrl;
+    const channel=$('#updateChannel');if(channel)channel.value=settings.channel||st.channel||'stable';
+    const policy=$('#updateCheckPolicy');if(policy)policy.value=settings.checkPolicy||st.checkPolicy||'daily';
+    const verify=$('#updateVerifySha');if(verify)verify.checked=settings.verifySha256!==false;
+    const sig=$('#updateRequireSignature');if(sig)sig.checked=settings.requireReleaseSignature!==false;
+    const rollback=$('#updateKeepRollback');if(rollback)rollback.checked=settings.keepRollbackPackage!==false;
+    const notifications=$('#updateShowNotifications');if(notifications)notifications.checked=settings.showNotifications!==false;
+    const releases=Array.isArray(st.releases)?st.releases:[];setText('#updateHistoryMeta',releases.length?\`\${releases.length} release\${releases.length===1?'':'s'} loaded\`:st.lastCheckAt?\`Last checked \${relativeTime(st.lastCheckAt)}\`:'No update check yet');
+    const list=$('#updateReleaseHistory');if(list)list.innerHTML=releases.length?releases.map(r=>\`<button class="update-release-row" data-update-release-link="\${escapeHtml(r.url||'')}"><span><strong>\${escapeHtml(r.name||r.tag||'Release')}</strong><small>\${escapeHtml(r.tag||'')}\${r.prerelease?' · Preview':''} · \${escapeHtml(relativeTime(r.publishedAt))}</small></span><b>\${r.trust?.checksumAvailable?'SHA-256':'No checksum'}\${r.trust?.signatureAvailable?' · Signed':''}</b></button>\`).join(''):'<div class="empty">Run Check for Updates to load release history.</div>';
+    const check=$('#updateCheck');if(check){check.disabled=updateReleaseLoading;check.textContent=updateReleaseLoading?'Checking…':'Check for Updates';}
+  }
+  async function loadUpdateReleaseCenter(force=false){
+    if(updateReleaseLoading)return;updateReleaseLoading=true;renderUpdateReleaseCenter();
+    try{updateReleaseState=force?await api.checkForAppUpdates?.(true):await api.getUpdateReleaseState?.();if(updateReleaseState?.error&&force)toast('Update check needs review',updateReleaseState.error);else if(force&&updateReleaseState?.updateAvailable)toast('Update available',\`v\${updateReleaseState.latestVersion} is available.\`);else if(force)toast('Update check complete',updateReleaseState?.latestVersion?\`Latest: v\${updateReleaseState.latestVersion}\`:'No eligible release found.');}
+    catch(error){toast('Update & Release Center unavailable',String(error?.message||error));}
+    finally{updateReleaseLoading=false;renderUpdateReleaseCenter();}
+  }
+  async function saveUpdateReleaseSettings(){
+    const payload={channel:$('#updateChannel')?.value||'stable',checkPolicy:$('#updateCheckPolicy')?.value||'daily',verifySha256:Boolean($('#updateVerifySha')?.checked),requireReleaseSignature:Boolean($('#updateRequireSignature')?.checked),keepRollbackPackage:Boolean($('#updateKeepRollback')?.checked),showNotifications:Boolean($('#updateShowNotifications')?.checked)};
+    try{const out=await api.saveUpdateReleaseSettings?.(payload);if(!out?.ok){toast('Update settings not saved',out?.error||'Unknown error');return;}updateReleaseState=out.state||updateReleaseState;if(updateReleaseState)updateReleaseState.settings=out.settings||payload;renderUpdateReleaseCenter();}
+    catch(error){toast('Update settings not saved',String(error?.message||error));}
+  }
+
   function githubSelectedRepoName(){
     const saved=localStorage.getItem('pt.github.repo')||'';const repos=Array.isArray(githubCenterState?.repositories)?githubCenterState.repositories:[];
     return repos.some(r=>r.fullName===saved)?saved:'';
@@ -1649,7 +1692,7 @@
   }
   async function loadGitHubRepoDetails(repo,force=true){
     if(!repo||githubRepoLoading)return;if(!force&&githubRepoDetails?.repository?.fullName===repo){renderGitHubRepoDetails();return;}githubRepoLoading=true;githubRepoDetails=null;renderGitHubRepoDetails();
-    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v2.1.0`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
+    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v${appInfo?.version||'2.2.0'}`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
   }
   function showGitHubSetup(){
     const configured=Boolean(githubCenterState?.configured||githubCenterState?.credential?.configured);const login=githubCenterState?.profile?.login||'';
@@ -1724,7 +1767,7 @@
     if (view === 'automation') { loadAutomationCenter(false); resetAutomationBuilder(automationEditingRuleId ? automationState?.rules?.find(r=>r.id===automationEditingRuleId) : null); }
     if (view === 'data') loadDataHub(false);
     if (view === 'network') loadNetworkCenter(false);
-    if (view === 'integrations') loadGitHubCenter(false);
+    if (view === 'integrations') { loadUpdateReleaseCenter(false); loadGitHubCenter(false); }
     if (view === 'apps') { loadAppCenter(false); startAppCenterAutoRefresh(); } else stopAppCenterAutoRefresh();
     setTimeout(drawCharts, 60);
   }
@@ -1746,8 +1789,8 @@
   async function showAbout() {
     setProfileMenu(false);
     try { appInfo = await api.getAppInfo?.() || appInfo; } catch {}
-    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.1.0',edition:'Stable Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
-    const version = escapeHtml(info.version || '2.1.0');
+    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.2.0',edition:'Stable Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
+    const version = escapeHtml(info.version || '2.2.0');
     const edition = escapeHtml(info.edition || 'AI Command Center');
     const creator = escapeHtml(info.creator || 'Purple Dragon Foundation Ltd');
     const arch = escapeHtml(architectureLabel(info.arch));
@@ -1988,6 +2031,15 @@
       const a=btn.dataset.action;
       if(a==='export') doExport(); else if(a==='experiment') createDraft('Experiment'); else if(a==='automation'){navigate('automation');setTimeout(()=>{automationEditingRuleId=null;resetAutomationBuilder();$('#automationName')?.focus();},80);} else openWindows(a);
     }));
+    $('#updateCheck')?.addEventListener('click',()=>loadUpdateReleaseCenter(true));
+    $('#updateOpenRelease')?.addEventListener('click',async()=>{if(!updateReleaseState?.latestReleaseUrl)return;const out=await api.openUpdateRelease?.(updateReleaseState.latestReleaseUrl);if(out?.ok===false)toast('Unable to open release',out.error||'');});
+    $('#updateChannel')?.addEventListener('change',async()=>{await saveUpdateReleaseSettings();await loadUpdateReleaseCenter(true);});
+    $('#updateCheckPolicy')?.addEventListener('change',saveUpdateReleaseSettings);
+    $('#updateVerifySha')?.addEventListener('change',saveUpdateReleaseSettings);
+    $('#updateRequireSignature')?.addEventListener('change',saveUpdateReleaseSettings);
+    $('#updateKeepRollback')?.addEventListener('change',saveUpdateReleaseSettings);
+    $('#updateShowNotifications')?.addEventListener('change',saveUpdateReleaseSettings);
+    $('#updateReleaseHistory')?.addEventListener('click',e=>{const row=e.target.closest('[data-update-release-link]');if(row?.dataset.updateReleaseLink)api.openUpdateRelease?.(row.dataset.updateReleaseLink);});
     $('#githubRefresh')?.addEventListener('click',()=>{githubCenterLoaded=false;githubRepoDetails=null;loadGitHubCenter(true);});
     $('#githubConfigure')?.addEventListener('click',showGitHubSetup);
     $('#githubRepoSearch')?.addEventListener('input',renderGitHubCenter);
@@ -2009,7 +2061,7 @@
     setText('#greeting', `${hour<12?'GOOD MORNING':hour<18?'GOOD AFTERNOON':'GOOD EVENING'}, ADMIN`);
     setText('#assistantMessage','Ask about performance, automation, security, network, hardware, storage, or use a selected AI provider/model.');
     bindEvents(); applySettings(true); renderDrafts(); resetAutomationBuilder(); renderAiContext(); renderPrivacySummary(); if($('#modelCustomEndpoint'))$('#modelCustomEndpoint').value=modelCustomEndpoint();
-    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.1.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Stable Release'}`;}).catch(()=>{});
+    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.2.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Stable Release'}`;}).catch(()=>{});
     window.addEventListener('error',event=>{nativeApi?.reportRendererError?.({message:event?.error?.stack||event?.message||'Renderer window error'});});
     window.addEventListener('unhandledrejection',event=>{nativeApi?.reportRendererError?.({message:event?.reason?.stack||event?.reason?.message||String(event?.reason||'Renderer unhandled rejection')});});
     if(nativeApi?.rendererReady) nativeApi.rendererReady().then(status=>{reliabilityState=status;reliabilityLoaded=Boolean(status);if($('#view-settings')?.classList.contains('active'))renderReliability();}).catch(()=>{});
