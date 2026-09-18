@@ -11,6 +11,11 @@ $key = if ([System.IO.Path]::IsPathRooted($SigningKey)) { $SigningKey } else { J
 if (-not (Test-Path -LiteralPath $manifest)) { throw "Release manifest not found: $manifest" }
 if (-not (Test-Path -LiteralPath $key)) { throw "Release signing key not found: $key" }
 
+$manifestData = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+if ($null -eq $manifestData.signature -or $manifestData.signature.algorithm -ne 'ssh-ed25519' -or $manifestData.signature.file -ne 'release-manifest.json.sig') {
+  throw 'Manifest signature metadata is missing. Re-run New-ReleaseManifest.ps1 with -IncludeSignatureMetadata before signing.'
+}
+
 $sshKeygen = Get-Command ssh-keygen -ErrorAction Stop
 $signature = "$manifest.sig"
 if (Test-Path -LiteralPath $signature) { Remove-Item -LiteralPath $signature -Force }
