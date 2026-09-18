@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createUpdateVerificationEngine } = require('./update-verification');
 
 const OFFICIAL_REPOSITORY = 'bubblegump30/PurpleDragonPowerTools';
 const RELEASES_API = `https://api.github.com/repos/${OFFICIAL_REPOSITORY}/releases?per_page=20`;
@@ -73,8 +74,15 @@ function compareVersions(aValue, bValue) {
 }
 
 function publicRelease(release) {
-  const assets = Array.isArray(release?.assets) ? release.assets : [];
-  const assetNames = assets.map(asset => String(asset?.name || '')).filter(Boolean);
+  const assets = Array.isArray(release?.assets) ? release.assets.map(asset => ({
+    id: Number(asset?.id) || null,
+    name: String(asset?.name || ''),
+    sizeBytes: Number(asset?.size) || 0,
+    contentType: String(asset?.content_type || ''),
+    digest: String(asset?.digest || ''),
+    downloadUrl: String(asset?.browser_download_url || '')
+  })).filter(asset => asset.name) : [];
+  const assetNames = assets.map(asset => asset.name);
   const manifest = assetNames.find(name => /manifest[^/]*\.json$/i.test(name)) || null;
   const checksum = assetNames.find(name => /sha[-_ ]?256|checksums?/i.test(name)) || null;
   const signature = assetNames.find(name => /(^|[-_.])(signature|signed)([-_.]|$)|\.(sig|minisig)$/i.test(name)) || null;
@@ -88,7 +96,7 @@ function publicRelease(release) {
     publishedAt: release?.published_at || release?.created_at || null,
     url: String(release?.html_url || ''),
     body: String(release?.body || '').slice(0, 12000),
-    assets: assetNames.map(name => ({ name })),
+    assets,
     trust: {
       manifestAvailable: Boolean(manifest),
       checksumAvailable: Boolean(checksum),
@@ -100,9 +108,10 @@ function publicRelease(release) {
   };
 }
 
-function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addActivity = () => {}, notify = () => {} }) {
+function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addActivity = () => {}, notify = () => {}, progress = () => {} }) {
   let cache = null;
   let pending = null;
+  const verificationEngine = createUpdateVerificationEngine({ app, logDiagnostic, addActivity, progress });
 
   function settingsPath() {
     return path.join(app.getPath('userData'), 'update-release-settings.json');
@@ -193,6 +202,7 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
         showNotifications: settings.showNotifications
       },
       releases: [],
+      verification: verificationEngine.getLastVerification(),
       ...extra
     };
   }
@@ -297,6 +307,39 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
     return { ok: true, settings: cache.settings, state: cache };
   }
 
+  async function stageLatestPackage(packageKindValue) {
+    const settings = readSettings();
+    try {
+      const raw = await fetchReleases();
+      const releases = raw.map(publicRelease).filter(release => !release.draft && parseVersion(release.version));
+      const eligible = releases
+        .filter(release => settings.channel === 'preview' || !release.prerelease)
+        .sort((a, b) => compareVersions(b.version, a.version));
+      const latest = eligible[0] || null;
+      if (!latest) return { ok:false, verified:false, installUnlocked:false, error:'No eligible official release is available for verification.' };
+      const result = await verificationEngine.stageAndVerify({
+        release: latest,
+        packageKind: packageKindValue,
+        settings,
+        compareVersions
+      });
+      const base = cache || stateFromSettings(settings);
+      cache = { ...base, releases: base.releases?.length ? base.releases : eligible.slice(0, 8), verification: result };
+      return result;
+    } catch (error) {
+      logDiagnostic('stage latest update package', error);
+      const result = { ok:false, verified:false, installUnlocked:false, error:String(error?.message || error), checkedAt:new Date().toISOString() };
+      if (cache) cache = { ...cache, verification: result };
+      return result;
+    }
+  }
+
+  function clearStaging() {
+    const result = verificationEngine.clearStaging();
+    if (cache) cache = { ...cache, verification: null };
+    return result;
+  }
+
   async function openRelease(urlValue) {
     try {
       const url = new URL(String(urlValue || ''));
@@ -317,6 +360,8 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
     getSettings,
     saveSettings,
     checkForUpdates,
+    stageLatestPackage,
+    clearStaging,
     shouldCheckOnStartup: () => isDue(readSettings()),
     openRelease
   };
