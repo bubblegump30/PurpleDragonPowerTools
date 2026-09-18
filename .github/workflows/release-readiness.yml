@@ -66,7 +66,9 @@ jobs:
           node --check src/renderer.js
           node --check src/update-release.js
           node --check src/update-verification.js
+          node --check src/update-transaction.js
           node scripts/test-update-verification.js
+          node scripts/test-update-transaction.js
 
       - name: Validate package metadata
         shell: pwsh
