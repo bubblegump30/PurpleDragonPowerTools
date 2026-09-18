@@ -1632,7 +1632,7 @@
     return ({manual:'Manual only',startup:'Every startup','6h':'Every 6 hours','12h':'Every 12 hours',daily:'Daily',weekly:'Weekly'})[value]||'Daily';
   }
   function renderUpdateVerification(){
-    const v=updateReleaseState?.verification||null;const p=updateReleaseProgress||null;
+    const v=updateReleaseState?.verification||null;const p=updateReleaseProgress||null;const tx=updateReleaseState?.transaction||null;const capability=tx?.capability||{};
     setText('#updateVerifyPackage',v?.ok===false?'Failed':v?.package?.name||'Not staged');
     setText('#updateVerifyPackageMeta',v?.package?`${v.package.kind==='portable'?'Portable':'Setup'} · ${formatBytes(v.package.sizeBytes||0)}`:'Setup or Portable');
     const hashState=v?.sha256?.verified===true?'VERIFIED':v?.sha256?.required===false?'OPTIONAL':v?.sha256?'FAILED':'Pending';
@@ -1643,22 +1643,32 @@
     setText('#updateVerifyTagMeta',v?.tagSignature?.checked?(v.tagSignature.verified?'GitHub verified signed annotated tag':v.tagSignature.reason||'Tag verification failed'):'GitHub verification not evaluated');
     const manifestState=v?.manifest?.available?(v.manifest.valid?(v.manifestSignature?.verified?'SIGNED & VALID':'VALID · UNSIGNED'):'INVALID'):'NOT PUBLISHED';
     setText('#updateVerifyManifest',v?manifestState:'Pending');
-    setText('#updateVerifyManifestMeta',v?.manifest?.available?(v.manifest.valid?'Manifest matches selected package':(v.manifest.errors||[])[0]||'Manifest validation failed'):'No manifest evaluated');
-    setText('#updateInstallGate','LOCKED');
-    setText('#updateInstallGateMeta',v?.verified?'Verification passed · install phase still disabled':v?.ok===false?'Verification failed · no execution allowed':'Installation is not implemented in this phase');
+    setText('#updateVerifyManifestMeta',v?.manifest?.available?(v.manifest.valid?(v.manifestSignature?.verified?'Signed manifest matches the verified release key':'Manifest is not install-grade'):(v.manifest.errors||[])[0]||'Manifest validation failed'):'No manifest evaluated');
+    const txStatus=String(tx?.status||'');
+    const txLabel=txStatus==='succeeded'?'HEALTHY':txStatus==='rolled-back'?'ROLLED BACK':txStatus==='rollback-failed'?'RECOVERY NEEDED':txStatus==='prepared'?'INSTALLING':txStatus?txStatus.toUpperCase():'Idle';
+    setText('#updateTransactionState',txLabel);
+    setText('#updateTransactionMeta',tx?.active?`${tx.sourceVersion||'?'} → ${tx.targetVersion||'?'}${tx.backupRetained?' · rollback snapshot retained':''}`:'No update transaction recorded');
+    const canInstall=Boolean(capability.canInstall&&v?.verified&&v?.package?.kind==='installer'&&v?.manifest?.valid&&v?.manifestSignature?.verified);
+    const gateLabel=txStatus==='succeeded'?'HEALTHY':txStatus==='rolled-back'?'ROLLED BACK':txStatus==='rollback-failed'?'REVIEW':canInstall?'READY':'LOCKED';
+    setText('#updateInstallGate',gateLabel);
+    setText('#updateInstallGateMeta',txStatus==='succeeded'?'Post-update health check passed':txStatus==='rolled-back'?'Automatic application rollback restored the previous version':txStatus==='rollback-failed'?'Rollback needs manual recovery':canInstall?'Verified Setup is eligible for manual transactional install':capability.reason||'A newer signed Setup package is required');
     const detail=$('#updateVerificationDetail');
     if(detail){
       if(v?.ok===false)detail.textContent=`Verification stopped: ${v.error||'Unknown error'}. Installation remains locked.`;
-      else if(v)detail.textContent=`${v.verified?'Verification passed.':'Verification needs review.'} ${v.safety||'Installation remains locked.'}${v.manifestSignature?.available?` Manifest signature: ${v.manifestSignature.verified?'verified with the same release key as the GitHub-verified tag':v.manifestSignature.reason||'not verified'}.`:''}`;
-      else detail.textContent='The verifier will compare published SHA-256 sources, validate an available release manifest, and require the GitHub-verified signed annotated release tag when release-signature enforcement is enabled.';
+      else if(txStatus==='rolled-back')detail.textContent=tx.detail||'The update did not pass its health check and the previous application files were restored automatically.';
+      else if(txStatus==='rollback-failed')detail.textContent=tx.detail||'Automatic rollback could not complete. Review diagnostics before retrying.';
+      else if(canInstall)detail.textContent='Verification passed and the signed Setup package is install-ready. Install Verified Update creates a rollback snapshot, closes PowerTools, runs the verified installer, then requires the new version to report healthy.';
+      else if(v)detail.textContent=`${v.verified?'Verification passed.':'Verification needs review.'} ${capability.reason||v.safety||'Installation remains locked.'}${v.manifestSignature?.available?` Manifest signature: ${v.manifestSignature.verified?'verified with the same release key as the GitHub-verified tag':v.manifestSignature.reason||'not verified'}.`:''}`;
+      else detail.textContent='The verifier compares published SHA-256 sources, validates the signed release manifest, and requires the GitHub-verified annotated release tag before manual installation can unlock.';
     }
     const total=Number(p?.totalBytes)||0,done=Number(p?.downloadedBytes)||0;
     const percent=p?.phase==='complete'?100:total?Math.max(0,Math.min(100,Math.round(done/total*100))):0;
     const bar=$('#updateProgressBar');if(bar)bar.style.width=`${percent}%`;
-    setText('#updateProgressText',p?.phase==='download'?`Downloading ${p.asset||'release asset'} · ${formatBytes(done)}${total?` / ${formatBytes(total)} · ${percent}%`:''}`:p?.phase==='prepare'?`Preparing secure staging for ${p.asset||'release package'}…`:p?.phase==='complete'?`Staged and verified ${p.asset||'release package'} · installation remains locked`:p?.phase==='error'?`Verification stopped · ${p.error||'review diagnostics'}`:v?.checkedAt?`Last verification ${relativeTime(v.checkedAt)} · staged files are not executed`:'Ready. Run an update check, then stage the latest official release.');
-    const stage=$('#updateStageVerify');if(stage){stage.disabled=updateVerificationBusy;stage.textContent=updateVerificationBusy?'Staging & Verifying…':'Stage & Verify';}
-    const clear=$('#updateClearStaging');if(clear)clear.disabled=updateVerificationBusy;
-    const kind=$('#updatePackageKind');if(kind)kind.disabled=updateVerificationBusy;
+    setText('#updateProgressText',p?.phase==='download'?`Downloading ${p.asset||'release asset'} · ${formatBytes(done)}${total?` / ${formatBytes(total)} · ${percent}%`:''}`:p?.phase==='backup'?'Creating verified rollback snapshot of the current installed app…':p?.phase==='install-prepared'?'Rollback snapshot complete · PowerTools will close for installation':p?.phase==='prepare'?`Preparing secure staging for ${p.asset||'release package'}…`:p?.phase==='complete'?`Staged and verified ${p.asset||'release package'}`:p?.phase==='error'?`Verification stopped · ${p.error||'review diagnostics'}`:v?.checkedAt?`Last verification ${relativeTime(v.checkedAt)} · installer execution requires explicit confirmation`:'Ready. Run an update check, then stage the latest official release.');
+    const stage=$('#updateStageVerify');if(stage){stage.disabled=updateVerificationBusy||updateInstallBusy;stage.textContent=updateVerificationBusy?'Staging & Verifying…':'Stage & Verify';}
+    const clear=$('#updateClearStaging');if(clear)clear.disabled=updateVerificationBusy||updateInstallBusy;
+    const kind=$('#updatePackageKind');if(kind)kind.disabled=updateVerificationBusy||updateInstallBusy;
+    const install=$('#updateInstallVerified');if(install){install.disabled=!canInstall||updateVerificationBusy||updateInstallBusy;install.textContent=updateInstallBusy?'Preparing Rollback…':'Install Verified Update';}
   }
   async function stageAndVerifyUpdate(){
     if(updateVerificationBusy)return;updateVerificationBusy=true;updateReleaseProgress={phase:'prepare',asset:'official release package'};renderUpdateReleaseCenter();
