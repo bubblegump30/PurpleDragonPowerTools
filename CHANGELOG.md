@@ -8,8 +8,14 @@
 - Added persistent local update settings with atomic writes under Electron user data.
 - Added release-history display and update-availability detection using semantic-version comparison.
 - Added release trust-material discovery for manifests, SHA-256/checksum assets, and detached signature assets.
+- Added a manual Download & Verification Engine with Setup/Portable selection and secure staging under Electron user data.
+- Added streaming downloads with size limits, GitHub-host allowlisting, download progress, and no-execution staging.
+- Added SHA-256 verification across GitHub asset digests, `SHA256SUMS.txt`, and signed manifest hashes; conflicting published hashes fail closed.
+- Added GitHub-Verified signed annotated tag checks for official release identity.
+- Added local OpenSSH SSHSIG verification for signed release manifests and require the manifest signing key to match the same key GitHub verified on the release tag.
+- Added release-manifest schema/generation tooling plus a guarded local manifest-signing helper using the dedicated Ed25519 release key.
 - Added build-origin display for packaged versus source/development builds.
-- Kept automatic download and installation disabled while the verification/download/rollback pipeline is still being implemented.
+- Kept automatic download and all installation/execution disabled; staged packages cannot be launched by this phase.
 - Preserved the existing GitHub repository browser, source commit workflow, release notes generator, and release publisher.
 
 
