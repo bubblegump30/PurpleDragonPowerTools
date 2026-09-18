@@ -1,11 +1,11 @@
-# Purple Dragon PowerTools v2.1.0 — Release Candidate Checklist
+# Purple Dragon PowerTools v2.1.0 — Stable Release Checklist
 
 The authoritative release gate is [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md).
 
 ## Repository
 
 - [x] Public-release branch exists
-- [x] README uses Release Candidate / prerelease wording
+- [x] README uses Stable release wording
 - [x] SECURITY.md exists
 - [x] .gitignore includes build/dependency/credential hygiene
 - [x] Bug-report template exists
@@ -41,8 +41,8 @@ The authoritative release gate is [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_R
 - [ ] Uninstaller tested
 - [ ] Portable build tested
 - [ ] Windows smoke-test matrix completed
-- [ ] GitHub prerelease published and tested
+- [x] GitHub prerelease published and owner-tested
 
 ## Promotion rule
 
-Do not merge/publish as Stable until the mandatory unchecked items in PUBLIC_RELEASE_READINESS.md are resolved or explicitly documented as deferred.
+Stable publication is approved with broader compatibility-matrix items explicitly deferred. The final public release must not be published until the `v2.1.0` Git tag is cryptographically signed and GitHub can mark it Verified.
