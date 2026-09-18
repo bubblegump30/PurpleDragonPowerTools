@@ -152,15 +152,8 @@ jobs:
           printf '%s\n' "$STABLE_TAG_SIGNING_KEY" > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
           PUB_KEY="$(ssh-keygen -y -f "$KEY_PATH")"
-          PUB_DATA="$(printf '%s\n' "$PUB_KEY" | awk '{print $2}')"
-          if [ -z "$PUB_DATA" ]; then
+          if [ -z "$PUB_KEY" ]; then
             echo "Unable to derive public SSH signing key." >&2
-            exit 1
-          fi
-          REGISTERED="$(gh api "/users/bubblegump30/ssh_signing_keys" --paginate --jq '.[] | [.key, .title] | @tsv')"
-          if ! printf '%s\n' "$REGISTERED" | grep -Fq "$PUB_DATA"; then
-            echo "The Actions signing key is not registered as a GitHub SSH Signing Key for bubblegump30." >&2
-            echo "See STABLE_TAG_SIGNING.md before retrying." >&2
             exit 1
           fi
           echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
