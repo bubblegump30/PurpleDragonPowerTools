@@ -1,6 +1,6 @@
 # Purple Dragon PowerTools v2.1.0 — Public Release Readiness
 
-This document is the release gate for the first public-ready build. A checked item means the requirement has been verified for the current release candidate, not merely implemented.
+This document records the release gate used for the first public-ready build. Checked items were verified during the v2.1.0 release-candidate/stable promotion cycle.
 
 ## 1. Repository and legal
 
@@ -10,8 +10,8 @@ This document is the release gate for the first public-ready build. A checked it
 - [x] Final software license selected and added as LICENSE (MIT)
 - [x] package.json license metadata matches LICENSE
 - [x] README no longer describes the application as private
-- [ ] Repository description matches the public-release positioning
-- [ ] Copyright/organization naming reviewed for consistency
+- [x] Repository description matches the public-release positioning
+- [x] Copyright/organization naming reviewed for consistency
 
 ## 2. Dependency and build reproducibility
 
@@ -73,9 +73,9 @@ This document is the release gate for the first public-ready build. A checked it
 - [x] Pull-request template added
 - [x] Release notes prepared
 - [x] Git tag naming convention confirmed: v2.1.0-rc.1 for the first prerelease
-- [ ] GitHub Release created as a prerelease first
-- [ ] Installer and portable artifacts attached to the prerelease (CI now builds both)
-- [ ] SHA-256 checksums attached to the prerelease (CI now generates SHA256SUMS.txt)
+- [x] GitHub Release created as a prerelease first (`v2.1.0-rc.1`)
+- [x] Installer and portable artifacts attached to the prerelease
+- [x] SHA-256 checksums attached to the prerelease
 - [x] Code-signing status clearly documented
 
 ## 7. Windows smoke-test matrix
@@ -93,9 +93,9 @@ Run at minimum on:
 
 ## Release decision
 
-Do not mark v2.1.0 as Stable until all mandatory items above are complete or explicitly documented as deferred with a user-visible limitation.
+v2.1.0 is approved for Stable publication. Remaining unchecked compatibility items are explicitly deferred as broader post-release hardware/environment coverage; they are not represented as completed.
 
-Current target channel: **Release Candidate / Prerelease**
+Current target channel: **Stable**
 
 
 ## Security review notes — 2026-09-17
@@ -140,3 +140,14 @@ The resulting CI archive contained:
 The archive and both executable hashes were independently recomputed and matched the CI-published digests/checksum file.
 
 This verifies build reproducibility and artifact integrity at CI level; it does not replace real interactive Windows smoke testing.
+
+
+## Stable promotion record — 2026-09-17
+
+- `v2.1.0-rc.1` was published publicly with Setup, Portable, and SHA-256 assets.
+- The release candidate was exercised by the project owner after the startup-performance and release-readiness fixes and reported as working correctly.
+- Release Readiness CI passed after the final startup/performance fixes.
+- The repository description, MIT license, release notes, security policy, and public support files are in place.
+- Broader compatibility coverage across every VPN provider/hardware/storage/offline permutation remains a post-release validation track and is not falsely marked as complete.
+- Windows executable code signing remains pending; release notes must continue to state that Windows may show an Unknown Publisher/SmartScreen warning.
+- Stable tag publication is gated on a GitHub-recognized cryptographic tag signature so the final `v2.1.0` tag is not published as Unverified.
