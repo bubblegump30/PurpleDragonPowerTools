@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const net = require('net');
 const dns = require('dns').promises;
 const { execFile, spawn } = require('child_process');
+const { createUpdateReleaseCenter } = require('./update-release');
 const BOOT_AT = Date.now();
 const SESSION_ID = `${process.pid}-${BOOT_AT}`;
 let rendererReadyAt = 0;
@@ -42,6 +43,26 @@ let aiSystemContextCache = { at: 0, key: '', data: null };
 let githubCenterCache = { at: 0, data: null, pending: null };
 let githubSourceSelection = [];
 let githubReleaseAssets = [];
+const updateReleaseCenter = createUpdateReleaseCenter({
+  app,
+  shell,
+  dialog,
+  healthCheck: () => {
+    const windowReady = Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isLoading());
+    const rendererHealthy = windowReady && rendererCrashCount === 0 && !lastRendererError;
+    return { ok:rendererHealthy, rendererReady:windowReady, rendererCrashCount, reason:rendererHealthy ? 'Renderer remained healthy through the post-update observation window.' : (lastRendererError || 'Renderer is not stably ready.') };
+  },
+  logDiagnostic: writeDiagnostic,
+  addActivity,
+  notify: (title, body) => {
+    try { if (Notification.isSupported()) new Notification({ title, body }).show(); } catch {}
+  },
+  progress: (payload) => {
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:progress', payload || {});
+    } catch {}
+  }
+});
 
 // v1.7.0 — Change Journal + Undo. The journal is local-only, capped, and
 // intentionally excludes credentials, prompts, IP/geolocation data, and file contents.
@@ -359,7 +380,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.2.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
@@ -367,7 +388,7 @@ function getStableReleaseStatus() {
     { id:'automation-data', label:'Automation data', ok:automationDataHealthy, optional:automationChecked===0, detail:automationChecked ? `${automationChecked} local automation data file(s) parsed successfully.` : 'No persisted automation files yet.' },
     { id:'diagnostics', label:'Diagnostics rotation', ok:diagSize <= 2 * 1024 * 1024, detail:`Active diagnostics log: ${diagSize} bytes.` },
     { id:'sensor', label:'CPU sensor runtime', ok:sensorPresent, optional:true, detail:sensorPresent ? 'Optional LibreHardwareMonitor bridge is bundled.' : 'Optional CPU sensor bridge is not present.' },
-    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:true, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean-shutdown marker. Informational only; review diagnostics if unexpected.') : 'No previous v2.1.0 session marker yet.' }
+    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:true, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean-shutdown marker. Informational only; review diagnostics if unexpected.') : `No previous v${app.getVersion()} session marker yet.` }
   ];
   const blocking = checks.filter(c => !c.ok && !c.optional);
   const passed = checks.filter(c => c.ok).length;
@@ -446,7 +467,7 @@ function createWindow() {
     writeDiagnostic('render-process-gone', lastRendererError);
     setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload(); }, 650);
   });
-  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 Stable is ready');
+  addActivity('Application started', `Purple Dragon PowerTools v${app.getVersion()} is ready`);
 }
 
 function timesTotal(times) {
@@ -3624,7 +3645,7 @@ async function githubRequest(endpoint,options={}){
   try{
     const headers={
       'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':GITHUB_API_VERSION,
-      'User-Agent':'PurpleDragonPowerTools/2.1.0',...(options.headers||{})
+      'User-Agent':`PurpleDragonPowerTools/${app.getVersion()}`,...(options.headers||{})
     };
     let body;
     if(Buffer.isBuffer(options.rawBody)){body=options.rawBody;headers['Content-Type']=options.contentType||'application/octet-stream';headers['Content-Length']=String(body.length);}
@@ -3935,7 +3956,7 @@ async function probeGeminiCloud() {
   const key=loadAiCredential('gemini'); const started=Date.now();
   if(!key)return {provider:{id:'gemini',name:'Gemini',scope:'cloud',configured:false,online:false,modelsCount:0},models:[]};
   try{
-    const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',{headers:{'x-goog-api-key':key,'x-goog-api-client':'purple-dragon-powertools/2.1.0'}},12000);
+    const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',{headers:{'x-goog-api-key':key,'x-goog-api-client':`purple-dragon-powertools/${app.getVersion()}`}},12000);
     const rows=Array.isArray(data?.models)?data.models:[];
     const models=rows.map(m=>{const id=String(m.name||'').replace(/^models\//,'');return {key:`gemini::${id}`,provider:'gemini',providerName:'Gemini',scope:'cloud',id,name:String(m.displayName||id||'Gemini model'),description:m.description||null,inputTokenLimit:m.inputTokenLimit||null,outputTokenLimit:m.outputTokenLimit||null,endpoint:'https://generativelanguage.googleapis.com/v1beta'};}).filter(m=>isGeminiInteractiveModel(m.id)).slice(0,180);
     return {provider:{id:'gemini',name:'Gemini',scope:'cloud',configured:true,online:true,modelsCount:models.length,latencyMs:Date.now()-started},models};
@@ -4139,7 +4160,7 @@ async function runModelChat(payload) {
     if(provider==='lmstudio'||provider==='custom'){const endpoint=provider==='lmstudio'?'http://127.0.0.1:1234/v1':normalizeLocalModelEndpoint(payload?.customEndpoint||payload?.endpoint||'');const data=await localModelJson(openAiLocalUrl(endpoint,'chat/completions'),{method:'POST',body:JSON.stringify({model,messages:[...(effectiveSystem?[{role:'system',content:effectiveSystem}]:[]),{role:'user',content:prompt}],temperature:0.6,max_tokens:1600,stream:false})},180000);const text=String(data?.choices?.[0]?.message?.content||'');if(!text)throw new Error('Local OpenAI-compatible provider returned an empty response.');addActivity('Local AI request completed',`${provider==='lmstudio'?'LM Studio':'Custom local'} · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'local',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
     if(provider==='openai'||provider==='codex'){const apiKey=loadAiCredential('openai');if(!apiKey)throw new Error('OpenAI API key is not configured.');const body={model,input:prompt,max_output_tokens:1600};if(effectiveSystem)body.instructions=effectiveSystem;const data=await cloudAiJson('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:JSON.stringify(body)},180000);const text=openAiResponseText(data);if(!text)throw new Error('OpenAI returned an empty response.');addActivity('Cloud AI request completed',`${provider==='codex'?'Codex':'OpenAI'} · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
     if(provider==='claude'){const apiKey=loadAiCredential('anthropic');if(!apiKey)throw new Error('Claude API key is not configured.');const body={model,max_tokens:1600,messages:[{role:'user',content:prompt}]};if(effectiveSystem)body.system=effectiveSystem;const data=await cloudAiJson('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify(body)},180000);const text=(Array.isArray(data?.content)?data.content:[]).filter(x=>x?.type==='text').map(x=>String(x.text||'')).join('\n').trim();if(!text)throw new Error('Claude returned an empty response.');addActivity('Cloud AI request completed',`Claude · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
-    if(provider==='gemini'){const apiKey=loadAiCredential('gemini');if(!apiKey)throw new Error('Gemini API key is not configured.');const body={model,input:prompt};if(effectiveSystem)body.system_instruction=effectiveSystem;const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'x-goog-api-key':apiKey,'x-goog-api-client':'purple-dragon-powertools/2.1.0'},body:JSON.stringify(body)},180000);const text=geminiInteractionText(data);if(!text)throw new Error('Gemini returned an empty response.');addActivity('Cloud AI request completed',`Gemini · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
+    if(provider==='gemini'){const apiKey=loadAiCredential('gemini');if(!apiKey)throw new Error('Gemini API key is not configured.');const body={model,input:prompt};if(effectiveSystem)body.system_instruction=effectiveSystem;const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'x-goog-api-key':apiKey,'x-goog-api-client':`purple-dragon-powertools/${app.getVersion()}`},body:JSON.stringify(body)},180000);const text=geminiInteractionText(data);if(!text)throw new Error('Gemini returned an empty response.');addActivity('Cloud AI request completed',`Gemini · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
   }catch(error){writeDiagnostic(`${provider} model chat`,error);return {ok:false,error:String(error?.message||error),provider,model,scope:cloudProvider?'cloud':'local',latencyMs:Date.now()-started,systemContext};}
 }
 
@@ -4455,6 +4476,7 @@ ipcMain.handle('automation:clearHistory', () => clearAutomationHistory());
 ipcMain.handle('reliability:rendererReady', () => {
   if (!rendererReadyAt) rendererReadyAt = Date.now();
   loadRecoveryAttempts = 0;
+  updateReleaseCenter.noteRendererReady();
   return getReliabilityStatus();
 });
 ipcMain.handle('reliability:rendererError', (_, payload) => {
@@ -4472,6 +4494,18 @@ ipcMain.handle('privacy:appTrustSelect', () => privacySelectAppTrustFile());
 ipcMain.handle('privacy:appTrustInstalled', (_, index) => privacyInspectInstalledApp(index));
 ipcMain.handle('privacy:appProtectionStatus', () => privacyGetAppProtectionStatus());
 ipcMain.handle('privacy:openHashReputation', (_, hash) => privacyOpenHashReputation(hash));
+ipcMain.handle('updates:getState', () => updateReleaseCenter.getState());
+ipcMain.handle('updates:check', (_, force) => updateReleaseCenter.checkForUpdates({force:Boolean(force)}));
+ipcMain.handle('updates:saveSettings', (_, payload) => updateReleaseCenter.saveSettings(payload||{}));
+ipcMain.handle('updates:stageVerify', (_, packageKind) => updateReleaseCenter.stageLatestPackage(packageKind));
+ipcMain.handle('updates:clearStaging', () => updateReleaseCenter.clearStaging());
+ipcMain.handle('updates:transactionStatus', () => updateReleaseCenter.getTransactionStatus());
+ipcMain.handle('updates:installVerified', async () => {
+  const out = await updateReleaseCenter.installVerifiedPackage();
+  if (out?.ok && out.quitRequested) setTimeout(() => app.quit(), 350);
+  return out;
+});
+ipcMain.handle('updates:openRelease', (_, url) => updateReleaseCenter.openRelease(url));
 ipcMain.handle('github:status', () => githubCredentialStatus());
 ipcMain.handle('github:saveToken', (_, token) => saveGitHubCredential(token));
 ipcMain.handle('github:removeToken', () => removeGitHubCredential());
@@ -4660,9 +4694,14 @@ if (!gotSingleInstanceLock) {
   });
   app.whenReady().then(() => {
     beginSessionState();
+    updateReleaseCenter.noteLaunchRecovery();
     loadStaticCacheFromDisk();
     createWindow();
     setTimeout(() => initializeAutomationEngine().catch(error => writeDiagnostic('automation init', error)), 4200);
+    setTimeout(() => {
+      if (!updateReleaseCenter.shouldCheckOnStartup()) return;
+      updateReleaseCenter.checkForUpdates({force:false}).catch(error => writeDiagnostic('startup update check', error));
+    }, 8000);
   }).catch(error => writeDiagnostic('app.whenReady', error));
 }
 app.on('before-quit', () => { finishSessionState(); if (automationEngineTimer) { clearInterval(automationEngineTimer); automationEngineTimer = null; } });

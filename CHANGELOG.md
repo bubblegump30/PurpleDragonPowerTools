@@ -1,5 +1,34 @@
 # Changelog
 
+## v2.2.0 — Update & Release Center 2.0 (In development)
+
+- Added a dedicated Update & Release Center 2.0 above the existing GitHub publishing workspace.
+- Added public, token-free checks against the official `bubblegump30/PurpleDragonPowerTools` GitHub releases feed.
+- Added Stable and Preview release channels plus Manual, Startup, 6-hour, 12-hour, Daily, and Weekly check policies.
+- Added persistent local update settings with atomic writes under Electron user data.
+- Added release-history display and update-availability detection using semantic-version comparison.
+- Added release trust-material discovery for manifests, SHA-256/checksum assets, and detached signature assets.
+- Added a manual Download & Verification Engine with Setup/Portable selection and secure staging under Electron user data.
+- Added streaming downloads with size limits, GitHub-host allowlisting, download progress, and no-execution staging.
+- Added SHA-256 verification across GitHub asset digests, `SHA256SUMS.txt`, and signed manifest hashes; conflicting published hashes fail closed.
+- Added GitHub-Verified signed annotated tag checks for official release identity.
+- Added local OpenSSH SSHSIG verification for signed release manifests and require the manifest signing key to match the same key GitHub verified on the release tag.
+- Added release-manifest schema/generation tooling plus a guarded local manifest-signing helper using the dedicated Ed25519 release key.
+- Added build-origin display for packaged versus source/development builds.
+- Added manual-only transactional Setup installation for packaged Windows installs after strict install-grade verification.
+- Added a complete installed-app rollback snapshot before update execution, with SHA-256 checks of the backed-up executable and `app.asar`.
+- Added an external PowerShell update helper that survives the app shutdown, re-hashes the staged installer, runs the NSIS Setup package, launches the target version, and waits for a post-update health marker.
+- Added automatic application-file rollback when the new version fails its health check, including restored executable and `app.asar` integrity verification.
+- Blocked transactional install from source/development runs, Portable sessions, Portable packages, same-version/downgrade packages, and releases without a signed manifest.
+- Kept automatic download and automatic install disabled; installation requires an explicit confirmation every time.
+- Added a manual-only v2.2.0 Stable publishing workflow that builds from `main`, requires an explicit `PUBLISH-v2.2.0` confirmation, and refuses to overwrite an existing tag/release.
+- Added official manifest generation using the actual Ed25519 release-key fingerprint, local SSHSIG verification, same-key signed annotated tag creation, GitHub Verified-tag enforcement, and exact commit binding.
+- Added end-to-end published trust verification by checking the five required release assets, GitHub asset digests, re-downloading trust metadata, byte-comparing it, and re-verifying the published manifest signature.
+- Added guarded failed-publication cleanup and a Release Readiness policy test that prevents accidental removal of the manual-only/signing safeguards.
+- Preserved the existing GitHub repository browser, source commit workflow, release notes generator, and release publisher.
+
+
+
 ## v2.1.0 — Stable Release
 
 ### Stable promotion

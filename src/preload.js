@@ -52,6 +52,19 @@ contextBridge.exposeInMainWorld('powerTools', {
   privacyInspectInstalledApp: (index) => ipcRenderer.invoke('privacy:appTrustInstalled', index),
   privacyGetAppProtectionStatus: () => ipcRenderer.invoke('privacy:appProtectionStatus'),
   privacyOpenHashReputation: (hash) => ipcRenderer.invoke('privacy:openHashReputation', hash),
+  getUpdateReleaseState: () => ipcRenderer.invoke('updates:getState'),
+  checkForAppUpdates: (force = false) => ipcRenderer.invoke('updates:check', force),
+  saveUpdateReleaseSettings: (payload = {}) => ipcRenderer.invoke('updates:saveSettings', payload),
+  stageAndVerifyUpdate: (packageKind = 'installer') => ipcRenderer.invoke('updates:stageVerify', packageKind),
+  clearUpdateStaging: () => ipcRenderer.invoke('updates:clearStaging'),
+  getUpdateTransactionStatus: () => ipcRenderer.invoke('updates:transactionStatus'),
+  installVerifiedUpdate: () => ipcRenderer.invoke('updates:installVerified'),
+  openUpdateRelease: (url) => ipcRenderer.invoke('updates:openRelease', url),
+  onUpdateReleaseProgress: (callback) => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('updates:progress', handler);
+    return () => ipcRenderer.removeListener('updates:progress', handler);
+  },
   getGitHubStatus: () => ipcRenderer.invoke('github:status'),
   saveGitHubToken: (token) => ipcRenderer.invoke('github:saveToken', token),
   removeGitHubToken: () => ipcRenderer.invoke('github:removeToken'),

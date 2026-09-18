@@ -1,6 +1,6 @@
 {
   "name": "purple-dragon-powertools",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
@@ -9,9 +9,12 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/update-release.js && node --check src/update-verification.js && node --check src/update-transaction.js",
     "dist:win": "electron-builder --win nsis portable",
-    "pack:win": "electron-builder --win dir"
+    "pack:win": "electron-builder --win dir",
+    "test:update-verification": "node scripts/test-update-verification.js",
+    "test:update-transaction": "node scripts/test-update-transaction.js",
+    "test:release-publisher": "node scripts/test-release-publisher.js"
   },
   "devDependencies": {
     "electron": "44.2.0",

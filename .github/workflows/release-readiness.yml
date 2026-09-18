@@ -64,12 +64,18 @@ jobs:
           node --check src/main.js
           node --check src/preload.js
           node --check src/renderer.js
+          node --check src/update-release.js
+          node --check src/update-verification.js
+          node --check src/update-transaction.js
+          node scripts/test-update-verification.js
+          node scripts/test-update-transaction.js
+          node scripts/test-release-publisher.js
 
       - name: Validate package metadata
         shell: pwsh
         run: |
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          if ($pkg.version -ne '2.1.0') { throw "Expected package version 2.1.0, found $($pkg.version)" }
+          if ($pkg.version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') { throw "Invalid semantic package version: $($pkg.version)" }
           if ($pkg.main -ne 'src/main.js') { throw "Unexpected Electron main entry: $($pkg.main)" }
           if ($pkg.devDependencies.electron -ne '44.2.0') { throw "Electron pin changed unexpectedly." }
           if ($pkg.private -ne $true) { throw "package.json private must remain true to prevent accidental npm publication." }
@@ -84,7 +90,9 @@ jobs:
           $runtime = Get-Content runtime/package-lock.json -Raw | ConvertFrom-Json -AsHashtable
 
           if ($root.lockfileVersion -ne 3) { throw "Root lockfileVersion must be 3." }
-          if ($root.version -ne '2.1.0') { throw "Root lock version must be 2.1.0." }
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json -AsHashtable
+          if ($root.version -ne $pkg.version) { throw "Root lock version $($root.version) does not match package version $($pkg.version)." }
+          if ($root.packages[''].version -ne $pkg.version) { throw "Root package lock entry version does not match package.json." }
           if ($root.packages[''].devDependencies.electron -ne '44.2.0') { throw "Root Electron lock is not 44.2.0." }
 
           if ($runtime.lockfileVersion -ne 3) { throw "Runtime lockfileVersion must be 3." }
@@ -144,15 +152,21 @@ jobs:
           $lines | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding utf8
           Get-Content dist/SHA256SUMS.txt
 
+      - name: Generate release manifest
+        shell: pwsh
+        run: |
+          ./scripts/New-ReleaseManifest.ps1 -Channel preview -Commit '${{ github.sha }}'
+
       - name: Upload Windows release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: Purple-Dragon-PowerTools-v2.1.0-Release-Candidate
+          name: Purple-Dragon-PowerTools-Release-Candidate
           path: |
             dist/*.exe
             dist/*.msi
             dist/*.zip
             dist/*.blockmap
             dist/SHA256SUMS.txt
+            dist/release-manifest.json
           if-no-files-found: error
           retention-days: 14
