@@ -1,0 +1,51 @@
+name: Android Toolchain Temp
+
+on:
+  push:
+    branches:
+      - android-toolchain-ci-temp
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect installed Android SDK toolchain
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
+          ls -la "${ANDROID_SDK_ROOT}/platforms" || true
+          ls -la "${ANDROID_SDK_ROOT}/build-tools" || true
+
+          mkdir -p toolchain/platform toolchain/build-tools
+
+          PLATFORM_JAR=""
+          if [ -f "${ANDROID_SDK_ROOT}/platforms/android-37/android.jar" ]; then
+            PLATFORM_JAR="${ANDROID_SDK_ROOT}/platforms/android-37/android.jar"
+          else
+            PLATFORM_JAR="$(find "${ANDROID_SDK_ROOT}/platforms" -maxdepth 2 -name android.jar -print | sort -V | tail -1)"
+          fi
+          test -n "$PLATFORM_JAR"
+          cp "$PLATFORM_JAR" toolchain/platform/android.jar
+          basename "$(dirname "$PLATFORM_JAR")" > toolchain/platform/VERSION.txt
+
+          BT="$(find "${ANDROID_SDK_ROOT}/build-tools" -mindepth 1 -maxdepth 1 -type d -print | sort -V | tail -1)"
+          test -n "$BT"
+          echo "$BT"
+          cp "$BT/aapt2" toolchain/build-tools/
+          cp "$BT/zipalign" toolchain/build-tools/
+          cp "$BT/apksigner" toolchain/build-tools/
+          cp "$BT/d8" toolchain/build-tools/
+          cp -R "$BT/lib" toolchain/build-tools/
+          basename "$BT" > toolchain/build-tools/VERSION.txt
+
+          chmod +x toolchain/build-tools/aapt2 toolchain/build-tools/zipalign toolchain/build-tools/apksigner toolchain/build-tools/d8
+          sha256sum toolchain/platform/android.jar toolchain/build-tools/aapt2 toolchain/build-tools/zipalign toolchain/build-tools/apksigner toolchain/build-tools/lib/d8.jar > toolchain/SHA256SUMS.txt
+
+      - name: Upload Android toolchain
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-toolchain-temp
+          path: toolchain/
+          retention-days: 1
