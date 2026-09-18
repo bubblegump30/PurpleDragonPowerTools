@@ -15,7 +15,12 @@
 - Added local OpenSSH SSHSIG verification for signed release manifests and require the manifest signing key to match the same key GitHub verified on the release tag.
 - Added release-manifest schema/generation tooling plus a guarded local manifest-signing helper using the dedicated Ed25519 release key.
 - Added build-origin display for packaged versus source/development builds.
-- Kept automatic download and all installation/execution disabled; staged packages cannot be launched by this phase.
+- Added manual-only transactional Setup installation for packaged Windows installs after strict install-grade verification.
+- Added a complete installed-app rollback snapshot before update execution, with SHA-256 checks of the backed-up executable and `app.asar`.
+- Added an external PowerShell update helper that survives the app shutdown, re-hashes the staged installer, runs the NSIS Setup package, launches the target version, and waits for a post-update health marker.
+- Added automatic application-file rollback when the new version fails its health check, including restored executable and `app.asar` integrity verification.
+- Blocked transactional install from source/development runs, Portable sessions, Portable packages, same-version/downgrade packages, and releases without a signed manifest.
+- Kept automatic download and automatic install disabled; installation requires an explicit confirmation every time.
 - Preserved the existing GitHub repository browser, source commit workflow, release notes generator, and release publisher.
 
 
