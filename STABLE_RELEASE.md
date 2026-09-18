@@ -1,9 +1,9 @@
 # Purple Dragon PowerTools v2.1.0 — Stable Release Gate
 
-**Current channel: Release Candidate / Prerelease**  
-**Stable status: NOT YET APPROVED**
+**Current channel: Stable**  
+**Stable status: APPROVED — VERIFIED TAG REQUIRED FOR PUBLICATION**
 
-This file defines the promotion rule from v2.1.0 Release Candidate to Stable. It does not claim that the current branch is stable.
+This file records the promotion rule used to move v2.1.0 from Release Candidate to Stable.
 
 ## Required before Stable
 
@@ -23,6 +23,7 @@ This file defines the promotion rule from v2.1.0 Release Candidate to Stable. It
 14. A real support report is reviewed for privacy/redaction.
 15. Unsigned/code-signing status is clearly visible in release notes.
 16. The GitHub prerelease is installed/tested before promotion.
+17. The final `v2.1.0` Git tag is cryptographically signed with a key GitHub recognizes before the Stable release is published.
 
 ## Stable invariants
 
@@ -36,4 +37,4 @@ This file defines the promotion rule from v2.1.0 Release Candidate to Stable. It
 - Diagnostics/support exports remain sanitized.
 - Heavy hardware, VPN, GitHub, and cloud-provider discovery remains lazy where designed.
 
-See [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md) for the full checklist and [RELEASE_NOTES_v2.1.0-rc.1.md](RELEASE_NOTES_v2.1.0-rc.1.md) for prerelease notes.
+See [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md) for the full readiness record, [RELEASE_NOTES_v2.1.0-rc.1.md](RELEASE_NOTES_v2.1.0-rc.1.md) for prerelease notes, and [RELEASE_NOTES_v2.1.0.md](RELEASE_NOTES_v2.1.0.md) for the Stable release notes.
