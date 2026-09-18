@@ -361,7 +361,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.2.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
@@ -369,7 +369,7 @@ function getStableReleaseStatus() {
     { id:'automation-data', label:'Automation data', ok:automationDataHealthy, optional:automationChecked===0, detail:automationChecked ? `${automationChecked} local automation data file(s) parsed successfully.` : 'No persisted automation files yet.' },
     { id:'diagnostics', label:'Diagnostics rotation', ok:diagSize <= 2 * 1024 * 1024, detail:`Active diagnostics log: ${diagSize} bytes.` },
     { id:'sensor', label:'CPU sensor runtime', ok:sensorPresent, optional:true, detail:sensorPresent ? 'Optional LibreHardwareMonitor bridge is bundled.' : 'Optional CPU sensor bridge is not present.' },
-    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:true, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean-shutdown marker. Informational only; review diagnostics if unexpected.') : 'No previous v2.1.0 session marker yet.' }
+    { id:'previous-session', label:'Previous session shutdown', ok:!previousSessionState || previousSessionState.cleanShutdown===true, optional:true, detail:previousSessionState ? (previousSessionState.cleanShutdown===true ? 'Previous PowerTools session closed cleanly.' : 'Previous session did not record a clean-shutdown marker. Informational only; review diagnostics if unexpected.') : `No previous v${app.getVersion()} session marker yet.` }
   ];
   const blocking = checks.filter(c => !c.ok && !c.optional);
   const passed = checks.filter(c => c.ok).length;
@@ -448,7 +448,7 @@ function createWindow() {
     writeDiagnostic('render-process-gone', lastRendererError);
     setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload(); }, 650);
   });
-  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 Stable is ready');
+  addActivity('Application started', `Purple Dragon PowerTools v${app.getVersion()} is ready`);
 }
 
 function timesTotal(times) {
@@ -3937,7 +3937,7 @@ async function probeGeminiCloud() {
   const key=loadAiCredential('gemini'); const started=Date.now();
   if(!key)return {provider:{id:'gemini',name:'Gemini',scope:'cloud',configured:false,online:false,modelsCount:0},models:[]};
   try{
-    const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',{headers:{'x-goog-api-key':key,'x-goog-api-client':'purple-dragon-powertools/2.1.0'}},12000);
+    const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',{headers:{'x-goog-api-key':key,'x-goog-api-client':`purple-dragon-powertools/${app.getVersion()}`}},12000);
     const rows=Array.isArray(data?.models)?data.models:[];
     const models=rows.map(m=>{const id=String(m.name||'').replace(/^models\//,'');return {key:`gemini::${id}`,provider:'gemini',providerName:'Gemini',scope:'cloud',id,name:String(m.displayName||id||'Gemini model'),description:m.description||null,inputTokenLimit:m.inputTokenLimit||null,outputTokenLimit:m.outputTokenLimit||null,endpoint:'https://generativelanguage.googleapis.com/v1beta'};}).filter(m=>isGeminiInteractiveModel(m.id)).slice(0,180);
     return {provider:{id:'gemini',name:'Gemini',scope:'cloud',configured:true,online:true,modelsCount:models.length,latencyMs:Date.now()-started},models};
@@ -4141,7 +4141,7 @@ async function runModelChat(payload) {
     if(provider==='lmstudio'||provider==='custom'){const endpoint=provider==='lmstudio'?'http://127.0.0.1:1234/v1':normalizeLocalModelEndpoint(payload?.customEndpoint||payload?.endpoint||'');const data=await localModelJson(openAiLocalUrl(endpoint,'chat/completions'),{method:'POST',body:JSON.stringify({model,messages:[...(effectiveSystem?[{role:'system',content:effectiveSystem}]:[]),{role:'user',content:prompt}],temperature:0.6,max_tokens:1600,stream:false})},180000);const text=String(data?.choices?.[0]?.message?.content||'');if(!text)throw new Error('Local OpenAI-compatible provider returned an empty response.');addActivity('Local AI request completed',`${provider==='lmstudio'?'LM Studio':'Custom local'} · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'local',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
     if(provider==='openai'||provider==='codex'){const apiKey=loadAiCredential('openai');if(!apiKey)throw new Error('OpenAI API key is not configured.');const body={model,input:prompt,max_output_tokens:1600};if(effectiveSystem)body.instructions=effectiveSystem;const data=await cloudAiJson('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:JSON.stringify(body)},180000);const text=openAiResponseText(data);if(!text)throw new Error('OpenAI returned an empty response.');addActivity('Cloud AI request completed',`${provider==='codex'?'Codex':'OpenAI'} · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
     if(provider==='claude'){const apiKey=loadAiCredential('anthropic');if(!apiKey)throw new Error('Claude API key is not configured.');const body={model,max_tokens:1600,messages:[{role:'user',content:prompt}]};if(effectiveSystem)body.system=effectiveSystem;const data=await cloudAiJson('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify(body)},180000);const text=(Array.isArray(data?.content)?data.content:[]).filter(x=>x?.type==='text').map(x=>String(x.text||'')).join('\n').trim();if(!text)throw new Error('Claude returned an empty response.');addActivity('Cloud AI request completed',`Claude · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
-    if(provider==='gemini'){const apiKey=loadAiCredential('gemini');if(!apiKey)throw new Error('Gemini API key is not configured.');const body={model,input:prompt};if(effectiveSystem)body.system_instruction=effectiveSystem;const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'x-goog-api-key':apiKey,'x-goog-api-client':'purple-dragon-powertools/2.1.0'},body:JSON.stringify(body)},180000);const text=geminiInteractionText(data);if(!text)throw new Error('Gemini returned an empty response.');addActivity('Cloud AI request completed',`Gemini · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
+    if(provider==='gemini'){const apiKey=loadAiCredential('gemini');if(!apiKey)throw new Error('Gemini API key is not configured.');const body={model,input:prompt};if(effectiveSystem)body.system_instruction=effectiveSystem;const data=await cloudAiJson('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'x-goog-api-key':apiKey,'x-goog-api-client':`purple-dragon-powertools/${app.getVersion()}`},body:JSON.stringify(body)},180000);const text=geminiInteractionText(data);if(!text)throw new Error('Gemini returned an empty response.');addActivity('Cloud AI request completed',`Gemini · ${model} · ${Date.now()-started} ms${activitySuffix}`);return {ok:true,text,provider,model,scope:'cloud',latencyMs:Date.now()-started,usage:data?.usage||null,systemContext};}
   }catch(error){writeDiagnostic(`${provider} model chat`,error);return {ok:false,error:String(error?.message||error),provider,model,scope:cloudProvider?'cloud':'local',latencyMs:Date.now()-started,systemContext};}
 }
 
