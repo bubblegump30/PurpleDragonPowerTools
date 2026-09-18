@@ -4,6 +4,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { createUpdateTransactionManager, safeTransactionId, pathInside, sha256File, helperScript } = require('../src/update-transaction');
 
 (async () => {
@@ -49,6 +50,12 @@ const { createUpdateTransactionManager, safeTransactionId, pathInside, sha256Fil
   assert(helper.includes('healthMarkerPath'));
   assert(helper.includes('sourceAsarSha256'));
   assert(helper.includes('Installer package changed after verification.'));
+  if (process.platform === 'win32') {
+    const helperPath = path.join(temp, 'update-helper.ps1');
+    fs.writeFileSync(helperPath, helper, 'utf8');
+    const escaped = helperPath.replace(/'/g, "''");
+    execFileSync('powershell.exe', ['-NoProfile','-NonInteractive','-Command', `$null=[scriptblock]::Create((Get-Content -LiteralPath '${escaped}' -Raw))`], { stdio:'pipe' });
+  }
 
   fs.rmSync(temp, { recursive:true, force:true });
   console.log('Update transaction tests passed.');
