@@ -46,6 +46,7 @@ let githubReleaseAssets = [];
 const updateReleaseCenter = createUpdateReleaseCenter({
   app,
   shell,
+  dialog,
   logDiagnostic: writeDiagnostic,
   addActivity,
   notify: (title, body) => {
@@ -4470,6 +4471,7 @@ ipcMain.handle('automation:clearHistory', () => clearAutomationHistory());
 ipcMain.handle('reliability:rendererReady', () => {
   if (!rendererReadyAt) rendererReadyAt = Date.now();
   loadRecoveryAttempts = 0;
+  updateReleaseCenter.noteRendererReady();
   return getReliabilityStatus();
 });
 ipcMain.handle('reliability:rendererError', (_, payload) => {
@@ -4492,6 +4494,12 @@ ipcMain.handle('updates:check', (_, force) => updateReleaseCenter.checkForUpdate
 ipcMain.handle('updates:saveSettings', (_, payload) => updateReleaseCenter.saveSettings(payload||{}));
 ipcMain.handle('updates:stageVerify', (_, packageKind) => updateReleaseCenter.stageLatestPackage(packageKind));
 ipcMain.handle('updates:clearStaging', () => updateReleaseCenter.clearStaging());
+ipcMain.handle('updates:transactionStatus', () => updateReleaseCenter.getTransactionStatus());
+ipcMain.handle('updates:installVerified', async () => {
+  const out = await updateReleaseCenter.installVerifiedPackage();
+  if (out?.ok && out.quitRequested) setTimeout(() => app.quit(), 350);
+  return out;
+});
 ipcMain.handle('updates:openRelease', (_, url) => updateReleaseCenter.openRelease(url));
 ipcMain.handle('github:status', () => githubCredentialStatus());
 ipcMain.handle('github:saveToken', (_, token) => saveGitHubCredential(token));
@@ -4681,6 +4689,7 @@ if (!gotSingleInstanceLock) {
   });
   app.whenReady().then(() => {
     beginSessionState();
+    updateReleaseCenter.noteLaunchRecovery();
     loadStaticCacheFromDisk();
     createWindow();
     setTimeout(() => initializeAutomationEngine().catch(error => writeDiagnostic('automation init', error)), 4200);
