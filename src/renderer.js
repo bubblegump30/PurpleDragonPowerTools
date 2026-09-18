@@ -1626,15 +1626,15 @@
   }
   function renderUpdateReleaseCenter(){
     const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.2.0';const latest=st.latestVersion||null;const trust=st.trust||{};
-    setText('#updateCurrentVersion',\`v\${current}\`);setText('#updateBuildType',st.build?.type||'Build origin unavailable');
-    setText('#updateLatestVersion',latest?\`v\${latest}\`:'Not checked');
-    setText('#updateLatestMeta',st.error?\`Check failed · \${st.error}\`:st.updateAvailable?'New release available':latest?'Installed version is current or newer':'Run an update check to query official releases');
+    setText('#updateCurrentVersion',`v${current}`);setText('#updateBuildType',st.build?.type||'Build origin unavailable');
+    setText('#updateLatestVersion',latest?`v${latest}`:'Not checked');
+    setText('#updateLatestMeta',st.error?`Check failed · ${st.error}`:st.updateAvailable?'New release available':latest?'Installed version is current or newer':'Run an update check to query official releases');
     setText('#updateChannelSummary',(st.channel||settings.channel)==='preview'?'Preview':'Stable');
-    setText('#updateCheckMeta',\`\${updateCheckPolicyLabel(st.checkPolicy||settings.checkPolicy)} update checks\${st.lastCheckAt?\` · last \${relativeTime(st.lastCheckAt)}\`:''}\`);
+    setText('#updateCheckMeta',`${updateCheckPolicyLabel(st.checkPolicy||settings.checkPolicy)} update checks${st.lastCheckAt?` · last ${relativeTime(st.lastCheckAt)}`:''}`);
     const trustParts=[trust.manifestAvailable?'Manifest':null,trust.checksumAvailable?'SHA-256':null,trust.signatureAvailable?'Signature':null].filter(Boolean);
     setText('#updateTrustSummary',trustParts.length?trustParts.join(' + '):latest?'Verification material incomplete':'Pending');
-    setText('#updateTrustMeta',latest?\`\${trust.manifestAvailable?'Manifest found':'No manifest'} · \${trust.checksumAvailable?'Checksum found':'No checksum'} · \${trust.signatureAvailable?'Signature found':'No signature'}\`:'Manifest, checksum and signature presence');
-    setText('#updateStatusText',st.error?\`Official update source unavailable · \${st.error}\`:\`Official repository: \${st.repository||'bubblegump30/PurpleDragonPowerTools'}\${st.updateAvailable?' · update available':''}\`);
+    setText('#updateTrustMeta',latest?`${trust.manifestAvailable?'Manifest found':'No manifest'} · ${trust.checksumAvailable?'Checksum found':'No checksum'} · ${trust.signatureAvailable?'Signature found':'No signature'}`:'Manifest, checksum and signature presence');
+    setText('#updateStatusText',st.error?`Official update source unavailable · ${st.error}`:`Official repository: ${st.repository||'bubblegump30/PurpleDragonPowerTools'}${st.updateAvailable?' · update available':''}`);
     const open=$('#updateOpenRelease');if(open)open.disabled=!st.latestReleaseUrl;
     const channel=$('#updateChannel');if(channel)channel.value=settings.channel||st.channel||'stable';
     const policy=$('#updateCheckPolicy');if(policy)policy.value=settings.checkPolicy||st.checkPolicy||'daily';
@@ -1642,13 +1642,13 @@
     const sig=$('#updateRequireSignature');if(sig)sig.checked=settings.requireReleaseSignature!==false;
     const rollback=$('#updateKeepRollback');if(rollback)rollback.checked=settings.keepRollbackPackage!==false;
     const notifications=$('#updateShowNotifications');if(notifications)notifications.checked=settings.showNotifications!==false;
-    const releases=Array.isArray(st.releases)?st.releases:[];setText('#updateHistoryMeta',releases.length?\`\${releases.length} release\${releases.length===1?'':'s'} loaded\`:st.lastCheckAt?\`Last checked \${relativeTime(st.lastCheckAt)}\`:'No update check yet');
-    const list=$('#updateReleaseHistory');if(list)list.innerHTML=releases.length?releases.map(r=>\`<button class="update-release-row" data-update-release-link="\${escapeHtml(r.url||'')}"><span><strong>\${escapeHtml(r.name||r.tag||'Release')}</strong><small>\${escapeHtml(r.tag||'')}\${r.prerelease?' · Preview':''} · \${escapeHtml(relativeTime(r.publishedAt))}</small></span><b>\${r.trust?.checksumAvailable?'SHA-256':'No checksum'}\${r.trust?.signatureAvailable?' · Signed':''}</b></button>\`).join(''):'<div class="empty">Run Check for Updates to load release history.</div>';
+    const releases=Array.isArray(st.releases)?st.releases:[];setText('#updateHistoryMeta',releases.length?`${releases.length} release${releases.length===1?'':'s'} loaded`:st.lastCheckAt?`Last checked ${relativeTime(st.lastCheckAt)}`:'No update check yet');
+    const list=$('#updateReleaseHistory');if(list)list.innerHTML=releases.length?releases.map(r=>`<button class="update-release-row" data-update-release-link="${escapeHtml(r.url||'')}"><span><strong>${escapeHtml(r.name||r.tag||'Release')}</strong><small>${escapeHtml(r.tag||'')}${r.prerelease?' · Preview':''} · ${escapeHtml(relativeTime(r.publishedAt))}</small></span><b>${r.trust?.checksumAvailable?'SHA-256':'No checksum'}${r.trust?.signatureAvailable?' · Signed':''}</b></button>`).join(''):'<div class="empty">Run Check for Updates to load release history.</div>';
     const check=$('#updateCheck');if(check){check.disabled=updateReleaseLoading;check.textContent=updateReleaseLoading?'Checking…':'Check for Updates';}
   }
   async function loadUpdateReleaseCenter(force=false){
     if(updateReleaseLoading)return;updateReleaseLoading=true;renderUpdateReleaseCenter();
-    try{updateReleaseState=force?await api.checkForAppUpdates?.(true):await api.getUpdateReleaseState?.();if(updateReleaseState?.error&&force)toast('Update check needs review',updateReleaseState.error);else if(force&&updateReleaseState?.updateAvailable)toast('Update available',\`v\${updateReleaseState.latestVersion} is available.\`);else if(force)toast('Update check complete',updateReleaseState?.latestVersion?\`Latest: v\${updateReleaseState.latestVersion}\`:'No eligible release found.');}
+    try{updateReleaseState=force?await api.checkForAppUpdates?.(true):await api.getUpdateReleaseState?.();if(updateReleaseState?.error&&force)toast('Update check needs review',updateReleaseState.error);else if(force&&updateReleaseState?.updateAvailable)toast('Update available',`v${updateReleaseState.latestVersion} is available.`);else if(force)toast('Update check complete',updateReleaseState?.latestVersion?`Latest: v${updateReleaseState.latestVersion}`:'No eligible release found.');}
     catch(error){toast('Update & Release Center unavailable',String(error?.message||error));}
     finally{updateReleaseLoading=false;renderUpdateReleaseCenter();}
   }
