@@ -55,7 +55,14 @@ contextBridge.exposeInMainWorld('powerTools', {
   getUpdateReleaseState: () => ipcRenderer.invoke('updates:getState'),
   checkForAppUpdates: (force = false) => ipcRenderer.invoke('updates:check', force),
   saveUpdateReleaseSettings: (payload = {}) => ipcRenderer.invoke('updates:saveSettings', payload),
+  stageAndVerifyUpdate: (packageKind = 'installer') => ipcRenderer.invoke('updates:stageVerify', packageKind),
+  clearUpdateStaging: () => ipcRenderer.invoke('updates:clearStaging'),
   openUpdateRelease: (url) => ipcRenderer.invoke('updates:openRelease', url),
+  onUpdateReleaseProgress: (callback) => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('updates:progress', handler);
+    return () => ipcRenderer.removeListener('updates:progress', handler);
+  },
   getGitHubStatus: () => ipcRenderer.invoke('github:status'),
   saveGitHubToken: (token) => ipcRenderer.invoke('github:saveToken', token),
   removeGitHubToken: () => ipcRenderer.invoke('github:removeToken'),
