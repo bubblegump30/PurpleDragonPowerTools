@@ -23,6 +23,8 @@ assert(workflow.includes('-KeyId $env:KEY_FINGERPRINT'));
 assert(!workflow.includes("-KeyId '$env:KEY_FINGERPRINT'"));
 assert(workflow.includes('SAFE_TO_CLEANUP=true'));
 assert(workflow.includes('if [ "${SAFE_TO_CLEANUP:-}" != "true" ]'));
+const checksumReaders = workflow.split('\n').filter(line => line.includes("done < <(tr -d") && line.includes("\\r") && line.includes("release-artifacts/SHA256SUMS.txt)"));
+assert.strictEqual(checksumReaders.length, 2, 'Both Linux checksum readers must normalize Windows CRLF line endings.');
 assert(workflow.includes('release-artifacts/release-manifest.json'));
 assert(workflow.includes('release-artifacts/release-manifest.json.sig'));
 

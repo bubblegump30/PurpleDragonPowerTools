@@ -244,7 +244,7 @@ jobs:
           while read -r hash name; do
             manifest_hash="$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .sha256' "$MANIFEST")"
             test "$manifest_hash" = "$hash"
-          done < release-artifacts/SHA256SUMS.txt
+          done < <(tr -d '\r' < release-artifacts/SHA256SUMS.txt)
 
       - name: Sign and locally verify release manifest
         shell: bash
@@ -346,7 +346,7 @@ jobs:
             if [ -n "$digest" ]; then
               test "$digest" = "sha256:$hash"
             fi
-          done < release-artifacts/SHA256SUMS.txt
+          done < <(tr -d '\r' < release-artifacts/SHA256SUMS.txt)
 
       - name: Re-download and verify published trust metadata
         shell: bash
