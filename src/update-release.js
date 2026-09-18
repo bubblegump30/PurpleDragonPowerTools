@@ -336,7 +336,12 @@ function createUpdateReleaseCenter({ app, shell, dialog, logDiagnostic = () => {
         compareVersions
       });
       const base = cache || stateFromSettings(settings);
-      cache = { ...base, releases: base.releases?.length ? base.releases : eligible.slice(0, 8), verification: result };
+      cache = {
+        ...base,
+        releases: base.releases?.length ? base.releases : eligible.slice(0, 8),
+        verification: result,
+        transaction: transactionManager.getStatus()
+      };
       return result;
     } catch (error) {
       logDiagnostic('stage latest update package', error);
@@ -355,7 +360,11 @@ function createUpdateReleaseCenter({ app, shell, dialog, logDiagnostic = () => {
   async function installVerifiedPackage() {
     const settings = readSettings();
     const result = await transactionManager.prepareAndInstall(settings);
-    if (cache) cache = { ...cache, transaction: result.transaction || transactionManager.getStatus() };
+    if (cache) cache = {
+      ...cache,
+      verification: verificationEngine.getLastVerification(),
+      transaction: result.transaction || transactionManager.getStatus()
+    };
     return result;
   }
 
