@@ -146,6 +146,8 @@ function validateManifest(manifest, release, packageAsset) {
   if (manifest.repository !== OFFICIAL_REPOSITORY) errors.push('Manifest repository does not match the official repository.');
   if (String(manifest.version || '') !== String(release.version || '')) errors.push('Manifest version does not match the GitHub release tag.');
   if (!['stable','preview'].includes(String(manifest.channel || ''))) errors.push('Manifest channel is invalid.');
+  else if (release.prerelease === true && manifest.channel !== 'preview') errors.push('Manifest channel must be preview for a GitHub pre-release.');
+  else if (release.prerelease !== true && manifest.channel !== 'stable') errors.push('Manifest channel must be stable for a non-prerelease GitHub release.');
   if (!/^[0-9a-f]{40}$/i.test(String(manifest.commit || ''))) errors.push('Manifest commit must be a 40-character Git SHA.');
   if (!manifest.signature || typeof manifest.signature !== 'object') errors.push('Manifest signature metadata is required for an official signed release.');
   else {
@@ -160,7 +162,7 @@ function validateManifest(manifest, release, packageAsset) {
   if (item && !sha256) errors.push('Manifest package SHA-256 is invalid.');
   if (item && (!Number.isInteger(item.sizeBytes) || item.sizeBytes <= 0)) errors.push('Manifest package size is invalid.');
   if (item && Number(packageAsset.sizeBytes || 0) > 0 && item.sizeBytes !== Number(packageAsset.sizeBytes)) errors.push('Manifest package size does not match GitHub release metadata.');
-  return { available: true, valid: errors.length === 0, errors, asset: item ? { name:item.name, sha256, sizeBytes:item.sizeBytes, kind:item.kind || null } : null };
+  return { available: true, valid: errors.length === 0, errors, commit:String(manifest.commit || '').toLowerCase(), asset: item ? { name:item.name, sha256, sizeBytes:item.sizeBytes, kind:item.kind || null } : null };
 }
 
 function allowedDownloadUrl(value) {
@@ -209,7 +211,8 @@ async function verifySignedTag(tag) {
       verifiedAt:verification.verified_at || null,
       tagObjectSha:String(ref.object.sha || ''),
       keyFingerprint:parsedSignature ? sshKeyFingerprint(parsedSignature.publicKeyBlob) : null,
-      publicKeyBlob:parsedSignature ? parsedSignature.publicKeyBlob : null
+      publicKeyBlob:parsedSignature ? parsedSignature.publicKeyBlob : null,
+      targetCommitSha:object && object.object && object.object.type === 'commit' ? String(object.object.sha || '').toLowerCase() : null
     };
   } catch (error) {
     return { checked:true, verified:false, reason:String(error && error.message || error) };
@@ -263,7 +266,7 @@ async function downloadAsset(asset, stageDir, maxBytes, progress) {
         callback(null, chunk);
       }
     });
-    await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(tempPath, { flags:'w' }));
+    await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(tempPath, { flags:'wx' }));
     if (expectedSize && downloaded !== expectedSize) throw new Error(name + ' size does not match GitHub release metadata.');
     fs.renameSync(tempPath, finalPath);
     return { name, path:finalPath, sizeBytes:downloaded, sha256:hash.digest('hex') };
@@ -328,8 +331,11 @@ function createUpdateVerificationEngine(options) {
       const packageFile = await downloadAsset(packageAsset, stageDir, MAX_PACKAGE_BYTES, progress);
       const shaVerified = distinctHashes.length > 0 && distinctHashes.every(function(hash) { return hash === packageFile.sha256; });
       const tagSignatureInternal = await tagPromise;
+      if (manifestResult.available && manifestResult.valid && tagSignatureInternal.targetCommitSha && manifestResult.commit !== tagSignatureInternal.targetCommitSha) {
+        manifestResult = { ...manifestResult, valid:false, errors:[...(manifestResult.errors||[]), 'Manifest commit does not match the commit targeted by the signed release tag.'] };
+      }
       const manifestSignature = manifestBuffer && signatureFile ? verifyManifestSshSignature(fs.readFileSync(signatureFile.path, 'utf8'), manifestBuffer, tagSignatureInternal.publicKeyBlob) : { available:Boolean(signatureFile), verified:false, reason:signatureFile?'Manifest signature cannot be verified without a valid manifest.':'No detached manifest signature asset published.' };
-      const tagSignature = { checked:tagSignatureInternal.checked, verified:tagSignatureInternal.verified, reason:tagSignatureInternal.reason, verifiedAt:tagSignatureInternal.verifiedAt || null, tagObjectSha:tagSignatureInternal.tagObjectSha || null, keyFingerprint:tagSignatureInternal.keyFingerprint || null };
+      const tagSignature = { checked:tagSignatureInternal.checked, verified:tagSignatureInternal.verified, reason:tagSignatureInternal.reason, verifiedAt:tagSignatureInternal.verifiedAt || null, tagObjectSha:tagSignatureInternal.tagObjectSha || null, targetCommitSha:tagSignatureInternal.targetCommitSha || null, keyFingerprint:tagSignatureInternal.keyFingerprint || null };
       const manifestGate = !manifestResult.available || (manifestResult.valid === true && manifestSignature.verified === true);
       const shaGate = settings.verifySha256 === false || shaVerified;
       const signatureGate = settings.requireReleaseSignature === false || tagSignature.verified === true;
