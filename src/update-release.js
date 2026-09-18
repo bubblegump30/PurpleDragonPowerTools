@@ -43,6 +43,23 @@ function parseVersion(value) {
   };
 }
 
+function comparePrerelease(aValue, bValue) {
+  const a = String(aValue || '').split('.');
+  const b = String(bValue || '').split('.');
+  const length = Math.max(a.length, b.length);
+  for (let i = 0; i < length; i += 1) {
+    if (a[i] === undefined) return -1;
+    if (b[i] === undefined) return 1;
+    if (a[i] === b[i]) continue;
+    const aNumeric = /^\d+$/.test(a[i]);
+    const bNumeric = /^\d+$/.test(b[i]);
+    if (aNumeric && bNumeric) return Number(a[i]) > Number(b[i]) ? 1 : -1;
+    if (aNumeric !== bNumeric) return aNumeric ? -1 : 1;
+    return a[i] > b[i] ? 1 : -1;
+  }
+  return 0;
+}
+
 function compareVersions(aValue, bValue) {
   const a = parseVersion(aValue);
   const b = parseVersion(bValue);
@@ -52,13 +69,13 @@ function compareVersions(aValue, bValue) {
   }
   if (!a.prerelease && b.prerelease) return 1;
   if (a.prerelease && !b.prerelease) return -1;
-  return a.prerelease.localeCompare(b.prerelease, undefined, { numeric: true, sensitivity: 'base' });
+  return comparePrerelease(a.prerelease, b.prerelease);
 }
 
 function publicRelease(release) {
   const assets = Array.isArray(release?.assets) ? release.assets : [];
   const assetNames = assets.map(asset => String(asset?.name || '')).filter(Boolean);
-  const manifest = assetNames.find(name => /(^|[-_.])manifest([-_.]|$).*\.json$/i.test(name)) || null;
+  const manifest = assetNames.find(name => /manifest[^/]*\.json$/i.test(name)) || null;
   const checksum = assetNames.find(name => /sha[-_ ]?256|checksums?/i.test(name)) || null;
   const signature = assetNames.find(name => /(^|[-_.])(signature|signed)([-_.]|$)|\.(sig|minisig)$/i.test(name)) || null;
   return {
