@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const net = require('net');
 const dns = require('dns').promises;
 const { execFile, spawn } = require('child_process');
+const { createUpdateReleaseCenter } = require('./update-release');
 const BOOT_AT = Date.now();
 const SESSION_ID = `${process.pid}-${BOOT_AT}`;
 let rendererReadyAt = 0;
@@ -42,6 +43,7 @@ let aiSystemContextCache = { at: 0, key: '', data: null };
 let githubCenterCache = { at: 0, data: null, pending: null };
 let githubSourceSelection = [];
 let githubReleaseAssets = [];
+const updateReleaseCenter = createUpdateReleaseCenter({ app, shell, logDiagnostic: writeDiagnostic, addActivity });
 
 // v1.7.0 — Change Journal + Undo. The journal is local-only, capped, and
 // intentionally excludes credentials, prompts, IP/geolocation data, and file contents.
@@ -3624,7 +3626,7 @@ async function githubRequest(endpoint,options={}){
   try{
     const headers={
       'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':GITHUB_API_VERSION,
-      'User-Agent':'PurpleDragonPowerTools/2.1.0',...(options.headers||{})
+      'User-Agent':`PurpleDragonPowerTools/${app.getVersion()}`,...(options.headers||{})
     };
     let body;
     if(Buffer.isBuffer(options.rawBody)){body=options.rawBody;headers['Content-Type']=options.contentType||'application/octet-stream';headers['Content-Length']=String(body.length);}
@@ -4472,6 +4474,10 @@ ipcMain.handle('privacy:appTrustSelect', () => privacySelectAppTrustFile());
 ipcMain.handle('privacy:appTrustInstalled', (_, index) => privacyInspectInstalledApp(index));
 ipcMain.handle('privacy:appProtectionStatus', () => privacyGetAppProtectionStatus());
 ipcMain.handle('privacy:openHashReputation', (_, hash) => privacyOpenHashReputation(hash));
+ipcMain.handle('updates:getState', () => updateReleaseCenter.getState());
+ipcMain.handle('updates:check', (_, force) => updateReleaseCenter.checkForUpdates({force:Boolean(force)}));
+ipcMain.handle('updates:saveSettings', (_, payload) => updateReleaseCenter.saveSettings(payload||{}));
+ipcMain.handle('updates:openRelease', (_, url) => updateReleaseCenter.openRelease(url));
 ipcMain.handle('github:status', () => githubCredentialStatus());
 ipcMain.handle('github:saveToken', (_, token) => saveGitHubCredential(token));
 ipcMain.handle('github:removeToken', () => removeGitHubCredential());
@@ -4663,6 +4669,10 @@ if (!gotSingleInstanceLock) {
     loadStaticCacheFromDisk();
     createWindow();
     setTimeout(() => initializeAutomationEngine().catch(error => writeDiagnostic('automation init', error)), 4200);
+    setTimeout(() => {
+      if (!updateReleaseCenter.shouldCheckOnStartup()) return;
+      updateReleaseCenter.checkForUpdates({force:false}).catch(error => writeDiagnostic('startup update check', error));
+    }, 8000);
   }).catch(error => writeDiagnostic('app.whenReady', error));
 }
 app.on('before-quit', () => { finishSessionState(); if (automationEngineTimer) { clearInterval(automationEngineTimer); automationEngineTimer = null; } });
