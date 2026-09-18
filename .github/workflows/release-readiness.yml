@@ -149,15 +149,21 @@ jobs:
           $lines | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding utf8
           Get-Content dist/SHA256SUMS.txt
 
+      - name: Generate release manifest
+        shell: pwsh
+        run: |
+          ./scripts/New-ReleaseManifest.ps1 -Channel preview -Commit '${{ github.sha }}'
+
       - name: Upload Windows release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: Purple-Dragon-PowerTools-v2.1.0-Release-Candidate
+          name: Purple-Dragon-PowerTools-Release-Candidate
           path: |
             dist/*.exe
             dist/*.msi
             dist/*.zip
             dist/*.blockmap
             dist/SHA256SUMS.txt
+            dist/release-manifest.json
           if-no-files-found: error
           retention-days: 14
