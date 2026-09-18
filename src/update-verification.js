@@ -22,6 +22,83 @@ function normalizeSha256(value) {
   return /^[0-9a-f]{64}$/.test(raw) ? raw : null;
 }
 
+function readUint32(buffer, offset) {
+  if (offset + 4 > buffer.length) throw new Error('Invalid SSH signature encoding.');
+  return buffer.readUInt32BE(offset);
+}
+
+function readSshString(buffer, state) {
+  const length = readUint32(buffer, state.offset);
+  state.offset += 4;
+  if (length < 0 || state.offset + length > buffer.length) throw new Error('Invalid SSH signature string length.');
+  const value = buffer.subarray(state.offset, state.offset + length);
+  state.offset += length;
+  return value;
+}
+
+function encodeSshString(value) {
+  const buffer = Buffer.isBuffer(value) ? value : Buffer.from(String(value || ''), 'utf8');
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(buffer.length, 0);
+  return Buffer.concat([length, buffer]);
+}
+
+function parseArmoredSshSignature(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^-----BEGIN SSH SIGNATURE-----\s+([A-Za-z0-9+/=\s]+)\s+-----END SSH SIGNATURE-----$/);
+  if (!match) throw new Error('Detached signature is not an armored OpenSSH SSHSIG signature.');
+  const blob = Buffer.from(match[1].replace(/\s+/g, ''), 'base64');
+  if (blob.length < 10 || blob.subarray(0, 6).toString('ascii') !== 'SSHSIG') throw new Error('Detached signature SSHSIG preamble is invalid.');
+  const state = { offset:6 };
+  const version = readUint32(blob, state.offset);state.offset += 4;
+  if (version !== 1) throw new Error('Unsupported SSHSIG version.');
+  const publicKeyBlob = readSshString(blob, state);
+  const namespace = readSshString(blob, state).toString('utf8');
+  const reserved = readSshString(blob, state);
+  const hashAlgorithm = readSshString(blob, state).toString('ascii');
+  const signatureBlob = readSshString(blob, state);
+  const keyState = { offset:0 };
+  const keyType = readSshString(publicKeyBlob, keyState).toString('ascii');
+  const keyBytes = readSshString(publicKeyBlob, keyState);
+  const sigState = { offset:0 };
+  const signatureAlgorithm = readSshString(signatureBlob, sigState).toString('ascii');
+  const signatureBytes = readSshString(signatureBlob, sigState);
+  return { version, publicKeyBlob, namespace, reserved, hashAlgorithm, keyType, keyBytes, signatureAlgorithm, signatureBytes };
+}
+
+function sshKeyFingerprint(publicKeyBlob) {
+  return 'SHA256:' + crypto.createHash('sha256').update(publicKeyBlob).digest('base64').replace(/=+$/g, '');
+}
+
+function ed25519PublicKeyObject(rawKey) {
+  if (!Buffer.isBuffer(rawKey) || rawKey.length !== 32) throw new Error('Expected a 32-byte Ed25519 public key.');
+  const prefix = Buffer.from('302a300506032b6570032100', 'hex');
+  return crypto.createPublicKey({ key:Buffer.concat([prefix, rawKey]), format:'der', type:'spki' });
+}
+
+function verifyManifestSshSignature(signatureText, manifestBuffer, expectedPublicKeyBlob) {
+  try {
+    const parsed = parseArmoredSshSignature(signatureText);
+    if (parsed.namespace !== 'file') return { available:true, verified:false, reason:'Manifest SSH signature namespace must be file.' };
+    if (!['sha256','sha512'].includes(parsed.hashAlgorithm)) return { available:true, verified:false, reason:'Manifest SSH signature hash algorithm is unsupported.' };
+    if (parsed.keyType !== 'ssh-ed25519' || parsed.signatureAlgorithm !== 'ssh-ed25519') return { available:true, verified:false, reason:'Manifest signature must use the Purple Dragon Ed25519 release key.' };
+    if (expectedPublicKeyBlob && !crypto.timingSafeEqual(parsed.publicKeyBlob, expectedPublicKeyBlob)) return { available:true, verified:false, reason:'Manifest signature key does not match the GitHub-verified release tag key.', keyFingerprint:sshKeyFingerprint(parsed.publicKeyBlob) };
+    const digest = crypto.createHash(parsed.hashAlgorithm).update(manifestBuffer).digest();
+    const signedData = Buffer.concat([
+      Buffer.from('SSHSIG', 'ascii'),
+      encodeSshString(parsed.namespace),
+      encodeSshString(parsed.reserved),
+      encodeSshString(parsed.hashAlgorithm),
+      encodeSshString(digest)
+    ]);
+    const verified = crypto.verify(null, signedData, ed25519PublicKeyObject(parsed.keyBytes), parsed.signatureBytes);
+    return { available:true, verified, reason:verified?'Detached manifest signature is valid and matches the GitHub-verified release key.':'Detached manifest signature cryptographic verification failed.', keyFingerprint:sshKeyFingerprint(parsed.publicKeyBlob) };
+  } catch (error) {
+    return { available:true, verified:false, reason:String(error && error.message || error) };
+  }
+}
+
+
 function parseChecksums(text) {
   const out = new Map();
   for (const rawLine of String(text || '').split(/\r?\n/)) {
@@ -57,7 +134,7 @@ function findMetadataAsset(release, type) {
   const assets = Array.isArray(release && release.assets) ? release.assets : [];
   if (type === 'checksums') return assets.find(function(asset) { return /sha[-_ ]?256|checksums?/i.test(String(asset.name || '')); }) || null;
   if (type === 'manifest') return assets.find(function(asset) { return /manifest[^/]*\.json$/i.test(String(asset.name || '')); }) || null;
-  if (type === 'signature') return assets.find(function(asset) { return /(^|[-_.])(signature|signed)([-_.]|$)|\.(sig|minisig)$/i.test(String(asset.name || '')); }) || null;
+  if (type === 'signature') return assets.find(function(asset) { return /manifest.*\.(sig|minisig)$/i.test(String(asset.name || '')); }) || assets.find(function(asset) { return /(^|[-_.])(signature|signed)([-_.]|$)|\.(sig|minisig)$/i.test(String(asset.name || '')); }) || null;
   return null;
 }
 
@@ -117,12 +194,16 @@ async function verifySignedTag(tag) {
     }
     const object = await githubJson(GITHUB_API_ROOT + '/git/tags/' + ref.object.sha, 15000);
     const verification = object && object.verification || {};
+    let parsedSignature = null;
+    try { if (verification.signature) parsedSignature = parseArmoredSshSignature(verification.signature); } catch {}
     return {
       checked:true,
       verified:verification.verified === true,
       reason:String(verification.reason || (verification.verified ? 'verified' : 'unverified')),
       verifiedAt:verification.verified_at || null,
-      tagObjectSha:String(ref.object.sha || '')
+      tagObjectSha:String(ref.object.sha || ''),
+      keyFingerprint:parsedSignature ? sshKeyFingerprint(parsedSignature.publicKeyBlob) : null,
+      publicKeyBlob:parsedSignature ? parsedSignature.publicKeyBlob : null
     };
   } catch (error) {
     return { checked:true, verified:false, reason:String(error && error.message || error) };
@@ -225,9 +306,11 @@ function createUpdateVerificationEngine(options) {
       }
       let manifestResult = { available:false, valid:null, errors:[], asset:null };
       let manifestFile = null;
+      let manifestBuffer = null;
       if (manifestAsset) {
         manifestFile = await downloadAsset(manifestAsset, stageDir, MAX_METADATA_BYTES, progress);
-        try { manifestResult = validateManifest(JSON.parse(fs.readFileSync(manifestFile.path, 'utf8')), release, packageAsset); }
+        manifestBuffer = fs.readFileSync(manifestFile.path);
+        try { manifestResult = validateManifest(JSON.parse(manifestBuffer.toString('utf8')), release, packageAsset); }
         catch (error) { manifestResult = { available:true, valid:false, errors:['Manifest JSON could not be parsed: ' + String(error && error.message || error)], asset:null }; }
       }
       let signatureFile = null;
@@ -238,8 +321,10 @@ function createUpdateVerificationEngine(options) {
       if (settings.verifySha256 !== false && distinctHashes.length === 0) throw new Error('No trusted SHA-256 value is available for the selected package.');
       const packageFile = await downloadAsset(packageAsset, stageDir, MAX_PACKAGE_BYTES, progress);
       const shaVerified = distinctHashes.length > 0 && distinctHashes.every(function(hash) { return hash === packageFile.sha256; });
-      const tagSignature = await tagPromise;
-      const manifestGate = !manifestResult.available || manifestResult.valid === true;
+      const tagSignatureInternal = await tagPromise;
+      const manifestSignature = manifestBuffer && signatureFile ? verifyManifestSshSignature(fs.readFileSync(signatureFile.path, 'utf8'), manifestBuffer, tagSignatureInternal.publicKeyBlob) : { available:Boolean(signatureFile), verified:false, reason:signatureFile?'Manifest signature cannot be verified without a valid manifest.':'No detached manifest signature asset published.' };
+      const tagSignature = { checked:tagSignatureInternal.checked, verified:tagSignatureInternal.verified, reason:tagSignatureInternal.reason, verifiedAt:tagSignatureInternal.verifiedAt || null, tagObjectSha:tagSignatureInternal.tagObjectSha || null, keyFingerprint:tagSignatureInternal.keyFingerprint || null };
+      const manifestGate = !manifestResult.available || (manifestResult.valid === true && manifestSignature.verified === true);
       const shaGate = settings.verifySha256 === false || shaVerified;
       const signatureGate = settings.requireReleaseSignature === false || tagSignature.verified === true;
       const verificationPassed = Boolean(shaGate && signatureGate && manifestGate);
@@ -256,7 +341,7 @@ function createUpdateVerificationEngine(options) {
         sha256:{ required:settings.verifySha256 !== false, verified:shaVerified, expected:distinctHashes[0] || null, sources:expectedHashes },
         tagSignature,
         manifest:manifestResult,
-        manifestSignature:{ available:Boolean(signatureFile), verified:false, reason:signatureFile ? 'Detached manifest signature staged; pinned-key verification is not enabled yet.' : 'No detached manifest signature asset published.' },
+        manifestSignature,
         metadata:{ checksums:checksumFile ? checksumFile.name : null, manifest:manifestFile ? manifestFile.name : null, signature:signatureFile ? signatureFile.name : null },
         stage:{ label:'update-staging/' + release.version, retained:true },
         checkedAt:new Date().toISOString(),
@@ -292,5 +377,8 @@ module.exports = {
   validateManifest,
   selectPackageAsset,
   verifySignedTag,
-  normalizeSha256
+  normalizeSha256,
+  parseArmoredSshSignature,
+  verifyManifestSshSignature,
+  sshKeyFingerprint
 };
