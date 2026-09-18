@@ -58,7 +58,7 @@ function publicTransaction(tx, result, capability) {
     rollbackAttempted:Boolean(result?.rollbackAttempted),
     rollbackSucceeded:Boolean(result?.rollbackSucceeded),
     backupRetained:tx ? tx.keepBackup !== false : false,
-    detail:result?.detail || null
+    detail:result?.detail || (tx?.status==='prepared' ? 'Rollback snapshot prepared; waiting for the external update helper.' : null)
   };
 }
 
@@ -117,6 +117,12 @@ function Restore-Backup {
   if (-not (Test-Path -LiteralPath $tx.appExePath)) { throw 'Restored application executable is missing.' }
   $restoredHash = (Get-FileHash -LiteralPath $tx.appExePath -Algorithm SHA256).Hash.ToLowerInvariant()
   if ($restoredHash -ne $tx.sourceExeSha256) { throw 'Restored application executable hash does not match the rollback snapshot.' }
+  if ($tx.sourceAsarSha256) {
+    $restoredAsar = Join-Path $tx.installDir 'resources\app.asar'
+    if (-not (Test-Path -LiteralPath $restoredAsar)) { throw 'Restored app.asar is missing.' }
+    $restoredAsarHash = (Get-FileHash -LiteralPath $restoredAsar -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($restoredAsarHash -ne $tx.sourceAsarSha256) { throw 'Restored app.asar hash does not match the rollback snapshot.' }
+  }
 }
 
 $tx = $null
