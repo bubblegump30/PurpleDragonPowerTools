@@ -79,6 +79,7 @@
   let updateReleaseState = null;
   let updateReleaseLoading = false;
   let updateVerificationBusy = false;
+  let updateInstallBusy = false;
   let updateReleaseProgress = null;
   let githubCenterState = null;
   let githubCenterLoaded = false;
@@ -192,6 +193,8 @@
     async saveUpdateReleaseSettings(payload={}){const st=await this.getUpdateReleaseState();st.settings={...st.settings,...payload};st.channel=st.settings.channel;st.checkPolicy=st.settings.checkPolicy;return {ok:true,settings:st.settings,state:st};},
     async stageAndVerifyUpdate(packageKind='installer'){return {ok:true,verified:true,installUnlocked:false,installImplemented:false,isUpdate:false,version:'2.1.0',tag:'v2.1.0',package:{kind:packageKind,name:packageKind==='portable'?'Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe':'Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe',sizeBytes:119013977,sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'},sha256:{required:true,verified:true,expected:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679',sources:[{source:'SHA256SUMS',sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'}]},tagSignature:{checked:true,verified:true,reason:'valid',verifiedAt:new Date().toISOString()},manifest:{available:false,valid:null,errors:[],asset:null},manifestSignature:{available:false,verified:false,reason:'No detached manifest signature asset published.'},metadata:{checksums:'SHA256SUMS.txt',manifest:null,signature:null},stage:{label:'update-staging/2.1.0',retained:true},checkedAt:new Date().toISOString(),safety:'Package is staged only. Installation and execution remain locked.'};},
     async clearUpdateStaging(){return {ok:true};},
+    async getUpdateTransactionStatus(){return {capability:{canInstall:false,reason:'Browser preview cannot install updates.'},active:false,status:null,backupRetained:false};},
+    async installVerifiedUpdate(){return {ok:false,error:'Desktop-only transactional install'};},
     async openUpdateRelease(){return {ok:false,error:'Desktop-only external link'};},
     async getGitHubStatus(){return {configured:false,encryptionAvailable:true,storage:'Preview secure storage',provider:'GitHub'};},
     async saveGitHubToken(){return {ok:false,error:'Desktop-only secure GitHub connection'};},
