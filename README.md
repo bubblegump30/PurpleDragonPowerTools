@@ -1,23 +1,33 @@
-# Purple Dragon PowerTools v2.1.0 — Stable Release
+# Purple Dragon PowerTools v2.2.0 — Stable Release
 
 Purple Dragon PowerTools is a Windows Electron system utility and AI command center by **Purple Dragon Foundation Ltd**.
 
-`v2.1.0` is the first **Stable public release** of Purple Dragon PowerTools. The v2.1.0 release line completed the public-release hardening pass covering reproducible Windows builds, repository hygiene, Electron security boundaries, sanitized diagnostics, release automation, and improved startup behavior.
+`v2.2.0` is the current **Stable public release** of Purple Dragon PowerTools. It adds Update & Release Center 2.0, cryptographic release verification, signed release manifests, manual transactional updates, rollback/health checks, and a guarded signed Stable publishing pipeline.
 
-The earlier `v2.1.0-rc.1` prerelease remains available as the public release-candidate record.
+`v2.1.0` remains the first Stable public-release milestone, with `v2.1.0-rc.1` retained as the earlier public release-candidate record.
 
 ## Release status
 
-- Version: **2.1.0**
+- Version: **2.2.0**
 - Release channel: **Stable / Latest**
 - Platform: **Windows x64**
 - Runtime: **Electron 44.2.0**
 - Stable public release: **Published**
-- Git tag: **v2.1.0**
+- Git tag: **v2.2.0**
 - Git tag signing: **Verified (SSH signature)**
-- Release integrity: **SHA-256 checksums published**
+- Release integrity: **SHA-256 + signed release manifest + detached SSH signature**
 - Windows executable signing: **Pending (unsigned binaries)**
 - License: **MIT**
+
+## Screenshots
+
+### Command Center dashboard
+
+![Purple Dragon PowerTools v2.2.0 dashboard](docs/screenshots/dashboard.svg)
+
+### Settings, Reliability Center & Stable Release Status
+
+![Purple Dragon PowerTools v2.2.0 settings and reliability center](docs/screenshots/settings.svg)
 
 ## Stable release foundation
 
@@ -83,7 +93,7 @@ Unsupported or inaccessible telemetry should be reported as unavailable/unsuppor
 
 ## Major centers
 
-Purple Dragon PowerTools currently includes Performance & Hardware, System PowerTools, Windows Feature Lab, Storage & Data Hub, Process & Apps, Network PowerTools, Privacy & App Trust Intelligence, Automation Engine, Change Journal + Undo, GitHub Release Center, Security Center, Reliability controls, AI Provider Hub, Dragon Router, Dragon Council, and System-Aware AI.
+Purple Dragon PowerTools currently includes the Dashboard, AI Command Center, Performance & Hardware, System PowerTools, Windows Feature Lab, Storage & Data Hub, Process & Apps, Network PowerTools, Privacy & App Trust Intelligence, Automation Engine, Change Journal + Undo, Experiments, Update & Release Center 2.0, Security Center, Reliability controls, AI Provider Hub, Dragon Router, Dragon Council, and System-Aware AI.
 
 ## Run from source
 
