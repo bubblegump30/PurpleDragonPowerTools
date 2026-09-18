@@ -33,7 +33,8 @@ const manifest = {
   channel:'stable',
   repository:'bubblegump30/PurpleDragonPowerTools',
   commit:'1'.repeat(40),
-  assets:[{name:packageAsset.name,sha256:'a'.repeat(64),sizeBytes:100,kind:'installer'}]
+  assets:[{name:packageAsset.name,sha256:'a'.repeat(64),sizeBytes:100,kind:'installer'}],
+  signature:{algorithm:'ssh-ed25519',keyId:'test-release-key',file:'release-manifest.json.sig'}
 };
 const valid = validateManifest(manifest,release,packageAsset);
 assert.strictEqual(valid.valid,true);
