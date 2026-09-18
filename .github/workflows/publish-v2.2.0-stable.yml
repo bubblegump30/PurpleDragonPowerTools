@@ -1,0 +1,393 @@
+name: Publish v2.2.0 Stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type PUBLISH-v2.2.0 to publish the official Stable release"
+        required: true
+        type: string
+
+concurrency:
+  group: publish-v2.2.0-stable
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build v2.2.0 Stable artifacts
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Require explicit Stable confirmation
+        shell: pwsh
+        run: |
+          if ('${{ inputs.confirmation }}' -ne 'PUBLISH-v2.2.0') {
+            throw 'Stable publication confirmation did not match PUBLISH-v2.2.0.'
+          }
+          if ('${{ github.ref }}' -ne 'refs/heads/main') {
+            throw 'Stable publication must be dispatched from the main branch.'
+          }
+
+      - name: Checkout exact Stable commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate Stable release identity
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.2.0') { throw "Expected package version 2.2.0." }
+          if ($pkg.license -ne 'MIT') { throw "Expected MIT license metadata." }
+          if ($pkg.private -ne $true) { throw "package.json private must remain true." }
+          $required = @(
+            'LICENSE',
+            'RELEASE_NOTES_v2.2.0.md',
+            'STABLE_TAG_SIGNING.md',
+            'UPDATE_RELEASE_TRUST.md',
+            'release-manifest.schema.json',
+            'scripts/New-ReleaseManifest.ps1',
+            'package-lock.json',
+            'runtime/package-lock.json'
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path -LiteralPath $file)) { throw "Required Stable release file is missing: $file" }
+          }
+
+      - name: Validate updater and transaction tests
+        shell: pwsh
+        run: |
+          node --check src/main.js
+          node --check src/preload.js
+          node --check src/renderer.js
+          node --check src/update-release.js
+          node --check src/update-verification.js
+          node --check src/update-transaction.js
+          node scripts/test-update-verification.js
+          node scripts/test-update-transaction.js
+
+      - name: Install packaging dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate runtime lock installation
+        shell: pwsh
+        run: |
+          Push-Location runtime
+          try {
+            npm ci --ignore-scripts --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+
+      - name: Production dependency audit
+        shell: pwsh
+        run: |
+          npm audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Push-Location runtime
+          try {
+            npm audit --omit=dev --audit-level=high
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+
+      - name: Build Windows Setup and Portable
+        run: npm run dist:win -- --publish never
+
+      - name: Generate and verify SHA-256 checksums
+        shell: pwsh
+        run: |
+          $setup = Get-Item 'dist/Purple-Dragon-PowerTools-Setup-2.2.0-x64.exe'
+          $portable = Get-Item 'dist/Purple-Dragon-PowerTools-Portable-2.2.0-x64.exe'
+          $artifacts = @($setup, $portable)
+          foreach ($file in $artifacts) {
+            if (-not $file -or $file.Length -le 0) { throw "Release executable is missing or empty." }
+          }
+          $lines = foreach ($file in $artifacts) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          [System.IO.File]::WriteAllLines(
+            (Join-Path $PWD 'dist/SHA256SUMS.txt'),
+            $lines,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Upload unsigned Stable build bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Purple-Dragon-PowerTools-v2.2.0-Stable-Build
+          path: |
+            dist/Purple-Dragon-PowerTools-Setup-2.2.0-x64.exe
+            dist/Purple-Dragon-PowerTools-Portable-2.2.0-x64.exe
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Sign manifest + tag and publish v2.2.0 Stable
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG_NAME: v2.2.0
+      SIGNING_IDENTITY: 49097353+bubblegump30@users.noreply.github.com
+      STABLE_TAG_SIGNING_KEY: ${{ secrets.STABLE_TAG_SIGNING_KEY }}
+
+    steps:
+      - name: Checkout exact Stable commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify main branch and commit identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(node -p "require('./package.json').version")" = "2.2.0"
+
+      - name: Download Stable build bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: Purple-Dragon-PowerTools-v2.2.0-Stable-Build
+          path: release-artifacts
+
+      - name: Refuse to overwrite existing Stable release or tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Stable release $TAG_NAME already exists." >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Refusing to overwrite it." >&2
+            exit 1
+          fi
+
+      - name: Load dedicated Ed25519 release key
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${STABLE_TAG_SIGNING_KEY:-}" ]; then
+            echo "STABLE_TAG_SIGNING_KEY is not configured." >&2
+            exit 1
+          fi
+          KEY_PATH="$RUNNER_TEMP/purple-dragon-v2.2.0-release-key"
+          printf '%s\n' "$STABLE_TAG_SIGNING_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+
+          PUB_KEY="$(ssh-keygen -y -f "$KEY_PATH")"
+          if ! printf '%s\n' "$PUB_KEY" | grep -q '^ssh-ed25519 '; then
+            echo "Stable release key must be Ed25519." >&2
+            exit 1
+          fi
+
+          PUB_PATH="$RUNNER_TEMP/purple-dragon-v2.2.0-release-key.pub"
+          printf '%s\n' "$PUB_KEY" > "$PUB_PATH"
+          KEY_FINGERPRINT="$(ssh-keygen -lf "$PUB_PATH" -E sha256 | awk '{print $2}')"
+          if ! printf '%s' "$KEY_FINGERPRINT" | grep -Eq '^SHA256:[A-Za-z0-9+/]+$'; then
+            echo "Unable to derive SSH release-key fingerprint." >&2
+            exit 1
+          fi
+
+          echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "PUB_KEY=$PUB_KEY" >> "$GITHUB_ENV"
+          echo "KEY_FINGERPRINT=$KEY_FINGERPRINT" >> "$GITHUB_ENV"
+          echo "Release signing key fingerprint: $KEY_FINGERPRINT"
+
+      - name: Generate official signed-manifest payload
+        shell: pwsh
+        run: |
+          ./scripts/New-ReleaseManifest.ps1 `
+            -DistPath 'release-artifacts' `
+            -Channel stable `
+            -Commit '${{ github.sha }}' `
+            -MinimumVersion '2.1.0' `
+            -KeyId '$env:KEY_FINGERPRINT' `
+            -IncludeSignatureMetadata
+
+      - name: Validate official manifest contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="release-artifacts/release-manifest.json"
+          test -s "$MANIFEST"
+          test "$(jq -r '.schemaVersion' "$MANIFEST")" = "1"
+          test "$(jq -r '.product' "$MANIFEST")" = "Purple Dragon PowerTools"
+          test "$(jq -r '.version' "$MANIFEST")" = "2.2.0"
+          test "$(jq -r '.channel' "$MANIFEST")" = "stable"
+          test "$(jq -r '.repository' "$MANIFEST")" = "bubblegump30/PurpleDragonPowerTools"
+          test "$(jq -r '.commit' "$MANIFEST")" = "$GITHUB_SHA"
+          test "$(jq -r '.signature.algorithm' "$MANIFEST")" = "ssh-ed25519"
+          test "$(jq -r '.signature.keyId' "$MANIFEST")" = "$KEY_FINGERPRINT"
+          test "$(jq -r '.signature.file' "$MANIFEST")" = "release-manifest.json.sig"
+          test "$(jq '.assets | length' "$MANIFEST")" = "2"
+
+          while read -r hash name; do
+            manifest_hash="$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .sha256' "$MANIFEST")"
+            test "$manifest_hash" = "$hash"
+          done < release-artifacts/SHA256SUMS.txt
+
+      - name: Sign and locally verify release manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="release-artifacts/release-manifest.json"
+          SIG="$MANIFEST.sig"
+          rm -f "$SIG"
+          ssh-keygen -Y sign -f "$KEY_PATH" -n file "$MANIFEST"
+          test -s "$SIG"
+
+          ALLOWED="$RUNNER_TEMP/allowed_manifest_signers"
+          printf '%s %s\n' "$SIGNING_IDENTITY" "$PUB_KEY" > "$ALLOWED"
+          ssh-keygen -Y verify \
+            -f "$ALLOWED" \
+            -I "$SIGNING_IDENTITY" \
+            -n file \
+            -s "$SIG" < "$MANIFEST"
+
+      - name: Create and locally verify signed annotated tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "KyleAustinHillier"
+          git config user.email "$SIGNING_IDENTITY"
+          git config gpg.format ssh
+          git config user.signingkey "$KEY_PATH"
+
+          ALLOWED="$RUNNER_TEMP/allowed_tag_signers"
+          printf '%s %s\n' "$SIGNING_IDENTITY" "$PUB_KEY" > "$ALLOWED"
+          git config gpg.ssh.allowedSignersFile "$ALLOWED"
+
+          git tag -s "$TAG_NAME" -m "Purple Dragon PowerTools v2.2.0 Stable Release"
+          git tag -v "$TAG_NAME"
+
+      - name: Push tag and require GitHub Verified status
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin "refs/tags/$TAG_NAME"
+          sleep 2
+
+          REF_JSON="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG_NAME")"
+          OBJ_TYPE="$(printf '%s' "$REF_JSON" | jq -r '.object.type')"
+          OBJ_SHA="$(printf '%s' "$REF_JSON" | jq -r '.object.sha')"
+          test "$OBJ_TYPE" = "tag"
+          test -n "$OBJ_SHA"
+          test "$OBJ_SHA" != "null"
+
+          TAG_JSON="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJ_SHA")"
+          VERIFIED="$(printf '%s' "$TAG_JSON" | jq -r '.verification.verified')"
+          REASON="$(printf '%s' "$TAG_JSON" | jq -r '.verification.reason')"
+          TARGET_TYPE="$(printf '%s' "$TAG_JSON" | jq -r '.object.type')"
+          TARGET_SHA="$(printf '%s' "$TAG_JSON" | jq -r '.object.sha')"
+
+          echo "GitHub tag verification: verified=$VERIFIED reason=$REASON target=$TARGET_SHA"
+          test "$VERIFIED" = "true"
+          test "$TARGET_TYPE" = "commit"
+          test "$TARGET_SHA" = "$GITHUB_SHA"
+
+      - name: Publish official v2.2.0 Stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$TAG_NAME" \
+            "release-artifacts/Purple-Dragon-PowerTools-Setup-2.2.0-x64.exe" \
+            "release-artifacts/Purple-Dragon-PowerTools-Portable-2.2.0-x64.exe" \
+            "release-artifacts/SHA256SUMS.txt" \
+            "release-artifacts/release-manifest.json" \
+            "release-artifacts/release-manifest.json.sig" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Purple Dragon PowerTools v2.2.0" \
+            --notes-file "RELEASE_NOTES_v2.2.0.md" \
+            --latest
+
+      - name: Verify published release metadata and asset digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_JSON="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME")"
+          test "$(printf '%s' "$RELEASE_JSON" | jq -r '.draft')" = "false"
+          test "$(printf '%s' "$RELEASE_JSON" | jq -r '.prerelease')" = "false"
+
+          expected=(
+            "Purple-Dragon-PowerTools-Setup-2.2.0-x64.exe"
+            "Purple-Dragon-PowerTools-Portable-2.2.0-x64.exe"
+            "SHA256SUMS.txt"
+            "release-manifest.json"
+            "release-manifest.json.sig"
+          )
+          for name in "${expected[@]}"; do
+            count="$(printf '%s' "$RELEASE_JSON" | jq --arg name "$name" '[.assets[] | select(.name == $name)] | length')"
+            test "$count" = "1"
+          done
+
+          while read -r hash name; do
+            digest="$(printf '%s' "$RELEASE_JSON" | jq -r --arg name "$name" '.assets[] | select(.name == $name) | .digest // empty')"
+            if [ -n "$digest" ]; then
+              test "$digest" = "sha256:$hash"
+            fi
+          done < release-artifacts/SHA256SUMS.txt
+
+      - name: Re-download and verify published trust metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p published-trust
+          gh release download "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --pattern "SHA256SUMS.txt" --dir published-trust
+          gh release download "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --pattern "release-manifest.json" --dir published-trust
+          gh release download "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --pattern "release-manifest.json.sig" --dir published-trust
+
+          cmp release-artifacts/SHA256SUMS.txt published-trust/SHA256SUMS.txt
+          cmp release-artifacts/release-manifest.json published-trust/release-manifest.json
+          cmp release-artifacts/release-manifest.json.sig published-trust/release-manifest.json.sig
+
+          ALLOWED="$RUNNER_TEMP/allowed_published_manifest_signers"
+          printf '%s %s\n' "$SIGNING_IDENTITY" "$PUB_KEY" > "$ALLOWED"
+          ssh-keygen -Y verify \
+            -f "$ALLOWED" \
+            -I "$SIGNING_IDENTITY" \
+            -n file \
+            -s published-trust/release-manifest.json.sig < published-trust/release-manifest.json
+
+      - name: Verify final Stable release summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json tagName,isPrerelease,isDraft,url,assets
+
+      - name: Clean up failed publication
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes
+          git push origin ":refs/tags/$TAG_NAME"
+          exit 0
+
+      - name: Remove signing key from runner
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          if [ -n "${KEY_PATH:-}" ] && [ -f "$KEY_PATH" ]; then
+            shred -u "$KEY_PATH" 2>/dev/null || rm -f "$KEY_PATH"
+          fi
