@@ -13,7 +13,8 @@
     "dist:win": "electron-builder --win nsis portable",
     "pack:win": "electron-builder --win dir",
     "test:update-verification": "node scripts/test-update-verification.js",
-    "test:update-transaction": "node scripts/test-update-transaction.js"
+    "test:update-transaction": "node scripts/test-update-transaction.js",
+    "test:release-publisher": "node scripts/test-release-publisher.js"
   },
   "devDependencies": {
     "electron": "44.2.0",
