@@ -1,24 +1,24 @@
-# Purple Dragon PowerTools v2.1.0 — Public Release Readiness
+# Purple Dragon PowerTools v2.1.0 — Stable Release
 
 Purple Dragon PowerTools is a Windows Electron system utility and AI command center by **Purple Dragon Foundation Ltd**.
 
-**v2.1.0 is currently a release-candidate / prerelease target.** The application is being hardened for public use with reproducible builds, repository hygiene, security review, clearer unsupported/error states, Windows smoke testing, and public support documentation.
+`v2.1.0` is the first **Stable public release** of Purple Dragon PowerTools. The v2.1.0 release line completed the public-release hardening pass covering reproducible Windows builds, repository hygiene, Electron security boundaries, sanitized diagnostics, release automation, and improved startup behavior.
 
-> Do not treat v2.1.0 as a stable public release until the requirements in [PUBLIC_RELEASE_READINESS.md](PUBLIC_RELEASE_READINESS.md) are complete.
+The earlier `v2.1.0-rc.1` prerelease remains available as the public release-candidate record.
 
 ## Release status
 
 - Version: **2.1.0**
-- Target channel: **Release Candidate / Prerelease**
+- Release channel: **Stable**
 - Platform: **Windows x64**
 - Runtime: **Electron 44.2.0**
-- Stable public release: **Not yet approved**
+- Stable public release: **Approved**
 - Code signing: **Pending**
 - License: **MIT**
 
-## Public-release priorities
+## Stable release foundation
 
-The v2.1.0 readiness pass focuses on:
+The v2.1.0 stable release is built on:
 
 - clean Windows installation and portable packaging
 - dependency and build reproducibility
