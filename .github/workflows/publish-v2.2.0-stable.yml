@@ -221,7 +221,7 @@ jobs:
             -Channel stable `
             -Commit '${{ github.sha }}' `
             -MinimumVersion '2.1.0' `
-            -KeyId '$env:KEY_FINGERPRINT' `
+            -KeyId $env:KEY_FINGERPRINT `
             -IncludeSignatureMetadata
 
       - name: Validate official manifest contents
