@@ -1628,6 +1628,55 @@
   function updateCheckPolicyLabel(value){
     return ({manual:'Manual only',startup:'Every startup','6h':'Every 6 hours','12h':'Every 12 hours',daily:'Daily',weekly:'Weekly'})[value]||'Daily';
   }
+  function renderUpdateVerification(){
+    const v=updateReleaseState?.verification||null;const p=updateReleaseProgress||null;
+    setText('#updateVerifyPackage',v?.ok===false?'Failed':v?.package?.name||'Not staged');
+    setText('#updateVerifyPackageMeta',v?.package?`${v.package.kind==='portable'?'Portable':'Setup'} · ${formatBytes(v.package.sizeBytes||0)}`:'Setup or Portable');
+    const hashState=v?.sha256?.verified===true?'VERIFIED':v?.sha256?.required===false?'OPTIONAL':v?.sha256?'FAILED':'Pending';
+    setText('#updateVerifyHash',hashState);
+    setText('#updateVerifyHashMeta',v?.sha256?.sources?.length?`${v.sha256.sources.length} published hash source${v.sha256.sources.length===1?'':'s'} compared`:v?.sha256?'No matching trusted checksum':'Checksum not evaluated');
+    const tagState=v?.tagSignature?.verified===true?'VERIFIED':v?.tagSignature?.checked?'UNVERIFIED':'Pending';
+    setText('#updateVerifyTag',tagState);
+    setText('#updateVerifyTagMeta',v?.tagSignature?.checked?(v.tagSignature.verified?'GitHub verified signed annotated tag':v.tagSignature.reason||'Tag verification failed'):'GitHub verification not evaluated');
+    const manifestState=v?.manifest?.available?(v.manifest.valid?'VALID':'INVALID'):'NOT PUBLISHED';
+    setText('#updateVerifyManifest',v?manifestState:'Pending');
+    setText('#updateVerifyManifestMeta',v?.manifest?.available?(v.manifest.valid?'Manifest matches selected package':(v.manifest.errors||[])[0]||'Manifest validation failed'):'No manifest evaluated');
+    setText('#updateInstallGate','LOCKED');
+    setText('#updateInstallGateMeta',v?.verified?'Verification passed · install phase still disabled':v?.ok===false?'Verification failed · no execution allowed':'Installation is not implemented in this phase');
+    const detail=$('#updateVerificationDetail');
+    if(detail){
+      if(v?.ok===false)detail.textContent=`Verification stopped: ${v.error||'Unknown error'}. Installation remains locked.`;
+      else if(v)detail.textContent=`${v.verified?'Verification passed.':'Verification needs review.'} ${v.safety||'Installation remains locked.'}${v.manifestSignature?.available?' Detached manifest signature was staged, but pinned-key verification is not enabled yet.':''}`;
+      else detail.textContent='The verifier will compare published SHA-256 sources, validate an available release manifest, and require the GitHub-verified signed annotated release tag when release-signature enforcement is enabled.';
+    }
+    const total=Number(p?.totalBytes)||0,done=Number(p?.downloadedBytes)||0;
+    const percent=p?.phase==='complete'?100:total?Math.max(0,Math.min(100,Math.round(done/total*100))):0;
+    const bar=$('#updateProgressBar');if(bar)bar.style.width=`${percent}%`;
+    setText('#updateProgressText',p?.phase==='download'?`Downloading ${p.asset||'release asset'} · ${formatBytes(done)}${total?` / ${formatBytes(total)} · ${percent}%`:''}`:p?.phase==='prepare'?`Preparing secure staging for ${p.asset||'release package'}…`:p?.phase==='complete'?`Staged and verified ${p.asset||'release package'} · installation remains locked`:p?.phase==='error'?`Verification stopped · ${p.error||'review diagnostics'}`:v?.checkedAt?`Last verification ${relativeTime(v.checkedAt)} · staged files are not executed`:'Ready. Run an update check, then stage the latest official release.');
+    const stage=$('#updateStageVerify');if(stage){stage.disabled=updateVerificationBusy;stage.textContent=updateVerificationBusy?'Staging & Verifying…':'Stage & Verify';}
+    const clear=$('#updateClearStaging');if(clear)clear.disabled=updateVerificationBusy;
+    const kind=$('#updatePackageKind');if(kind)kind.disabled=updateVerificationBusy;
+  }
+  async function stageAndVerifyUpdate(){
+    if(updateVerificationBusy)return;updateVerificationBusy=true;updateReleaseProgress={phase:'prepare',asset:'official release package'};renderUpdateReleaseCenter();
+    try{
+      const kind=$('#updatePackageKind')?.value||'installer';
+      const out=await api.stageAndVerifyUpdate?.(kind);
+      if(!updateReleaseState)updateReleaseState=await api.getUpdateReleaseState?.()||{};
+      updateReleaseState={...updateReleaseState,verification:out};
+      if(!out?.ok)toast('Release verification stopped',out?.error||'Verification failed.');
+      else if(out.verified)toast('Release verification passed',`${out.package?.name||'Package'} · installation remains locked`);
+      else toast('Release verification needs review',out.tagSignature?.reason||'One or more trust checks did not pass.');
+    }catch(error){
+      const out={ok:false,verified:false,installUnlocked:false,error:String(error?.message||error),checkedAt:new Date().toISOString()};
+      updateReleaseState={...(updateReleaseState||{}),verification:out};toast('Release verification stopped',out.error);
+    }finally{updateVerificationBusy=false;renderUpdateReleaseCenter();}
+  }
+  async function clearUpdateStaging(){
+    if(updateVerificationBusy)return;const out=await api.clearUpdateStaging?.();
+    if(!out?.ok){toast('Unable to clear update staging',out?.error||'');return;}
+    updateReleaseProgress=null;if(updateReleaseState)updateReleaseState={...updateReleaseState,verification:null};renderUpdateReleaseCenter();toast('Update staging cleared','No staged update package remains.');
+  }
   function renderUpdateReleaseCenter(){
     const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.2.0';const latest=st.latestVersion||null;const trust=st.trust||{};
     setText('#updateCurrentVersion',`v${current}`);setText('#updateBuildType',st.build?.type||'Build origin unavailable');
@@ -1649,6 +1698,7 @@
     const releases=Array.isArray(st.releases)?st.releases:[];setText('#updateHistoryMeta',releases.length?`${releases.length} release${releases.length===1?'':'s'} loaded`:st.lastCheckAt?`Last checked ${relativeTime(st.lastCheckAt)}`:'No update check yet');
     const list=$('#updateReleaseHistory');if(list)list.innerHTML=releases.length?releases.map(r=>`<button class="update-release-row" data-update-release-link="${escapeHtml(r.url||'')}"><span><strong>${escapeHtml(r.name||r.tag||'Release')}</strong><small>${escapeHtml(r.tag||'')}${r.prerelease?' · Preview':''} · ${escapeHtml(relativeTime(r.publishedAt))}</small></span><b>${r.trust?.checksumAvailable?'SHA-256':'No checksum'}${r.trust?.signatureAvailable?' · Signed':''}</b></button>`).join(''):'<div class="empty">Run Check for Updates to load release history.</div>';
     const check=$('#updateCheck');if(check){check.disabled=updateReleaseLoading;check.textContent=updateReleaseLoading?'Checking…':'Check for Updates';}
+    renderUpdateVerification();
   }
   async function loadUpdateReleaseCenter(force=false){
     if(updateReleaseLoading)return;updateReleaseLoading=true;renderUpdateReleaseCenter();
@@ -2036,6 +2086,8 @@
       if(a==='export') doExport(); else if(a==='experiment') createDraft('Experiment'); else if(a==='automation'){navigate('automation');setTimeout(()=>{automationEditingRuleId=null;resetAutomationBuilder();$('#automationName')?.focus();},80);} else openWindows(a);
     }));
     $('#updateCheck')?.addEventListener('click',()=>loadUpdateReleaseCenter(true));
+    $('#updateStageVerify')?.addEventListener('click',stageAndVerifyUpdate);
+    $('#updateClearStaging')?.addEventListener('click',clearUpdateStaging);
     $('#updateOpenRelease')?.addEventListener('click',async()=>{if(!updateReleaseState?.latestReleaseUrl)return;const out=await api.openUpdateRelease?.(updateReleaseState.latestReleaseUrl);if(out?.ok===false)toast('Unable to open release',out.error||'');});
     $('#updateChannel')?.addEventListener('change',async()=>{await saveUpdateReleaseSettings();await loadUpdateReleaseCenter(true);});
     $('#updateCheckPolicy')?.addEventListener('change',saveUpdateReleaseSettings);
@@ -2070,6 +2122,7 @@
     window.addEventListener('unhandledrejection',event=>{nativeApi?.reportRendererError?.({message:event?.reason?.stack||event?.reason?.message||String(event?.reason||'Renderer unhandled rejection')});});
     if(nativeApi?.rendererReady) nativeApi.rendererReady().then(status=>{reliabilityState=status;reliabilityLoaded=Boolean(status);if($('#view-settings')?.classList.contains('active'))renderReliability();}).catch(()=>{});
     if(nativeApi?.onAutomationEvent) nativeApi.onAutomationEvent(item=>{automationLoaded=false;if($('#view-automation')?.classList.contains('active'))loadAutomationCenter(true);toast(item?.ok===false?'Automation action failed':'Automation rule fired',item?.ruleName||'Automation Engine');refreshActivity();});
+    if(nativeApi?.onUpdateReleaseProgress) nativeApi.onUpdateReleaseProgress(item=>{updateReleaseProgress=item||null;if($('#view-integrations')?.classList.contains('active'))renderUpdateVerification();});
     if(nativeApi?.onAutomationNavigate) nativeApi.onAutomationNavigate(view=>{if(view)navigate(view);});
 
     // v1.7.0 Change Journal + Undo: paint and begin live sampling immediately; reliability and release readiness remain local/lazy. Static CIM/firmware and
