@@ -78,6 +78,8 @@
   let featureLabBusy = false;
   let updateReleaseState = null;
   let updateReleaseLoading = false;
+  let updateVerificationBusy = false;
+  let updateReleaseProgress = null;
   let githubCenterState = null;
   let githubCenterLoaded = false;
   let githubCenterLoading = false;
@@ -188,6 +190,8 @@
     async getUpdateReleaseState(){return {ok:true,repository:'bubblegump30/PurpleDragonPowerTools',currentVersion:'2.2.0',channel:'stable',checkPolicy:'daily',updateAvailable:false,latestVersion:'2.1.0',latestReleaseUrl:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',latestPublishedAt:new Date(Date.now()-86400000).toISOString(),lastCheckAt:new Date().toISOString(),build:{packaged:false,type:'Browser preview build',platform:'win32',arch:'x64'},trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false},settings:{channel:'stable',checkPolicy:'daily',autoDownload:false,autoInstall:false,verifySha256:true,requireReleaseSignature:true,keepRollbackPackage:true,showNotifications:true},releases:[{tag:'v2.1.0',version:'2.1.0',name:'Purple Dragon PowerTools v2.1.0',publishedAt:new Date(Date.now()-86400000).toISOString(),url:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',prerelease:false,trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false}}]};},
     async checkForAppUpdates(){return this.getUpdateReleaseState();},
     async saveUpdateReleaseSettings(payload={}){const st=await this.getUpdateReleaseState();st.settings={...st.settings,...payload};st.channel=st.settings.channel;st.checkPolicy=st.settings.checkPolicy;return {ok:true,settings:st.settings,state:st};},
+    async stageAndVerifyUpdate(packageKind='installer'){return {ok:true,verified:true,installUnlocked:false,installImplemented:false,isUpdate:false,version:'2.1.0',tag:'v2.1.0',package:{kind:packageKind,name:packageKind==='portable'?'Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe':'Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe',sizeBytes:119013977,sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'},sha256:{required:true,verified:true,expected:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679',sources:[{source:'SHA256SUMS',sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'}]},tagSignature:{checked:true,verified:true,reason:'valid',verifiedAt:new Date().toISOString()},manifest:{available:false,valid:null,errors:[],asset:null},manifestSignature:{available:false,verified:false,reason:'No detached manifest signature asset published.'},metadata:{checksums:'SHA256SUMS.txt',manifest:null,signature:null},stage:{label:'update-staging/2.1.0',retained:true},checkedAt:new Date().toISOString(),safety:'Package is staged only. Installation and execution remain locked.'};},
+    async clearUpdateStaging(){return {ok:true};},
     async openUpdateRelease(){return {ok:false,error:'Desktop-only external link'};},
     async getGitHubStatus(){return {configured:false,encryptionAvailable:true,storage:'Preview secure storage',provider:'GitHub'};},
     async saveGitHubToken(){return {ok:false,error:'Desktop-only secure GitHub connection'};},
