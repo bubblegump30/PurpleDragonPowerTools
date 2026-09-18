@@ -1,5 +1,19 @@
 # Changelog
 
+## v2.2.0 — Update & Release Center 2.0 (In development)
+
+- Added a dedicated Update & Release Center 2.0 above the existing GitHub publishing workspace.
+- Added public, token-free checks against the official `bubblegump30/PurpleDragonPowerTools` GitHub releases feed.
+- Added Stable and Preview release channels plus Manual, Startup, 6-hour, 12-hour, Daily, and Weekly check policies.
+- Added persistent local update settings with atomic writes under Electron user data.
+- Added release-history display and update-availability detection using semantic-version comparison.
+- Added release trust-material discovery for manifests, SHA-256/checksum assets, and detached signature assets.
+- Added build-origin display for packaged versus source/development builds.
+- Kept automatic download and installation disabled while the verification/download/rollback pipeline is still being implemented.
+- Preserved the existing GitHub repository browser, source commit workflow, release notes generator, and release publisher.
+
+
+
 ## v2.1.0 — Stable Release
 
 ### Stable promotion
