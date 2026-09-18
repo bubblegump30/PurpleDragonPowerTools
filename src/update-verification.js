@@ -345,8 +345,8 @@ function createUpdateVerificationEngine(options) {
       lastVerification = {
         ok:true,
         verified:verificationPassed,
-        installUnlocked:false,
-        installImplemented:false,
+        installUnlocked:Boolean(verificationPassed && isUpdate && requestedKind === 'installer' && manifestResult.available === true && manifestResult.valid === true && manifestSignature.verified === true),
+        installImplemented:true,
         isUpdate,
         version:release.version,
         tag:release.tag,
@@ -358,7 +358,7 @@ function createUpdateVerificationEngine(options) {
         metadata:{ checksums:checksumFile ? checksumFile.name : null, manifest:manifestFile ? manifestFile.name : null, signature:signatureFile ? signatureFile.name : null },
         stage:{ label:'update-staging/' + release.version, retained:true },
         checkedAt:new Date().toISOString(),
-        safety:'Package is staged only. Installation and execution remain locked.'
+        safety:'Package is staged only. Installation requires an explicit confirmation and transactional rollback preparation.'
       };
       lastInstallCandidate = verificationPassed ? {
         version:release.version,
@@ -380,7 +380,7 @@ function createUpdateVerificationEngine(options) {
     } catch (error) {
       logDiagnostic('update release stage/verify', error);
       lastInstallCandidate = null;
-      lastVerification = { ok:false, verified:false, installUnlocked:false, installImplemented:false, version:release.version, tag:release.tag, error:String(error && error.message || error), checkedAt:new Date().toISOString(), safety:'Installation remains locked.' };
+      lastVerification = { ok:false, verified:false, installUnlocked:false, installImplemented:true, version:release.version, tag:release.tag, error:String(error && error.message || error), checkedAt:new Date().toISOString(), safety:'Installation remains locked.' };
       progress({ phase:'error', asset:packageAsset.name, error:lastVerification.error });
       return lastVerification;
     }
