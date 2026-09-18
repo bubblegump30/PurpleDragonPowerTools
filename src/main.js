@@ -50,6 +50,11 @@ const updateReleaseCenter = createUpdateReleaseCenter({
   addActivity,
   notify: (title, body) => {
     try { if (Notification.isSupported()) new Notification({ title, body }).show(); } catch {}
+  },
+  progress: (payload) => {
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:progress', payload || {});
+    } catch {}
   }
 });
 
@@ -4485,6 +4490,8 @@ ipcMain.handle('privacy:openHashReputation', (_, hash) => privacyOpenHashReputat
 ipcMain.handle('updates:getState', () => updateReleaseCenter.getState());
 ipcMain.handle('updates:check', (_, force) => updateReleaseCenter.checkForUpdates({force:Boolean(force)}));
 ipcMain.handle('updates:saveSettings', (_, payload) => updateReleaseCenter.saveSettings(payload||{}));
+ipcMain.handle('updates:stageVerify', (_, packageKind) => updateReleaseCenter.stageLatestPackage(packageKind));
+ipcMain.handle('updates:clearStaging', () => updateReleaseCenter.clearStaging());
 ipcMain.handle('updates:openRelease', (_, url) => updateReleaseCenter.openRelease(url));
 ipcMain.handle('github:status', () => githubCredentialStatus());
 ipcMain.handle('github:saveToken', (_, token) => saveGitHubCredential(token));
