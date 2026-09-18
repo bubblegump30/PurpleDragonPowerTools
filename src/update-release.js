@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createUpdateVerificationEngine } = require('./update-verification');
+const { createUpdateTransactionManager } = require('./update-transaction');
 
 const OFFICIAL_REPOSITORY = 'bubblegump30/PurpleDragonPowerTools';
 const RELEASES_API = `https://api.github.com/repos/${OFFICIAL_REPOSITORY}/releases?per_page=20`;
@@ -108,10 +109,20 @@ function publicRelease(release) {
   };
 }
 
-function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addActivity = () => {}, notify = () => {}, progress = () => {} }) {
+function createUpdateReleaseCenter({ app, shell, dialog, logDiagnostic = () => {}, addActivity = () => {}, notify = () => {}, progress = () => {} }) {
   let cache = null;
   let pending = null;
   const verificationEngine = createUpdateVerificationEngine({ app, logDiagnostic, addActivity, progress });
+  const transactionManager = createUpdateTransactionManager({
+    app,
+    dialog,
+    logDiagnostic,
+    addActivity,
+    progress,
+    getCandidate: () => verificationEngine.getInstallCandidate(),
+    getVerification: () => verificationEngine.getLastVerification(),
+    compareVersions
+  });
 
   function settingsPath() {
     return path.join(app.getPath('userData'), 'update-release-settings.json');
@@ -203,6 +214,7 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
       },
       releases: [],
       verification: verificationEngine.getLastVerification(),
+      transaction: transactionManager.getStatus(),
       ...extra
     };
   }
@@ -336,8 +348,27 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
 
   function clearStaging() {
     const result = verificationEngine.clearStaging();
-    if (cache) cache = { ...cache, verification: null };
+    if (cache) cache = { ...cache, verification: null, transaction: transactionManager.getStatus() };
     return result;
+  }
+
+  async function installVerifiedPackage() {
+    const settings = readSettings();
+    const result = await transactionManager.prepareAndInstall(settings);
+    if (cache) cache = { ...cache, transaction: result.transaction || transactionManager.getStatus() };
+    return result;
+  }
+
+  function getTransactionStatus() {
+    return transactionManager.getStatus();
+  }
+
+  function noteRendererReady() {
+    transactionManager.noteRendererReady();
+  }
+
+  function noteLaunchRecovery() {
+    transactionManager.noteLaunchRecovery();
   }
 
   async function openRelease(urlValue) {
@@ -362,6 +393,10 @@ function createUpdateReleaseCenter({ app, shell, logDiagnostic = () => {}, addAc
     checkForUpdates,
     stageLatestPackage,
     clearStaging,
+    installVerifiedPackage,
+    getTransactionStatus,
+    noteRendererReady,
+    noteLaunchRecovery,
     shouldCheckOnStartup: () => isDue(readSettings()),
     openRelease
   };
