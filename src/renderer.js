@@ -1676,7 +1676,8 @@
       const kind=$('#updatePackageKind')?.value||'installer';
       const out=await api.stageAndVerifyUpdate?.(kind);
       if(!updateReleaseState)updateReleaseState=await api.getUpdateReleaseState?.()||{};
-      updateReleaseState={...updateReleaseState,verification:out};
+      const transaction=await api.getUpdateTransactionStatus?.();
+      updateReleaseState={...updateReleaseState,verification:out,transaction:transaction||updateReleaseState.transaction};
       if(!out?.ok)toast('Release verification stopped',out?.error||'Verification failed.');
       else if(out.verified)toast('Release verification passed',`${out.package?.name||'Package'} · installation remains locked`);
       else toast('Release verification needs review',out.tagSignature?.reason||'One or more trust checks did not pass.');
@@ -1686,9 +1687,21 @@
     }finally{updateVerificationBusy=false;renderUpdateReleaseCenter();}
   }
   async function clearUpdateStaging(){
-    if(updateVerificationBusy)return;const out=await api.clearUpdateStaging?.();
+    if(updateVerificationBusy||updateInstallBusy)return;const out=await api.clearUpdateStaging?.();
     if(!out?.ok){toast('Unable to clear update staging',out?.error||'');return;}
-    updateReleaseProgress=null;if(updateReleaseState)updateReleaseState={...updateReleaseState,verification:null};renderUpdateReleaseCenter();toast('Update staging cleared','No staged update package remains.');
+    const transaction=await api.getUpdateTransactionStatus?.();
+    updateReleaseProgress=null;if(updateReleaseState)updateReleaseState={...updateReleaseState,verification:null,transaction:transaction||updateReleaseState.transaction};renderUpdateReleaseCenter();toast('Update staging cleared','No staged update package remains.');
+  }
+  async function installVerifiedUpdate(){
+    if(updateInstallBusy||updateVerificationBusy)return;updateInstallBusy=true;renderUpdateReleaseCenter();
+    try{
+      const out=await api.installVerifiedUpdate?.();
+      if(out?.canceled)return;
+      if(out?.transaction&&updateReleaseState)updateReleaseState={...updateReleaseState,transaction:out.transaction};
+      if(!out?.ok){toast('Verified update not installed',out?.error||'Install gate rejected the request.');return;}
+      toast('Verified update prepared','Rollback snapshot created. PowerTools will close and complete the installation.');
+    }catch(error){toast('Verified update not installed',String(error?.message||error));}
+    finally{updateInstallBusy=false;renderUpdateReleaseCenter();}
   }
   function renderUpdateReleaseCenter(){
     const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.2.0';const latest=st.latestVersion||null;const trust=st.trust||{};
@@ -2101,6 +2114,7 @@
     $('#updateCheck')?.addEventListener('click',()=>loadUpdateReleaseCenter(true));
     $('#updateStageVerify')?.addEventListener('click',stageAndVerifyUpdate);
     $('#updateClearStaging')?.addEventListener('click',clearUpdateStaging);
+    $('#updateInstallVerified')?.addEventListener('click',installVerifiedUpdate);
     $('#updateOpenRelease')?.addEventListener('click',async()=>{if(!updateReleaseState?.latestReleaseUrl)return;const out=await api.openUpdateRelease?.(updateReleaseState.latestReleaseUrl);if(out?.ok===false)toast('Unable to open release',out.error||'');});
     $('#updateChannel')?.addEventListener('change',async()=>{await saveUpdateReleaseSettings();await loadUpdateReleaseCenter(true);});
     $('#updateCheckPolicy')?.addEventListener('change',saveUpdateReleaseSettings);
