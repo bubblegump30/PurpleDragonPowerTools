@@ -65,7 +65,8 @@ jobs:
           node --check src/preload.js
           node --check src/renderer.js
           node --check src/update-release.js
-          node -e "const v=require('./src/update-release'); if(v.compareVersions('2.2.0','2.1.0')<=0||v.compareVersions('2.2.0-rc.1','2.2.0')>=0) process.exit(1);"
+          node --check src/update-verification.js
+          node scripts/test-update-verification.js
 
       - name: Validate package metadata
         shell: pwsh
