@@ -1,7 +1,7 @@
 {
   "name": "purple-dragon-powertools",
   "version": "2.1.0",
-  "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd, currently in v2.1.0 public-release readiness.",
+  "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
   "license": "MIT",

@@ -328,9 +328,9 @@ function getReliabilityStatus() {
 function stableReleaseSummaryText(status) {
   const checks = Array.isArray(status?.checks) ? status.checks : [];
   return [
-    'Purple Dragon PowerTools Public Release Readiness',
+    'Purple Dragon PowerTools Stable Release',
     `Version: ${status?.version || app.getVersion()}`,
-    `Channel: ${status?.channel || 'Release Candidate'}`,
+    `Channel: ${status?.channel || 'Stable'}`,
     `Status: ${status?.ready ? 'READY' : 'REVIEW'}`,
     `Passed: ${status?.passed || 0}`,
     `Warnings: ${status?.warnings || 0}`,
@@ -359,7 +359,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Release candidate version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.1.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
@@ -373,7 +373,7 @@ function getStableReleaseStatus() {
   const passed = checks.filter(c => c.ok).length;
   return {
     version: app.getVersion(),
-    channel: 'Release Candidate',
+    channel: 'Stable',
     generatedAt: new Date().toISOString(),
     ready: blocking.length === 0,
     passed,
@@ -446,7 +446,7 @@ function createWindow() {
     writeDiagnostic('render-process-gone', lastRendererError);
     setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload(); }, 650);
   });
-  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 Release Candidate is ready');
+  addActivity('Application started', 'Purple Dragon PowerTools v2.1.0 Stable is ready');
 }
 
 function timesTotal(times) {
@@ -4492,7 +4492,7 @@ ipcMain.handle('journal:clear', () => clearChangeJournal());
 
 ipcMain.handle('reliability:getStatus', () => getReliabilityStatus());
 ipcMain.handle('stable:getStatus', () => getStableReleaseStatus());
-ipcMain.handle('stable:copySummary', () => { const status=getStableReleaseStatus(); clipboard.writeText(stableReleaseSummaryText(status)); addActivity('Release readiness summary copied', status.ready ? 'RC preflight is ready' : 'RC preflight has warnings'); return {ok:true,status}; });
+ipcMain.handle('stable:copySummary', () => { const status=getStableReleaseStatus(); clipboard.writeText(stableReleaseSummaryText(status)); addActivity('Stable readiness summary copied', status.ready ? 'Stable preflight is ready' : 'Stable preflight has warnings'); return {ok:true,status}; });
 ipcMain.handle('reliability:copySummary', () => {
   const status = getReliabilityStatus();
   clipboard.writeText(reliabilitySummaryText(status));
@@ -4523,7 +4523,7 @@ ipcMain.handle('reliability:resetStaticCache', async () => {
 ipcMain.handle('app:getInfo', () => ({
   name: 'Purple Dragon PowerTools',
   version: app.getVersion(),
-  edition: 'Public Release Readiness',
+  edition: 'Stable Release',
   creator: 'Purple Dragon Foundation Ltd',
   company: 'Purple Dragon Foundation Ltd',
   tagline: 'Software Development · Innovation · Solutions',

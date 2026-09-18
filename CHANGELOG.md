@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.1.0 — Stable Release
+
+### Stable promotion
+- Promoted the v2.1.0 release-candidate line to the first Stable public release.
+- Updated application/runtime UI from Release Candidate / Public Release Readiness to Stable Release.
+- Added final Stable release notes and a dedicated Stable Git-tag signing guide.
+- Added a guarded Stable publisher that requires a GitHub-recognized SSH signature on the annotated `v2.1.0` tag before publishing.
+- Stable publisher removes the remote tag and aborts if GitHub does not report the tag signature as verified.
+- Kept Windows Authenticode/code-signing status separate from Git tag verification; Windows binaries may remain unsigned until a certificate is available.
+- Retired the completed one-shot `v2.1.0-rc.1` publisher after successful prerelease publication.
+- The public `v2.1.0-rc.1` release remains available as the release-candidate record.
+
 ## v2.1.0 — Public Release Readiness + NordVPN / ExpressVPN Center
 
 ### Public release readiness

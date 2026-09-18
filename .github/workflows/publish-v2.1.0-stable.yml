@@ -1,0 +1,225 @@
+name: Publish v2.1.0 Stable
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/stable-release-trigger.txt"
+
+jobs:
+  build:
+    name: Build verified Stable artifacts
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate Stable release identity
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.0') { throw "Expected package version 2.1.0." }
+          if ($pkg.license -ne 'MIT') { throw "Expected MIT license metadata." }
+          if ($pkg.private -ne $true) { throw "package.json private must remain true." }
+          if (-not (Test-Path LICENSE)) { throw "LICENSE is missing." }
+          if (-not (Test-Path RELEASE_NOTES_v2.1.0.md)) { throw "Stable release notes are missing." }
+          if (-not (Test-Path STABLE_TAG_SIGNING.md)) { throw "Stable tag signing guide is missing." }
+          if (-not (Test-Path package-lock.json)) { throw "Root package lock is missing." }
+          if (-not (Test-Path runtime/package-lock.json)) { throw "Runtime package lock is missing." }
+
+      - name: Validate JavaScript syntax
+        shell: pwsh
+        run: |
+          node --check src/main.js
+          node --check src/preload.js
+          node --check src/renderer.js
+
+      - name: Install packaging dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate runtime lock installation
+        shell: pwsh
+        run: |
+          Push-Location runtime
+          try {
+            npm ci --ignore-scripts --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+
+      - name: Production dependency audit
+        shell: pwsh
+        run: |
+          npm audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Push-Location runtime
+          try {
+            npm audit --omit=dev --audit-level=high
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+
+      - name: Build Windows Setup and Portable
+        run: npm run dist:win -- --publish never
+
+      - name: Generate and verify SHA-256 checksums
+        shell: pwsh
+        run: |
+          $setup = Get-Item 'dist/Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe'
+          $portable = Get-Item 'dist/Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe'
+          if (-not $setup) { throw "Setup executable is missing." }
+          if (-not $portable) { throw "Portable executable is missing." }
+          $artifacts = @($setup, $portable)
+          $lines = foreach ($file in $artifacts) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          $lines | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding utf8
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Upload Stable build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Purple-Dragon-PowerTools-v2.1.0-Stable
+          path: |
+            dist/Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe
+            dist/Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Sign verified tag and publish Stable release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG_NAME: v2.1.0
+      STABLE_TAG_SIGNING_KEY: ${{ secrets.STABLE_TAG_SIGNING_KEY }}
+
+    steps:
+      - name: Checkout exact Stable commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Stable artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Purple-Dragon-PowerTools-v2.1.0-Stable
+          path: release-artifacts
+
+      - name: Refuse to overwrite existing Stable release or tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Stable release $TAG_NAME already exists." >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Refusing to overwrite it." >&2
+            exit 1
+          fi
+
+      - name: Require dedicated SSH signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${STABLE_TAG_SIGNING_KEY:-}" ]; then
+            echo "STABLE_TAG_SIGNING_KEY is not configured. See STABLE_TAG_SIGNING.md." >&2
+            exit 1
+          fi
+          KEY_PATH="$RUNNER_TEMP/purple-dragon-stable-signing-key"
+          printf '%s\n' "$STABLE_TAG_SIGNING_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          PUB_KEY="$(ssh-keygen -y -f "$KEY_PATH")"
+          PUB_DATA="$(printf '%s\n' "$PUB_KEY" | awk '{print $2}')"
+          if [ -z "$PUB_DATA" ]; then
+            echo "Unable to derive public SSH signing key." >&2
+            exit 1
+          fi
+          REGISTERED="$(gh api "/users/bubblegump30/ssh_signing_keys" --paginate --jq '.[] | [.key, .title] | @tsv')"
+          if ! printf '%s\n' "$REGISTERED" | grep -Fq "$PUB_DATA"; then
+            echo "The Actions signing key is not registered as a GitHub SSH Signing Key for bubblegump30." >&2
+            echo "See STABLE_TAG_SIGNING.md before retrying." >&2
+            exit 1
+          fi
+          echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "PUB_KEY=$PUB_KEY" >> "$GITHUB_ENV"
+
+      - name: Create and locally verify signed annotated tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "KyleAustinHillier"
+          git config user.email "49097353+bubblegump30@users.noreply.github.com"
+          git config gpg.format ssh
+          git config user.signingkey "$KEY_PATH"
+          ALLOWED="$RUNNER_TEMP/allowed_signers"
+          printf '%s %s\n' "49097353+bubblegump30@users.noreply.github.com" "$PUB_KEY" > "$ALLOWED"
+          git config gpg.ssh.allowedSignersFile "$ALLOWED"
+          git tag -s "$TAG_NAME" -m "Purple Dragon PowerTools v2.1.0 Stable Release"
+          git tag -v "$TAG_NAME"
+
+      - name: Push tag and require GitHub Verified status
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin "refs/tags/$TAG_NAME"
+          sleep 2
+          REF_JSON="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG_NAME")"
+          OBJ_TYPE="$(printf '%s' "$REF_JSON" | jq -r '.object.type')"
+          OBJ_SHA="$(printf '%s' "$REF_JSON" | jq -r '.object.sha')"
+          if [ "$OBJ_TYPE" != "tag" ] || [ -z "$OBJ_SHA" ] || [ "$OBJ_SHA" = "null" ]; then
+            git push origin ":refs/tags/$TAG_NAME" || true
+            echo "Stable tag is not an annotated tag object. Removed it." >&2
+            exit 1
+          fi
+          TAG_JSON="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJ_SHA")"
+          VERIFIED="$(printf '%s' "$TAG_JSON" | jq -r '.verification.verified')"
+          REASON="$(printf '%s' "$TAG_JSON" | jq -r '.verification.reason')"
+          echo "GitHub tag verification: verified=$VERIFIED reason=$REASON"
+          if [ "$VERIFIED" != "true" ]; then
+            git push origin ":refs/tags/$TAG_NAME" || true
+            echo "GitHub did not verify the Stable tag signature. Remote tag removed; release not published." >&2
+            exit 1
+          fi
+
+      - name: Publish Stable GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$TAG_NAME" \
+            "release-artifacts/Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe" \
+            "release-artifacts/Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe" \
+            "release-artifacts/SHA256SUMS.txt" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Purple Dragon PowerTools v2.1.0" \
+            --notes-file "RELEASE_NOTES_v2.1.0.md" \
+            --latest
+
+      - name: Verify published Stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json tagName,isPrerelease,isDraft,url,assets
