@@ -184,6 +184,7 @@ function createUpdateTransactionManager(options) {
   const getCandidate = options.getCandidate || function() { return null; };
   const getVerification = options.getVerification || function() { return null; };
   const compareVersions = options.compareVersions || function() { return 0; };
+  const healthCheck = options.healthCheck || function() { return { ok:true }; };
 
   function roots() {
     const userData = app.getPath('userData');
@@ -198,6 +199,8 @@ function createUpdateTransactionManager(options) {
   function capability() {
     const candidate = getCandidate();
     const verification = getVerification();
+    const existing = findLatestTransaction();
+    if (existing.tx?.status === 'prepared' && !existing.result) return { canInstall:false, reason:'An update transaction is already prepared and awaiting the external helper.' };
     if (process.platform !== 'win32') return { canInstall:false, reason:'Transactional install is Windows-only.' };
     if (!app.isPackaged) return { canInstall:false, reason:'Transactional install is disabled for source/development builds.' };
     if (process.env.PORTABLE_EXECUTABLE_FILE) return { canInstall:false, reason:'Transactional install is disabled while running the Portable build.' };
@@ -361,9 +364,12 @@ function createUpdateTransactionManager(options) {
       const coreFiles = ['resources/app.asar'].map(rel => path.join(tx.installDir, rel));
       let userDataWritable = false;
       try { fs.accessSync(app.getPath('userData'), fs.constants.W_OK); userDataWritable = true; } catch {}
-      const ok = app.getVersion() === tx.targetVersion && coreFiles.every(fs.existsSync) && userDataWritable;
-      if (!ok) return { ok:false, error:'Post-update health requirements are not satisfied.' };
-      atomicJson(d.healthMarkerPath, { ok:true, transactionId:id, version:app.getVersion(), rendererReady:true, userDataWritable, checkedAt:new Date().toISOString() });
+      let runtimeHealth = { ok:true };
+      try { runtimeHealth = healthCheck() || { ok:false, reason:'Runtime health callback returned no result.' }; }
+      catch (error) { runtimeHealth = { ok:false, reason:String(error?.message || error) }; }
+      const ok = app.getVersion() === tx.targetVersion && coreFiles.every(fs.existsSync) && userDataWritable && runtimeHealth.ok === true;
+      if (!ok) return { ok:false, error:runtimeHealth.reason || 'Post-update health requirements are not satisfied.' };
+      atomicJson(d.healthMarkerPath, { ok:true, transactionId:id, version:app.getVersion(), rendererReady:true, userDataWritable, runtimeHealth, checkedAt:new Date().toISOString() });
       addActivity('Post-update health check passed', `v${app.getVersion()} · transaction ${id}`);
       return { ok:true };
     } catch (error) { logDiagnostic('post-update health marker', error); return { ok:false, error:String(error?.message || error) }; }
