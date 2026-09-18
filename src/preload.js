@@ -57,6 +57,8 @@ contextBridge.exposeInMainWorld('powerTools', {
   saveUpdateReleaseSettings: (payload = {}) => ipcRenderer.invoke('updates:saveSettings', payload),
   stageAndVerifyUpdate: (packageKind = 'installer') => ipcRenderer.invoke('updates:stageVerify', packageKind),
   clearUpdateStaging: () => ipcRenderer.invoke('updates:clearStaging'),
+  getUpdateTransactionStatus: () => ipcRenderer.invoke('updates:transactionStatus'),
+  installVerifiedUpdate: () => ipcRenderer.invoke('updates:installVerified'),
   openUpdateRelease: (url) => ipcRenderer.invoke('updates:openRelease', url),
   onUpdateReleaseProgress: (callback) => {
     const handler = (_event, payload) => callback(payload);
