@@ -21,6 +21,10 @@
 - Added automatic application-file rollback when the new version fails its health check, including restored executable and `app.asar` integrity verification.
 - Blocked transactional install from source/development runs, Portable sessions, Portable packages, same-version/downgrade packages, and releases without a signed manifest.
 - Kept automatic download and automatic install disabled; installation requires an explicit confirmation every time.
+- Added a manual-only v2.2.0 Stable publishing workflow that builds from `main`, requires an explicit `PUBLISH-v2.2.0` confirmation, and refuses to overwrite an existing tag/release.
+- Added official manifest generation using the actual Ed25519 release-key fingerprint, local SSHSIG verification, same-key signed annotated tag creation, GitHub Verified-tag enforcement, and exact commit binding.
+- Added end-to-end published trust verification by checking the five required release assets, GitHub asset digests, re-downloading trust metadata, byte-comparing it, and re-verifying the published manifest signature.
+- Added guarded failed-publication cleanup and a Release Readiness policy test that prevents accidental removal of the manual-only/signing safeguards.
 - Preserved the existing GitHub repository browser, source commit workflow, release notes generator, and release publisher.
 
 
