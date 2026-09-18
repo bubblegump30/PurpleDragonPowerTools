@@ -109,7 +109,7 @@ function publicRelease(release) {
   };
 }
 
-function createUpdateReleaseCenter({ app, shell, dialog, logDiagnostic = () => {}, addActivity = () => {}, notify = () => {}, progress = () => {} }) {
+function createUpdateReleaseCenter({ app, shell, dialog, healthCheck = () => ({ok:true}), logDiagnostic = () => {}, addActivity = () => {}, notify = () => {}, progress = () => {} }) {
   let cache = null;
   let pending = null;
   const verificationEngine = createUpdateVerificationEngine({ app, logDiagnostic, addActivity, progress });
@@ -121,7 +121,8 @@ function createUpdateReleaseCenter({ app, shell, dialog, logDiagnostic = () => {
     progress,
     getCandidate: () => verificationEngine.getInstallCandidate(),
     getVerification: () => verificationEngine.getLastVerification(),
-    compareVersions
+    compareVersions,
+    healthCheck
   });
 
   function settingsPath() {
