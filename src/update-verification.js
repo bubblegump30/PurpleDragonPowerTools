@@ -292,6 +292,7 @@ function createUpdateVerificationEngine(options) {
   const addActivity = options.addActivity || function() {};
   const progress = options.progress || function() {};
   let lastVerification = null;
+  let lastInstallCandidate = null;
 
   async function stageAndVerify(input) {
     const release = input && input.release;
@@ -359,11 +360,26 @@ function createUpdateVerificationEngine(options) {
         checkedAt:new Date().toISOString(),
         safety:'Package is staged only. Installation and execution remain locked.'
       };
+      lastInstallCandidate = verificationPassed ? {
+        version:release.version,
+        tag:release.tag,
+        kind:requestedKind,
+        packagePath:packageFile.path,
+        packageName:packageFile.name,
+        packageSha256:packageFile.sha256,
+        packageSizeBytes:packageFile.sizeBytes,
+        signedManifestVerified:manifestResult.available === true && manifestResult.valid === true && manifestSignature.verified === true,
+        tagSignatureVerified:tagSignature.verified === true,
+        manifestCommit:manifestResult.commit || null,
+        releaseCommit:tagSignature.targetCommitSha || null,
+        verifiedAt:lastVerification.checkedAt
+      } : null;
       addActivity('Release package verified', 'v' + release.version + ' · ' + packageFile.name + ' · ' + (verificationPassed ? 'verification passed' : 'verification needs review'));
       progress({ phase:'complete', asset:packageFile.name, downloadedBytes:packageFile.sizeBytes, totalBytes:packageFile.sizeBytes, verified:verificationPassed });
       return lastVerification;
     } catch (error) {
       logDiagnostic('update release stage/verify', error);
+      lastInstallCandidate = null;
       lastVerification = { ok:false, verified:false, installUnlocked:false, installImplemented:false, version:release.version, tag:release.tag, error:String(error && error.message || error), checkedAt:new Date().toISOString(), safety:'Installation remains locked.' };
       progress({ phase:'error', asset:packageAsset.name, error:lastVerification.error });
       return lastVerification;
@@ -375,12 +391,13 @@ function createUpdateVerificationEngine(options) {
       const root = path.join(app.getPath('userData'), 'update-staging');
       fs.rmSync(root, { recursive:true, force:true });
       lastVerification = null;
+      lastInstallCandidate = null;
       addActivity('Update staging cleared', 'Downloaded update verification files removed');
       return { ok:true };
     } catch (error) { return { ok:false, error:String(error && error.message || error) }; }
   }
 
-  return { stageAndVerify, getLastVerification:function() { return lastVerification; }, clearStaging };
+  return { stageAndVerify, getLastVerification:function() { return lastVerification; }, getInstallCandidate:function() { return lastInstallCandidate ? { ...lastInstallCandidate } : null; }, clearStaging };
 }
 
 module.exports = {
