@@ -180,6 +180,7 @@ jobs:
             echo "Tag $TAG_NAME already exists. Refusing to overwrite it." >&2
             exit 1
           fi
+          echo "SAFE_TO_CLEANUP=true" >> "$GITHUB_ENV"
 
       - name: Load dedicated Ed25519 release key
         shell: bash
@@ -379,6 +380,10 @@ jobs:
         shell: bash
         run: |
           set +e
+          if [ "${SAFE_TO_CLEANUP:-}" != "true" ]; then
+            echo "No tag/release was authorized for cleanup by this run."
+            exit 0
+          fi
           gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes
           git push origin ":refs/tags/$TAG_NAME"
           exit 0
@@ -388,6 +393,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          if [ -n "${KEY_PATH:-}" ] && [ -f "$KEY_PATH" ]; then
-            shred -u "$KEY_PATH" 2>/dev/null || rm -f "$KEY_PATH"
+          CANDIDATE="${KEY_PATH:-$RUNNER_TEMP/purple-dragon-v2.2.0-release-key}"
+          if [ -f "$CANDIDATE" ]; then
+            shred -u "$CANDIDATE" 2>/dev/null || rm -f "$CANDIDATE"
           fi
