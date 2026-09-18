@@ -1638,7 +1638,7 @@
     const tagState=v?.tagSignature?.verified===true?'VERIFIED':v?.tagSignature?.checked?'UNVERIFIED':'Pending';
     setText('#updateVerifyTag',tagState);
     setText('#updateVerifyTagMeta',v?.tagSignature?.checked?(v.tagSignature.verified?'GitHub verified signed annotated tag':v.tagSignature.reason||'Tag verification failed'):'GitHub verification not evaluated');
-    const manifestState=v?.manifest?.available?(v.manifest.valid?'VALID':'INVALID'):'NOT PUBLISHED';
+    const manifestState=v?.manifest?.available?(v.manifest.valid?(v.manifestSignature?.verified?'SIGNED & VALID':'VALID · UNSIGNED'):'INVALID'):'NOT PUBLISHED';
     setText('#updateVerifyManifest',v?manifestState:'Pending');
     setText('#updateVerifyManifestMeta',v?.manifest?.available?(v.manifest.valid?'Manifest matches selected package':(v.manifest.errors||[])[0]||'Manifest validation failed'):'No manifest evaluated');
     setText('#updateInstallGate','LOCKED');
@@ -1646,7 +1646,7 @@
     const detail=$('#updateVerificationDetail');
     if(detail){
       if(v?.ok===false)detail.textContent=`Verification stopped: ${v.error||'Unknown error'}. Installation remains locked.`;
-      else if(v)detail.textContent=`${v.verified?'Verification passed.':'Verification needs review.'} ${v.safety||'Installation remains locked.'}${v.manifestSignature?.available?' Detached manifest signature was staged, but pinned-key verification is not enabled yet.':''}`;
+      else if(v)detail.textContent=`${v.verified?'Verification passed.':'Verification needs review.'} ${v.safety||'Installation remains locked.'}${v.manifestSignature?.available?` Manifest signature: ${v.manifestSignature.verified?'verified with the same release key as the GitHub-verified tag':v.manifestSignature.reason||'not verified'}.`:''}`;
       else detail.textContent='The verifier will compare published SHA-256 sources, validate an available release manifest, and require the GitHub-verified signed annotated release tag when release-signature enforcement is enabled.';
     }
     const total=Number(p?.totalBytes)||0,done=Number(p?.downloadedBytes)||0;
