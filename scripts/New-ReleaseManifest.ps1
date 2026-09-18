@@ -3,6 +3,7 @@ param(
   [ValidateSet('stable','preview')][string]$Channel = 'preview',
   [string]$Commit = $env:GITHUB_SHA,
   [string]$MinimumVersion = '2.1.0',
+  [string]$KeyId = 'GitHub-verified release tag key',
   [switch]$IncludeSignatureMetadata
 )
 
@@ -48,7 +49,7 @@ $manifest = [ordered]@{
 if ($IncludeSignatureMetadata) {
   $manifest.signature = [ordered]@{
     algorithm = 'ssh-ed25519'
-    keyId = 'GitHub-verified release tag key'
+    keyId = $KeyId
     file = 'release-manifest.json.sig'
   }
 }
