@@ -9,9 +9,10 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/update-release.js",
+    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/update-release.js && node --check src/update-verification.js",
     "dist:win": "electron-builder --win nsis portable",
-    "pack:win": "electron-builder --win dir"
+    "pack:win": "electron-builder --win dir",
+    "test:update-verification": "node scripts/test-update-verification.js"
   },
   "devDependencies": {
     "electron": "44.2.0",
