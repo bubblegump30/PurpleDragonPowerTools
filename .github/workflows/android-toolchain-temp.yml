@@ -38,6 +38,7 @@ jobs:
           cp "$BT/apksigner" toolchain/build-tools/
           cp "$BT/d8" toolchain/build-tools/
           cp -R "$BT/lib" toolchain/build-tools/
+          if [ -d "$BT/lib64" ]; then cp -R "$BT/lib64" toolchain/build-tools/; fi
           basename "$BT" > toolchain/build-tools/VERSION.txt
 
           chmod +x toolchain/build-tools/aapt2 toolchain/build-tools/zipalign toolchain/build-tools/apksigner toolchain/build-tools/d8
