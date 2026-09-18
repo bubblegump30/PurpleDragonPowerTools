@@ -47,6 +47,11 @@ const updateReleaseCenter = createUpdateReleaseCenter({
   app,
   shell,
   dialog,
+  healthCheck: () => {
+    const windowReady = Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isLoading());
+    const rendererHealthy = windowReady && rendererCrashCount === 0 && !lastRendererError;
+    return { ok:rendererHealthy, rendererReady:windowReady, rendererCrashCount, reason:rendererHealthy ? 'Renderer remained healthy through the post-update observation window.' : (lastRendererError || 'Renderer is not stably ready.') };
+  },
   logDiagnostic: writeDiagnostic,
   addActivity,
   notify: (title, body) => {
