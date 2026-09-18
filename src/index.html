@@ -970,6 +970,25 @@
               <label class="update-release-toggle"><span><strong>Keep rollback package</strong><small>Preserve the previous release when transactional install support lands.</small></span><input id="updateKeepRollback" type="checkbox" checked /></label>
               <label class="update-release-toggle"><span><strong>Release notifications</strong><small>Allow PowerTools to surface new release availability.</small></span><input id="updateShowNotifications" type="checkbox" checked /></label>
             </div>
+            <div class="update-verification">
+              <div class="update-verification-head">
+                <div><span>DOWNLOAD &amp; VERIFICATION ENGINE</span><small>Downloads only into the PowerTools staging directory. Nothing is executed or installed.</small></div>
+                <div class="update-verification-actions">
+                  <select id="updatePackageKind" aria-label="Package type"><option value="installer">Setup installer</option><option value="portable">Portable executable</option></select>
+                  <button class="secondary-btn" id="updateClearStaging">Clear Staging</button>
+                  <button class="primary-btn" id="updateStageVerify">Stage &amp; Verify</button>
+                </div>
+              </div>
+              <div class="update-progress"><div class="update-progress-track"><i id="updateProgressBar"></i></div><small id="updateProgressText">Ready. Run an update check, then stage the latest official release.</small></div>
+              <div class="update-verification-grid">
+                <div><span>PACKAGE</span><strong id="updateVerifyPackage">Not staged</strong><small id="updateVerifyPackageMeta">Setup or Portable</small></div>
+                <div><span>SHA-256</span><strong id="updateVerifyHash">Pending</strong><small id="updateVerifyHashMeta">Checksum not evaluated</small></div>
+                <div><span>SIGNED TAG</span><strong id="updateVerifyTag">Pending</strong><small id="updateVerifyTagMeta">GitHub verification not evaluated</small></div>
+                <div><span>MANIFEST</span><strong id="updateVerifyManifest">Pending</strong><small id="updateVerifyManifestMeta">No manifest evaluated</small></div>
+                <div><span>INSTALL GATE</span><strong id="updateInstallGate">LOCKED</strong><small id="updateInstallGateMeta">Installation is not implemented in this phase</small></div>
+              </div>
+              <div class="update-verification-detail" id="updateVerificationDetail">The verifier will compare published SHA-256 sources, validate an available release manifest, and require the GitHub-verified signed annotated release tag when release-signature enforcement is enabled.</div>
+            </div>
             <div class="update-release-history">
               <div class="update-release-history-head"><span>RECENT OFFICIAL RELEASES</span><small id="updateHistoryMeta">No update check yet</small></div>
               <div id="updateReleaseHistory" class="update-release-list"><div class="empty">Run Check for Updates to load release history.</div></div>
