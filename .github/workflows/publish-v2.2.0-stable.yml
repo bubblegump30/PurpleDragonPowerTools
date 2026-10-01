@@ -163,7 +163,7 @@ jobs:
           test "$(node -p "require('./package.json').version")" = "2.2.0"
 
       - name: Download Stable build bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: Purple-Dragon-PowerTools-v2.2.0-Stable-Build
           path: release-artifacts
