@@ -32,12 +32,12 @@ jobs:
           }
 
       - name: Checkout exact Stable commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
 
@@ -125,7 +125,7 @@ jobs:
           Get-Content dist/SHA256SUMS.txt
 
       - name: Upload unsigned Stable build bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Purple-Dragon-PowerTools-v2.2.0-Stable-Build
           path: |
@@ -150,7 +150,7 @@ jobs:
 
     steps:
       - name: Checkout exact Stable commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
