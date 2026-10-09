@@ -1,3 +1,7 @@
+## v2.5.2 — Uninstall Website
+
+- Open the foundation website after successful interactive uninstallation, excluding silent removals and upgrades.
+
 ## v2.5.1 — Status Refresh Hotfix
 
 - Stabilize telemetry/process read-status banners during polling; retain immediate failure and recovery feedback.
