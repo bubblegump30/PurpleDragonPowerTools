@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict');const ws=require('../src/workspace');
+const displays=[{id:1,workArea:{x:0,y:0,width:1920,height:1040}},{id:2,workArea:{x:-1600,y:0,width:1600,height:900}}];
+let state=ws.normalize({view:'apps',filters:{processSearch:'test',processSort:'cpu',password:'secret',appSort:'invalid'}});
+assert.equal(state.view,'apps');assert.equal(state.filters.processSort,'cpu');assert(!('password' in state.filters));assert(!('appSort' in state.filters));
+assert.equal(ws.normalize({view:'invalid'}).view,'dashboard');assert.equal(ws.normalize({filters:{modelSearch:'x'.repeat(900)}}).filters.modelSearch.length,200);
+let data='bad';const storage={getItem:()=>data,setItem:(_k,v)=>{data=v;}};assert.deepEqual(ws.load(storage),ws.normalize({}));assert(ws.save(storage,state));assert.deepEqual(ws.load(storage),state);assert(!ws.save({setItem(){throw Error('blocked')}},state));
+let b=ws.fitWindow({x:-1500,y:20,width:1300,height:800,maximized:true},displays,1);assert.equal(b.x,-1500);assert(b.maximized);
+b=ws.fitWindow({x:-1500,y:20,width:1300,height:800},[displays[0]],1);assert(b.x>=0);assert(b.x+b.width<=1920);
+b=ws.fitWindow({x:1850,y:1000,width:3000,height:2000},displays,1);assert.equal(b.width,1920);assert.equal(b.height,1040);assert.equal(b.y,0);
+b=ws.fitWindow({x:null,y:null,width:Infinity,height:NaN},[{id:1,workArea:{x:0,y:0,width:900,height:600}}],1);assert.equal(b.width,900);assert.equal(b.height,600);assert.equal(b.minWidth,900);assert.equal(b.minHeight,600);
+const list=[{name:'B',cpuPercent:2,memoryBytes:100},{name:'A',cpuPercent:10,memoryBytes:20}];assert.equal(ws.sorted(list,'cpu','process')[0].name,'A');assert.equal(ws.sorted(list,'memory','process')[0].name,'B');assert.equal(ws.sorted(list,'name','process')[0].name,'A');assert.equal(list[0].name,'B');assert.deepEqual(ws.sorted(list,'default','process'),list);
+assert.equal(ws.sorted([{name:'X',publisher:'Z'},{name:'Y',publisher:'A'}],'publisher','app')[0].name,'Y');
+console.log('Workspace tests passed: preference validation/persistence, corrupt data, bounds recovery, negative monitors, small/high-DPI work areas, sorting without inventory mutation.');

@@ -73,6 +73,8 @@ jobs:
           node scripts/test-dialog-focus.js
           node --check src/navigation.js
           node scripts/test-navigation.js
+          node --check src/workspace.js
+          node scripts/test-workspace.js
 
       - name: Validate package metadata
         shell: pwsh

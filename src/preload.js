@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('powerTools', {
+  resetWorkspaceWindow: () => ipcRenderer.invoke('window:resetWorkspace'),
   getAppInfo: () => ipcRenderer.invoke('app:getInfo'),
   getLiveMetrics: () => ipcRenderer.invoke('system:getLiveMetrics'),
   enableCpuSensor: () => ipcRenderer.invoke('sensor:enable'),
