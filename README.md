@@ -1,27 +1,29 @@
-# Purple Dragon PowerTools v2.2.0 — Stable Release
+# Purple Dragon PowerTools v2.5.0 — Clear Status & Notifications
 
 Purple Dragon PowerTools is a Windows Electron system utility and AI command center by **Purple Dragon Foundation Ltd**.
 
-`v2.2.0` is the current **Stable public release** of Purple Dragon PowerTools. It adds Update & Release Center 2.0, cryptographic release verification, signed release manifests, manual transactional updates, rollback/health checks, and a guarded signed Stable publishing pipeline.
+`v2.5.0` is the current **Stable public release** of Purple Dragon PowerTools. It includes Interface Cleanup, Navigation & Quick Actions, Workspace Memory, and Clear Status & Notifications, alongside the existing cryptographic release verification and guarded signed publishing pipeline.
+
+Download the [v2.5.0 Stable release](https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.5.0).
 
 `v2.1.0` remains the first Stable public-release milestone, with `v2.1.0-rc.1` retained as the earlier public release-candidate record.
 
-## Next release: v2.5.0 — Clear Status & Notifications
+## Latest release: v2.5.0 — Clear Status & Notifications
 
-The source branch prepares shared read-status indicators for core centers, checked/last-success timestamps, and read-only retry actions. Process/app inventory failures retain the last successful snapshot with an explicit stale-data message.
+This release adds shared read-status indicators for core centers, checked/last-success timestamps, and read-only retry actions. Process/app inventory failures retain the last successful snapshot with an explicit stale-data message.
 
 The notification button opens a session-only history (up to 50 messages), with unread count, severity labels, dismissal, and clear-history controls. Settings includes persistent Quiet Mode for routine in-app/Windows popups and a separate routine in-app popup switch. Errors remain visible. Suppressed automation notifications remain recorded, and desktop notification messages are forwarded to the session center when the renderer is connected. Existing release-specific notification settings still apply.
 
-Native Windows notification/visual acceptance and signed publication remain pending. The published Stable release remains v2.2.0. The source also includes the merged v2.2.1–v2.4.0 improvements.
+The signed publication workflow completed successfully, including Windows installer/portable builds and published metadata verification. Native Windows notification behavior, UAC states, high-DPI visuals, and installation/upgrade acceptance remain unverified. This release includes the merged v2.2.1–v2.4.0 improvements.
 
 ## Release status
 
-- Version: **2.2.0**
+- Version: **2.5.0**
 - Release channel: **Stable / Latest**
 - Platform: **Windows x64**
 - Runtime: **Electron 44.2.0**
 - Stable public release: **Published**
-- Git tag: **v2.2.0**
+- Git tag: **v2.5.0**
 - Git tag signing: **Verified (SSH signature)**
 - Release integrity: **SHA-256 + signed release manifest + detached SSH signature**
 - Windows executable signing: **Pending (unsigned binaries)**
