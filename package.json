@@ -1,6 +1,6 @@
 {
   "name": "purple-dragon-powertools",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
@@ -9,14 +9,15 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/update-release.js && node --check src/update-verification.js && node --check src/update-transaction.js && node --check src/navigation.js",
+    "verify:syntax": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/update-release.js && node --check src/update-verification.js && node --check src/update-transaction.js && node --check src/navigation.js && node --check src/workspace.js",
     "dist:win": "electron-builder --win nsis portable",
     "pack:win": "electron-builder --win dir",
     "test:update-verification": "node scripts/test-update-verification.js",
     "test:update-transaction": "node scripts/test-update-transaction.js",
     "test:release-publisher": "node scripts/test-release-publisher.js",
     "test:dialog-focus": "node scripts/test-dialog-focus.js",
-    "test:navigation": "node scripts/test-navigation.js"
+    "test:navigation": "node scripts/test-navigation.js",
+    "test:workspace": "node scripts/test-workspace.js"
   },
   "devDependencies": {
     "electron": "44.2.0",

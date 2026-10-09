@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, Notification, screen, safeStorage } = require('electron');
 const path = require('path');
+const workspace = require('./workspace');
 const os = require('os');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -223,27 +224,26 @@ function diagnosticsPath() {
   catch { return null; }
 }
 
+function fitWindowState(data = {}) {
+  return workspace.fitWindow(data, screen.getAllDisplays(), screen.getPrimaryDisplay().id);
+}
 function readWindowState() {
-  const fallback = { width: 1540, height: 980, maximized: false };
   try {
     const file = windowStatePath();
-    if (!file || !fs.existsSync(file)) return fallback;
-    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-    const width = Math.max(1180, Math.min(3840, Number(data.width) || fallback.width));
-    const height = Math.max(760, Math.min(2160, Number(data.height) || fallback.height));
-    const x = Number.isFinite(Number(data.x)) ? Number(data.x) : undefined;
-    const y = Number.isFinite(Number(data.y)) ? Number(data.y) : undefined;
-    if (x !== undefined && y !== undefined && screen?.getAllDisplays) {
-      const visible = screen.getAllDisplays().some(display => {
-        const b = display.workArea;
-        return x + 120 >= b.x && y + 80 >= b.y && x <= b.x + b.width - 80 && y <= b.y + b.height - 60;
-      });
-      if (!visible) return { width, height, maximized: Boolean(data.maximized) };
-    }
-    return { width, height, x, y, maximized: Boolean(data.maximized) };
-  } catch (error) {
-    writeDiagnostic('window state load', error);
-    return fallback;
+    return fitWindowState(file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {});
+  } catch (error) { writeDiagnostic('window state load', error); return fitWindowState(); }
+}
+function recoverWindowBounds() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const saved = mainWindow.isMaximized() ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+  const fitted = fitWindowState(saved);
+  mainWindow.setMinimumSize(fitted.minWidth, fitted.minHeight);
+  if (['x','y','width','height'].some(key => fitted[key] !== saved[key])) {
+    const maximized = mainWindow.isMaximized();
+    if (maximized) mainWindow.unmaximize();
+    mainWindow.setBounds({x:fitted.x,y:fitted.y,width:fitted.width,height:fitted.height});
+    if (maximized) mainWindow.maximize();
+    saveWindowStateNow();
   }
 }
 
@@ -380,7 +380,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.3.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.4.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
@@ -412,8 +412,8 @@ function createWindow() {
     width: savedWindow.width || 1540,
     height: savedWindow.height || 980,
     ...(Number.isFinite(savedWindow.x) && Number.isFinite(savedWindow.y) ? { x:savedWindow.x, y:savedWindow.y } : {}),
-    minWidth: 1180,
-    minHeight: 760,
+    minWidth: savedWindow.minWidth,
+    minHeight: savedWindow.minHeight,
     backgroundColor: '#070512',
     icon: path.join(__dirname, 'assets', 'purple-dragon-foundation-mark.png'),
     frame: false,
@@ -443,6 +443,9 @@ function createWindow() {
     if (!mainWindow?.isDestroyed() && !mainWindow.isVisible()) mainWindow.show();
     if (savedWindow.maximized && !mainWindow.isMaximized()) mainWindow.maximize();
   });
+  screen.on('display-removed', recoverWindowBounds);
+  screen.on('display-metrics-changed', recoverWindowBounds);
+  mainWindow.once('closed', () => { screen.removeListener('display-removed', recoverWindowBounds); screen.removeListener('display-metrics-changed', recoverWindowBounds); });
   mainWindow.on('move', queueWindowStateSave);
   mainWindow.on('resize', queueWindowStateSave);
   mainWindow.on('maximize', queueWindowStateSave);
@@ -4669,6 +4672,19 @@ ipcMain.handle('system:open', async (_, target) => {
   }
 });
 
+ipcMain.handle('window:resetWorkspace', event => {
+  try {
+    if (event.sender !== mainWindow?.webContents) return {ok:false,error:'Untrusted window'};
+    if (!mainWindow || mainWindow.isDestroyed()) return {ok:false,error:'Window unavailable'};
+    clearTimeout(windowStateSaveTimer);
+    const fitted = fitWindowState();
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+    mainWindow.setMinimumSize(fitted.minWidth, fitted.minHeight);
+    mainWindow.setBounds({x:fitted.x,y:fitted.y,width:fitted.width,height:fitted.height});
+    saveWindowStateNow();
+    return {ok:true};
+  } catch(error) { return {ok:false,error:String(error.message||error)}; }
+});
 ipcMain.handle('window:minimize' , () => mainWindow?.minimize());
 ipcMain.handle('window:maximize', () => {
   if (!mainWindow) return false;

@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.4.0 — Workspace Memory (Unreleased)
+
+- Restore the last-opened center and allowlisted search/category/state filters.
+- Add persistent process sorting (name, CPU, memory) and app sorting (name, publisher), preserving default ordering.
+- Fit saved window bounds to current display work areas, including small displays and disconnected/negative-coordinate monitors.
+- Recover window bounds on monitor removal and display-metric changes.
+- Add a confirmed Reset Workspace control that resets window layout, route, filters and sorting while preserving pins, recents, credentials and other settings.
+- Add validation, preference, geometry and sorting tests; prepare the guarded manual signed publisher.
+- Native Windows/high-DPI acceptance and publication remain pending.
+
 ## v2.3.0 — Navigation & Quick Actions (Unreleased)
 
 - Replaced single-match search with a command palette for PowerTools centers and existing Windows tool launchers.

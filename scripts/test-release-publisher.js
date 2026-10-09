@@ -3,7 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 
-for (const version of ['2.2.0', '2.2.1', '2.3.0']) {
+for (const version of ['2.2.0', '2.2.1', '2.3.0', '2.4.0']) {
 const workflowPath = `.github/workflows/publish-v${version}-stable.yml`;
 const workflow = fs.readFileSync(workflowPath, 'utf8');
 const manifestScript = fs.readFileSync('scripts/New-ReleaseManifest.ps1', 'utf8');
