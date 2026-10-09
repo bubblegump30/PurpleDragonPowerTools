@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict');
+const nav=require('../src/navigation');
+let stored='broken JSON';const storage={getItem:()=>stored,setItem:(_key,value)=>{stored=value;}};
+assert.deepEqual(nav.load(storage),{pins:[],recent:[]});
+assert.deepEqual(nav.normalize({pins:['tool:taskmanager','invalid','tool:taskmanager',null],recent:'bad'}),{pins:['tool:taskmanager'],recent:[]});
+let state=nav.togglePin(nav.normalize({}),'tool:taskmanager');assert(nav.save(storage,state));assert.deepEqual(nav.load(storage),state);
+state=nav.togglePin(state,'tool:taskmanager');assert.equal(state.pins.length,0);
+for(const item of nav.catalog)state=nav.togglePin(state,item.id);assert.equal(state.pins.length,12);
+for(const item of nav.catalog)state=nav.recent(state,item.id);assert.equal(state.recent.length,8);
+state=nav.recent(state,'tool:taskmanager');state=nav.recent(state,'tool:taskmanager');assert.equal(state.recent[0],'tool:taskmanager');assert.equal(state.recent.filter(x=>x==='tool:taskmanager').length,1);
+assert.equal(nav.search('task manager',state)[0].id,'tool:taskmanager');
+assert(nav.search('vpn',state).some(x=>x.id==='center:network'));assert.equal(nav.search('no-such-tool',state).length,0);
+assert.deepEqual(nav.recent(state,'invalid'),state);assert.deepEqual(nav.togglePin(state,'invalid'),state);
+assert.equal(nav.save({setItem(){throw Error('Unavailable')}},state),false);
+assert.equal(new Set(nav.catalog.map(x=>x.id)).size,nav.catalog.length);
+assert(nav.catalog.every(x=>['center','tool','help'].includes(x.kind)));
+console.log('Navigation tests passed: corrupt preferences, validation, persistent pins, limits, deduplicated recents, search, unknown actions, unavailable storage.');
