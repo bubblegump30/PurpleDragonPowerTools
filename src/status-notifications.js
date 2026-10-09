@@ -16,15 +16,26 @@
   return {state:'success',detail:'Read completed.'};
  }
  function tracker(onChange=()=>{}){
-  const states=new Map(),retry=new Map();let serial=0;
+  const states=new Map(),retry=new Map(),published=new Map();let serial=0;
+  // Polling reads keep their last visible result while the next sample runs.
+  // Repaint timestamps at most twice a minute; state/detail changes stay immediate.
+  const polling=new Set(['getLiveMetrics','getProcesses']);
+  function publish(state){
+   const previous=published.get(state.method),now=Date.now();
+   if(polling.has(state.method)&&previous){
+    if(state.state==='loading')return;
+    if(state.state===previous.state&&state.detail===previous.detail&&now-previous.at<30000)return;
+   }
+   published.set(state.method,{state:state.state,detail:state.detail,at:now});onChange(state);
+  }
   function wrap(base){const api={...base};for(const [method,[label,view]] of Object.entries(reads)){
    if(typeof base[method]!=='function')continue;
    api[method]=async (...args)=>{
     const token=++serial,old=states.get(method)||{};
     retry.set(method,()=>api[method](...(typeof args[0]==='boolean'?[true,...args.slice(1)]:args)));
-    states.set(method,{...old,method,label,view,state:'loading',detail:'Reading…',token});onChange(states.get(method));
-    try{const result=await base[method].apply(base,args);if(states.get(method)?.token===token){const status=resultStatus(result);states.set(method,{...states.get(method),...status,checkedAt:Date.now(),lastSuccessAt:status.state==='success'?Date.now():old.lastSuccessAt});onChange(states.get(method));}return result;}
-    catch(error){if(states.get(method)?.token===token){states.set(method,{...states.get(method),state:'error',detail:String(error?.message||error),checkedAt:Date.now()});onChange(states.get(method));}throw error;}
+    states.set(method,{...old,method,label,view,state:'loading',detail:'Reading…',token});publish(states.get(method));
+    try{const result=await base[method].apply(base,args);if(states.get(method)?.token===token){const status=resultStatus(result);states.set(method,{...states.get(method),...status,checkedAt:Date.now(),lastSuccessAt:status.state==='success'?Date.now():old.lastSuccessAt});publish(states.get(method));}return result;}
+    catch(error){if(states.get(method)?.token===token){states.set(method,{...states.get(method),state:'error',detail:String(error?.message||error),checkedAt:Date.now()});publish(states.get(method));}throw error;}
    };
   }return api;}
   return {states,wrap,retry:method=>states.get(method)?.state==='loading'?Promise.resolve():retry.get(method)?.()};
