@@ -6,6 +6,10 @@ Purple Dragon PowerTools is a Windows Electron system utility and AI command cen
 
 `v2.1.0` remains the first Stable public-release milestone, with `v2.1.0-rc.1` retained as the earlier public release-candidate record.
 
+## Next patch: v2.2.1 — Interface Cleanup
+
+The source branch prepares v2.2.1 with centered page headings, wrapping controls, scrollable navigation and dialogs, and keyboard accessibility improvements. v2.2.1 is not yet published; Windows acceptance and signed publication remain pending. The published Stable release is v2.2.0.
+
 ## Release status
 
 - Version: **2.2.0**
