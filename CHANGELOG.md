@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.3.0 — Navigation & Quick Actions (Unreleased)
+
+- Replaced single-match search with a command palette for PowerTools centers and existing Windows tool launchers.
+- Added Ctrl+K, arrow/Home/End selection, Enter execution, mouse selection, and Alt+P pin/unpin.
+- Added dashboard quick access with up to 12 persistent pins and eight deduplicated recent tool IDs.
+- Added validated local preferences with corrupt-data recovery and a clear-recents control.
+- Added F1 shortcut help and typing-safe Dashboard/Settings shortcuts; dialogs retain keyboard focus containment.
+- Added navigation tests and prepared the guarded manual signed v2.3.0 publisher.
+- Windows visual acceptance and publication remain pending.
+
 ## v2.2.1 — Interface Cleanup (Unreleased)
 
 - Centered page headings above wrapping action groups, with consistent spacing and readable descriptions.

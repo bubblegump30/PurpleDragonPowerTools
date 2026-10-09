@@ -105,7 +105,7 @@
   let previewAutomationMaster = true;
 
   const fallbackApi = {
-    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.2.1',edition:'Development Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
+    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.3.0',edition:'Development Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
     async getLiveMetrics() {
       const t = Date.now() / 1000;
       const cpu = Math.round(36 + Math.sin(t * .8) * 13 + Math.sin(t * .19) * 8);
@@ -188,7 +188,7 @@
     async modelChat(payload){const cloud=['openai','codex','claude','gemini'].includes(payload?.provider);const requested=payload?.systemAware?.enabled===true&&payload?.systemAware?.mode!=='off';const attached=requested&&(!cloud||payload?.systemAware?.allowCloud===true);return {ok:true,text:`Browser preview response from ${payload?.model||'local model'}${attached?' with System-Aware context':''}: ${String(payload?.prompt||'').slice(0,180)}`,provider:payload?.provider||'preview',model:payload?.model||'preview',scope:cloud?'cloud':'local',latencyMs:120,systemContext:{attached,requested,mode:payload?.systemAware?.mode||'smart',sections:attached?['system','performance','hardware']:[],generatedAt:attached?new Date().toISOString():null,reason:attached?'Preview redacted context attached.':cloud&&requested?'Cloud privacy guard blocked context.':'System-Aware AI disabled.'}};},
     async routeModel(payload){const center=await this.getModelCenter(false,payload?.customEndpoint||'');const prompt=String(payload?.prompt||'').toLowerCase();const profile=String(payload?.profile||'automatic');let models=center.models.slice();if(profile==='local-only'||payload?.allowCloud===false)models=models.filter(m=>m.scope!=='cloud');if(!models.length)return {ok:false,error:'No models available in preview.'};const coding=/code|script|javascript|python|powershell|debug/.test(prompt);const picked=(coding?models.find(m=>/qwen|coder|code/i.test(m.id||m.name)):null)||models[0];return {ok:true,profile,profileLabel:{automatic:'Automatic','best-quality':'Best Quality',fastest:'Fastest',cheapest:'Cheapest','local-only':'Local Only','privacy-first':'Privacy First'}[profile]||'Automatic',task:{id:coding?'coding':'general',label:coding?'Coding / Development':'General Assistant',confidence:coding?'medium':'normal'},selected:{...picked},confidence:coding?88:74,reason:[coding?'Coding terms detected.':'General task detected.','Local preview model available.','Runs through a local provider.'],alternatives:models.filter(m=>m.key!==picked.key).slice(0,3).map(m=>({model:{...m},score:50,reasons:['Available local alternative']})),considered:models.length,routedAt:new Date().toISOString()};},
     async getAISystemContext(payload={}){const mode=payload?.mode==='full'?'full':'smart';const generatedAt=new Date().toISOString();const sections=['system','performance','hardware'];if(mode==='full')sections.push('security','storage','processes','network','reliability','featureLab');return {ok:true,generatedAt,mode,sections,sectionLabels:sections.map(x=>x.toUpperCase()),sources:['preview live metrics','preview hardware identity'],unavailable:[],privacy:{level:'redacted-safe',omitted:['hostname','username','IP/MAC','paths','API keys']},text:`PURPLE DRAGON SYSTEM CONTEXT — BROWSER PREVIEW\nGenerated: ${generatedAt}\nMode: ${mode}\n\n[SYSTEM]\nOS: Windows 11 Preview build 26100 (x64)\nSecure Boot enabled; TPM ready\n\n[LIVE PERFORMANCE]\nCPU load ${live.cpu||36}%; Memory ${live.memory||58}%; CPU temperature ${live.cpuTemperatureC||58} C\nGPU ${live.gpu?.name||'Preview GPU'}; load ${live.gpu?.load||42}%; temperature ${live.gpu?.temperatureC||64} C\n\n[HARDWARE]\nCPU: Preview Processor; RAM 32 GB; GPU Preview GPU\n\nPrivacy: hostname, username, IP/MAC addresses, paths and API keys omitted.`};},
-    async getUpdateReleaseState(){return {ok:true,repository:'bubblegump30/PurpleDragonPowerTools',currentVersion:'2.2.1',channel:'stable',checkPolicy:'daily',updateAvailable:false,latestVersion:'2.1.0',latestReleaseUrl:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',latestPublishedAt:new Date(Date.now()-86400000).toISOString(),lastCheckAt:new Date().toISOString(),build:{packaged:false,type:'Browser preview build',platform:'win32',arch:'x64'},trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false},settings:{channel:'stable',checkPolicy:'daily',autoDownload:false,autoInstall:false,verifySha256:true,requireReleaseSignature:true,keepRollbackPackage:true,showNotifications:true},releases:[{tag:'v2.1.0',version:'2.1.0',name:'Purple Dragon PowerTools v2.1.0',publishedAt:new Date(Date.now()-86400000).toISOString(),url:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',prerelease:false,trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false}}]};},
+    async getUpdateReleaseState(){return {ok:true,repository:'bubblegump30/PurpleDragonPowerTools',currentVersion:'2.3.0',channel:'stable',checkPolicy:'daily',updateAvailable:false,latestVersion:'2.1.0',latestReleaseUrl:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',latestPublishedAt:new Date(Date.now()-86400000).toISOString(),lastCheckAt:new Date().toISOString(),build:{packaged:false,type:'Browser preview build',platform:'win32',arch:'x64'},trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false},settings:{channel:'stable',checkPolicy:'daily',autoDownload:false,autoInstall:false,verifySha256:true,requireReleaseSignature:true,keepRollbackPackage:true,showNotifications:true},releases:[{tag:'v2.1.0',version:'2.1.0',name:'Purple Dragon PowerTools v2.1.0',publishedAt:new Date(Date.now()-86400000).toISOString(),url:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',prerelease:false,trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false}}]};},
     async checkForAppUpdates(){return this.getUpdateReleaseState();},
     async saveUpdateReleaseSettings(payload={}){const st=await this.getUpdateReleaseState();st.settings={...st.settings,...payload};st.channel=st.settings.channel;st.checkPolicy=st.settings.checkPolicy;return {ok:true,settings:st.settings,state:st};},
     async stageAndVerifyUpdate(packageKind='installer'){return {ok:true,verified:true,installUnlocked:false,installImplemented:false,isUpdate:false,version:'2.1.0',tag:'v2.1.0',package:{kind:packageKind,name:packageKind==='portable'?'Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe':'Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe',sizeBytes:119013977,sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'},sha256:{required:true,verified:true,expected:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679',sources:[{source:'SHA256SUMS',sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'}]},tagSignature:{checked:true,verified:true,reason:'valid',verifiedAt:new Date().toISOString()},manifest:{available:false,valid:null,errors:[],asset:null},manifestSignature:{available:false,verified:false,reason:'No detached manifest signature asset published.'},metadata:{checksums:'SHA256SUMS.txt',manifest:null,signature:null},stage:{label:'update-staging/2.1.0',retained:true},checkedAt:new Date().toISOString(),safety:'Package is staged only. Installation and execution remain locked.'};},
@@ -213,8 +213,8 @@
     async getChangeJournal(){return {generatedAt:new Date().toISOString(),count:3,reversibleCount:2,undoneCount:0,entries:[{id:'preview-1',at:new Date().toISOString(),category:'Automation',title:'Automation rule created',summary:'CPU Guard',source:'Automation Engine',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-2',at:new Date(Date.now()-120000).toISOString(),category:'Performance',title:'Power profile changed',summary:'Balanced → Performance',source:'Performance Center',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-3',at:new Date(Date.now()-300000).toISOString(),category:'GitHub',title:'GitHub release published',summary:'example/repo · v2.1.0 · 2 assets',source:'GitHub Release Center',reversible:false,undone:false,restartRequired:false,risk:'Medium'}]};},
     async undoChangeJournalEntry(){return {ok:false,error:'Desktop-only undo in browser preview'};},
     async clearChangeJournal(){return {ok:false,error:'Desktop-only action'};},
-    async getReliabilityStatus(){return {version:'2.2.1',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
-    async getStableReleaseStatus(){return {version:'2.2.1',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.2.1'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
+    async getReliabilityStatus(){return {version:'2.3.0',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
+    async getStableReleaseStatus(){return {version:'2.3.0',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.3.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
     async rendererReady(){return this.getReliabilityStatus();}, async reportRendererError(){return {ok:true};}, async copyReliabilitySummary(){return {ok:false,error:'Desktop-only action'};}, async openReliabilityLogs(){return {ok:false,error:'Desktop-only action'};}, async clearReliabilityDiagnostics(){return {ok:false,error:'Desktop-only action'};}, async resetHardwareCache(){return {ok:false,error:'Desktop-only action'};},
     async getAutomationState(){return {masterEnabled:previewAutomationMaster,running:previewAutomationMaster&&previewAutomationRules.some(r=>r.enabled),tickMs:3000,ruleCount:previewAutomationRules.length,enabledCount:previewAutomationRules.filter(r=>r.enabled).length,lastTriggeredAt:previewAutomationHistory[0]?.at||null,nextScheduledAt:null,rules:previewAutomationRules,history:previewAutomationHistory};},
     async saveAutomationRule(rule){const now=new Date().toISOString();const copy=JSON.parse(JSON.stringify(rule||{}));if(copy.id){const i=previewAutomationRules.findIndex(r=>r.id===copy.id);if(i>=0)previewAutomationRules[i]={...previewAutomationRules[i],...copy,updatedAt:now};}else{copy.id=`preview-${Date.now()}`;copy.enabled=true;copy.createdAt=now;copy.updatedAt=now;copy.runCount=0;copy.lastTriggeredAt=null;previewAutomationRules.unshift(copy);}return {ok:true,state:await this.getAutomationState(),rule:copy};},
@@ -1416,12 +1416,12 @@
     const st=stableReleaseState;
     if(!st)return;
     setText('#stableChannel', st.channel || 'Stable');
-    setText('#stableVersion', st.version || appInfo?.version || '2.2.1');
+    setText('#stableVersion', st.version || appInfo?.version || '2.3.0');
     setText('#stablePreflight', st.ready ? 'READY' : 'REVIEW');
     setText('#stablePreflightDetail', `${st.passed||0}/${st.total||0} checks passed${st.informational?` · ${st.informational} info`:''}`);
     const prev=st.previousSession;
     setText('#stablePreviousSession', !prev?.available ? 'FIRST RUN' : prev.cleanShutdown ? 'CLEAN' : 'NOTE');
-    setText('#stablePreviousSessionDetail', !prev?.available ? `No previous v${st.version||appInfo?.version||'2.2.1'} session marker yet` : prev.cleanShutdown ? `Previous ${prev.version||''} session closed cleanly` : 'Prior session has no clean-shutdown marker · informational only');
+    setText('#stablePreviousSessionDetail', !prev?.available ? `No previous v${st.version||appInfo?.version||'2.3.0'} session marker yet` : prev.cleanShutdown ? `Previous ${prev.version||''} session closed cleanly` : 'Prior session has no clean-shutdown marker · informational only');
     const root=$('#stableChecks');
     const checks=Array.isArray(st.checks)?st.checks:[];
     if(root)root.innerHTML=checks.length?checks.map(c=>`<div class="reliability-check ${c.ok?'':c.optional?'info':'warn'}"><i></i><div><strong>${escapeHtml(c.label||c.id||'Check')}</strong><small>${escapeHtml(c.detail||'')}</small></div></div>`).join(''):'<div class="empty">No release-readiness checks returned.</div>';
@@ -1704,7 +1704,7 @@
     finally{updateInstallBusy=false;renderUpdateReleaseCenter();}
   }
   function renderUpdateReleaseCenter(){
-    const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.2.1';const latest=st.latestVersion||null;const trust=st.trust||{};
+    const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.3.0';const latest=st.latestVersion||null;const trust=st.trust||{};
     setText('#updateCurrentVersion',`v${current}`);setText('#updateBuildType',st.build?.type||'Build origin unavailable');
     setText('#updateLatestVersion',latest?`v${latest}`:'Not checked');
     setText('#updateLatestMeta',st.error?`Check failed · ${st.error}`:st.updateAvailable?'New release available':latest?'Installed version is current or newer':'Run an update check to query official releases');
@@ -1772,7 +1772,7 @@
   }
   async function loadGitHubRepoDetails(repo,force=true){
     if(!repo||githubRepoLoading)return;if(!force&&githubRepoDetails?.repository?.fullName===repo){renderGitHubRepoDetails();return;}githubRepoLoading=true;githubRepoDetails=null;renderGitHubRepoDetails();
-    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v${appInfo?.version||'2.2.1'}`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
+    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v${appInfo?.version||'2.3.0'}`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
   }
   function showGitHubSetup(){
     const configured=Boolean(githubCenterState?.configured||githubCenterState?.credential?.configured);const login=githubCenterState?.profile?.login||'';
@@ -1833,8 +1833,81 @@
   async function loadChangeJournal(){if(changeJournalLoading)return;changeJournalLoading=true;try{changeJournalState=await api.getChangeJournal?.();renderChangeJournal();}catch(error){toast('Change Journal unavailable',String(error?.message||error));}finally{changeJournalLoading=false;}}
   async function undoJournalEntry(id){if(changeJournalLoading)return;changeJournalLoading=true;try{const out=await api.undoChangeJournalEntry?.(id);if(out?.canceled)return;if(!out?.ok){toast('Undo unavailable',out?.error||'The change could not be undone.');return;}changeJournalState=out.state||await api.getChangeJournal?.();renderChangeJournal();toast('Change undone',out.detail||'Previous state restored.');await refreshActivity();}catch(error){toast('Undo failed',String(error?.message||error));}finally{changeJournalLoading=false;}}
 
+  const navigation = window.PowerToolsNavigation;
+  let navigationState = navigation.load(localStorage);
+  let paletteItems = [], paletteIndex = 0;
+  function saveNavigation() {
+    if (!navigation.save(localStorage, navigationState)) toast('Preferences could not be saved', 'Quick access remains available for this session.');
+    renderNavigationHub();
+  }
+  function recordNavigation(id) { navigationState = navigation.recent(navigationState, id); saveNavigation(); }
+  function renderNavigationHub() {
+    const render = (ids, pinned) => ids.map(id => {
+      const item = navigation.byId.get(id);
+      return `<div class="navigation-link"><button class="small-btn" data-navigation-id="${item.id}">${escapeHtml(item.label)}</button>${pinned?`<button class="navigation-unpin" data-navigation-pin="${item.id}" title="Unpin ${escapeHtml(item.label)}" aria-label="Unpin ${escapeHtml(item.label)}">×</button>`:''}</div>`;
+    }).join('');
+    $('#navigationPins').innerHTML = render(navigationState.pins,true) || '<p>No pins yet. Use Find &amp; Pin Tools to add your favorites.</p>';
+    $('#navigationRecent').innerHTML = render(navigationState.recent,false) || '<p>Tools you open will appear here.</p>';
+  }
+  function toggleNavigationPin(id) {
+    if (!navigationState.pins.includes(id) && navigationState.pins.length >= 12) { toast('Pin limit reached','Unpin a tool before adding another.'); return; }
+    navigationState = navigation.togglePin(navigationState,id); saveNavigation();
+    if ($('#commandQuery')) renderCommandResults(id);
+  }
+  async function runNavigation(id) {
+    const item = navigation.byId.get(id); if (!item) return;
+    closeModal();
+    if (item.kind === 'center') navigate(item.target);
+    else if (item.kind === 'tool') {
+      try { const result = await api.openSystem(item.target); if (!result?.ok) { toast('Tool could not open',result.error || item.label); return; } recordNavigation(id); }
+      catch (error) { toast('Tool could not open',String(error?.message || error)); }
+    } else { recordNavigation(id); showShortcutGuide(); }
+  }
+  function selectPaletteRow() {
+    const rows = $$('#commandResults [data-command-id]');
+    rows.forEach((row,index)=>{row.classList.toggle('selected',index===paletteIndex);row.setAttribute('aria-selected',String(index===paletteIndex));});
+    const row = rows[paletteIndex];
+    if (row) { $('#commandQuery').setAttribute('aria-activedescendant',row.id); row.scrollIntoView({block:'nearest'}); }
+    else $('#commandQuery').removeAttribute('aria-activedescendant');
+  }
+  function renderCommandResults(selectedId=null) {
+    paletteItems = navigation.search($('#commandQuery').value,navigationState); paletteIndex = Math.max(0,paletteItems.findIndex(item=>item.id===selectedId));
+    $('#commandResults').innerHTML = paletteItems.map((item,index)=>`<div id="command-row-${index}" class="command-result" role="option" aria-selected="false" data-command-id="${item.id}"><span><strong>${escapeHtml(item.label)}</strong><small>${item.kind==='center'?'Open PowerTools center':item.kind==='tool'?'Open Windows tool':'Open help'}</small></span><span aria-hidden="true">${navigationState.pins.includes(item.id)?'★':''} ↵</span></div>`).join('');
+    $('#commandCount').textContent = paletteItems.length ? `${paletteItems.length} results · ↑/↓ select · Enter open · Alt+P pin/unpin` : 'No matches. Try a tool name such as Task Manager, VPN, or Storage.';
+    selectPaletteRow(); updatePalettePin();
+  }
+  function updatePalettePin() {
+    const item = paletteItems[paletteIndex], button = $('#commandPin');
+    button.disabled = !item; button.textContent = item && navigationState.pins.includes(item.id)?'Unpin selected tool':'Pin selected tool';
+    button.setAttribute('aria-pressed',String(Boolean(item && navigationState.pins.includes(item.id))));
+  }
+  function showCommandPalette(query='') {
+    setProfileMenu(false);
+    openModal('Find Tools & Quick Actions', '<label for="commandQuery">Search tools and settings</label><input id="commandQuery" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commandResults" autocomplete="off" placeholder="Try Task Manager, VPN, or Storage"/><p id="commandCount" role="status"></p><div id="commandResults" role="listbox" aria-label="Matching tools"></div><div class="command-footer"><button class="secondary-btn" id="commandPin">Pin selected tool</button><button class="small-btn" id="commandShortcuts">Shortcut Guide</button></div>', 'QUICK ACTIONS');
+    $('#commandQuery').value = query; renderCommandResults(); $('#commandQuery').focus();
+    $('#commandQuery').addEventListener('input',renderCommandResults);
+    $('#commandQuery').addEventListener('keydown',event=>{
+      if (['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
+        event.preventDefault();
+        if (!paletteItems.length) return;
+        paletteIndex = event.key==='Home'?0:event.key==='End'?paletteItems.length-1:(paletteIndex+(event.key==='ArrowDown'?1:-1)+paletteItems.length)%paletteItems.length;
+        selectPaletteRow(); updatePalettePin();
+      } else if (event.key==='Enter') { event.preventDefault(); if (paletteItems[paletteIndex]) runNavigation(paletteItems[paletteIndex].id); }
+      else if (event.altKey && event.key.toLowerCase()==='p') {event.preventDefault();if(paletteItems[paletteIndex])toggleNavigationPin(paletteItems[paletteIndex].id);}
+    });
+    $('#commandResults').addEventListener('click',event=>{const row=event.target.closest('[data-command-id]');if(row)runNavigation(row.dataset.commandId);});
+    $('#commandPin').addEventListener('click',()=>{if(paletteItems[paletteIndex])toggleNavigationPin(paletteItems[paletteIndex].id);});
+    $('#commandShortcuts').addEventListener('click',showShortcutGuide);
+  }
+  function showShortcutGuide() {
+    openModal('Keyboard Shortcut Guide','<dl class="shortcut-guide"><dt>Ctrl+K</dt><dd>Open the command palette</dd><dt>Ctrl+Shift+H</dt><dd>Open Dashboard outside text fields</dd><dt>Ctrl+Shift+,</dt><dd>Open Settings outside text fields</dd><dt>F1</dt><dd>Open this guide</dd><dt>↑ / ↓, Home / End</dt><dd>Select a palette result while its search field has focus</dd><dt>Enter</dt><dd>Open the selected result</dd><dt>Alt+P</dt><dd>Pin or unpin the selected result while searching</dd><dt>Tab / Shift+Tab</dt><dd>Move between controls</dd><dt>Escape</dt><dd>Close the dialog or profile menu</dd><dt>Ctrl+Enter</dt><dd>Send a mission from supported AI prompt fields</dd></dl><p>Pins and recently used tool IDs stay on this device. This list does not save prompts, files, or Windows activity.</p><button class="secondary-btn" id="clearNavigationRecent">Clear Recent Tools</button>','HELP');
+    $('#clearNavigationRecent').addEventListener('click',()=>{navigationState.recent=[];saveNavigation();toast('Recent tools cleared');});
+  }
+
   function navigate(view) {
-    $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    if (!navigation.byId.has(`center:${view}`)) return;
+    recordNavigation(`center:${view}`);
+    $$('.nav-item').forEach(b => { b.classList.toggle('active', b.dataset.view === view); if(b.dataset.view === view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current'); });
     $$('.view').forEach(v => v.classList.remove('active'));
     $(`#view-${view}`)?.classList.add('active');
     if (view === 'performance') refreshPowerProfiles();
@@ -1885,8 +1958,8 @@
   async function showAbout() {
     setProfileMenu(false);
     try { appInfo = await api.getAppInfo?.() || appInfo; } catch {}
-    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.2.1',edition:'Stable Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
-    const version = escapeHtml(info.version || '2.2.1');
+    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.3.0',edition:'Stable Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
+    const version = escapeHtml(info.version || '2.3.0');
     const edition = escapeHtml(info.edition || 'AI Command Center');
     const creator = escapeHtml(info.creator || 'Purple Dragon Foundation Ltd');
     const arch = escapeHtml(architectureLabel(info.arch));
@@ -1902,7 +1975,7 @@
 
   async function openWindows(target) {
     const result = await api.openSystem(target);
-    if(result?.ok){ toast('Windows tool opened', target); await refreshActivity(); }
+    if(result?.ok){ if(navigation.byId.has(`tool:${target}`))recordNavigation(`tool:${target}`); toast('Windows tool opened', target); await refreshActivity(); }
     else if(demoMode) toast('Desktop-only action', 'Open the app through Electron on Windows to use this command.');
     else toast('Unable to open tool', target);
   }
@@ -1918,7 +1991,7 @@
 
   function showAssistant() {
     const contextLabel=!aiContextEnabled()?'SYSTEM CONTEXT: OFF':aiContextCloudAllowed()?'SYSTEM CONTEXT: LOCAL + CLOUD OPT-IN':'SYSTEM CONTEXT: LOCAL-ONLY';
-    openModal('PowerTools AI Assistant', `<div class="assistant-chat"><div class="assistant-context-pill">${contextLabel}</div><p>v2.2.1 AI Command Center can use a pinned model or Dragon Router with redacted System-Aware context. Cloud AI receives system context only when you explicitly enable the separate cloud-context option in AI Command Center.</p><input id="assistantInput" placeholder="Try: Why does my PC feel slow right now?" /><button class="primary-btn" id="assistantAsk">Ask</button><div class="response" id="assistantResponse">Ready.</div></div>`, 'AI ASSISTANT');
+    openModal('PowerTools AI Assistant', `<div class="assistant-chat"><div class="assistant-context-pill">${contextLabel}</div><p>v2.3.0 AI Command Center can use a pinned model or Dragon Router with redacted System-Aware context. Cloud AI receives system context only when you explicitly enable the separate cloud-context option in AI Command Center.</p><input id="assistantInput" placeholder="Try: Why does my PC feel slow right now?" /><button class="primary-btn" id="assistantAsk">Ask</button><div class="response" id="assistantResponse">Ready.</div></div>`, 'AI ASSISTANT');
     setTimeout(()=>$('#assistantInput')?.focus(),50);
     $('#assistantAsk')?.addEventListener('click', answerAssistant);
     $('#assistantInput')?.addEventListener('keydown', e=>{ if(e.key==='Enter') answerAssistant(); });
@@ -1945,7 +2018,7 @@
     else if(q.includes('privacy') || q.includes('metadata') || q.includes('digital footprint') || q.includes('exposure')) answer = 'Open Privacy & App Trust Intelligence for self-auditing public identifiers, domain DNS exposure, file metadata, installed-app publisher coverage, and local SHA-256 / Authenticode trust signals. Privacy and App Trust findings stay out of System-Aware AI context and exported reports.';
     else if(q.includes('feature lab') || q.includes('sandbox') || q.includes('wsl') || q.includes('hyper-v') || q.includes('hyperv')) answer = featureLabState ? `Windows Feature Lab has discovered ${featureLabState.summary?.featureCount||0} capabilities on this PC, with ${featureLabState.summary?.supported||0} reported as supported and ${featureLabState.summary?.enabled||0} enabled. Open Feature Lab for compatibility details and guarded changes.` : 'Open Windows Feature Lab to inspect buried Windows capabilities. The scan is lazy and can optionally request administrator approval for deeper optional-feature state.';
     else if(q.includes('vpn') || q.includes('nord') || q.includes('expressvpn')) answer = vpnCenterState ? `VPN Center sees ${vpnCenterState.summary?.installedCount||0} supported client${vpnCenterState.summary?.installedCount===1?'':'s'} installed, ${vpnCenterState.summary?.runningCount||0} running, and ${vpnCenterState.summary?.connectedCount||0} active tunnel${vpnCenterState.summary?.connectedCount===1?'':'s'}. Open Network PowerTools to launch, connect, disconnect, or refresh NordVPN and ExpressVPN.` : 'Open Network PowerTools to detect NordVPN and ExpressVPN. VPN detection is local and lazy; credentials remain inside the official provider apps.';
-    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.2.1 release preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
+    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.3.0 release preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
     else if(q.includes('automation') || q.includes('rule') || q.includes('schedule')) answer = automationState ? `Automation Engine is ${automationState.masterEnabled===false?'paused':automationState.running?'active':'ready'} with ${automationState.enabledCount||0} enabled rule${automationState.enabledCount===1?'':'s'} (${automationState.ruleCount||0} total).${automationState.nextScheduledAt?` Next daily schedule: ${formatAutomationSchedule(automationState.nextScheduledAt)}.`:''}` : 'Open Automation to load the local Automation Engine, rules, schedules, and run history.';
     else if(q.includes('process')) answer = processSnapshot?.summary ? `Process Manager+ currently sees ${processSnapshot.summary.count} processes using about ${formatBytes(processSnapshot.summary.totalMemoryBytes||0)} of working-set memory. Open Process & Apps for per-process CPU, memory and I/O.` : 'Open Process & Apps to load the on-demand process inventory.';
     else if(q.includes('installed app') || q.includes('program')) answer = installedAppsSnapshot?.summary ? `App Manager+ currently sees ${installedAppsSnapshot.summary.count} installed applications in Windows uninstall registry inventory.` : 'Open Process & Apps to load installed applications.';
@@ -1995,7 +2068,7 @@
     $('#profileMenu')?.addEventListener('click',e=>{const item=e.target.closest('[data-profile-action]');if(!item)return;const action=item.dataset.profileAction;setProfileMenu(false);if(action==='settings')navigate('settings');else if(action==='about')showAbout();});
     document.addEventListener('click',e=>{if(!e.target.closest('#profileAccount'))setProfileMenu(false);});
     $('#pulseBtn')?.addEventListener('click', async()=>{ await Promise.all([refreshLive(),refreshStatic(true),refreshSecurity(true),refreshActivity(),refreshPowerProfiles()]); toast('System refreshed'); });
-    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, VPN Center, Automation Engine, Reliability Center, and Stable Release readiness is online. v2.2.1 keeps update checks, VPN detection, GitHub publishing, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
+    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, VPN Center, Automation Engine, Reliability Center, and Stable Release readiness is online. v2.3.0 keeps update checks, VPN detection, GitHub publishing, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
     $('#assistantStart')?.addEventListener('click',showAssistant);
     $('#modalClose')?.addEventListener('click',closeModal); $('#modalBackdrop')?.addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
     $('#refreshSystem')?.addEventListener('click',async()=>{await refreshStatic(true);toast('System profile refreshed')});
@@ -2149,7 +2222,10 @@
     $('#githubRecentReleases')?.addEventListener('click',e=>{const row=e.target.closest('[data-github-link]');if(row?.dataset.githubLink)api.openGitHubLink?.(row.dataset.githubLink);});
     $('#githubSelectFiles')?.addEventListener('click',()=>chooseGitHubSource('files'));$('#githubSelectFolder')?.addEventListener('click',()=>chooseGitHubSource('folder'));$('#githubClearSource')?.addEventListener('click',async()=>{await api.clearGitHubSource?.();githubSourceFiles=[];renderGitHubCenter();});$('#githubCommitUpload')?.addEventListener('click',commitGitHubSource);
     $('#githubSelectAssets')?.addEventListener('click',chooseGitHubAssets);$('#githubClearAssets')?.addEventListener('click',async()=>{await api.clearGitHubReleaseAssets?.();githubReleaseAssetFiles=[];renderGitHubCenter();});$('#githubGenerateNotes')?.addEventListener('click',generateGitHubNotes);$('#githubPublishRelease')?.addEventListener('click',publishGitHubRelease);
-    $('#globalSearch')?.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const q=e.currentTarget.value.trim().toLowerCase(); const map=[['release center','integrations'],['github release','integrations'],['stable','settings'],['release','settings'],['preflight','settings'],['reliability','settings'],['diagnostics','settings'],['crash','settings'],['boot time','settings'],['device manager','system'],['event viewer','system'],['registry','system'],['services','system'],['startup','system'],['secure boot','system'],['tpm','system'],['bios','system'],['system','system'],['gpu','performance'],['hardware','performance'],['sensor','performance'],['temperature','performance'],['defender','security'],['firewall','security'],['bitlocker','security'],['smartscreen','security'],['uac','security'],['antivirus','security'],['security','security'],['performance','performance'],['setting','settings'],['automation','automation'],['schedule','automation'],['trigger','automation'],['rule','automation'],['experiment','experiments'],['network','network'],['ping','network'],['dns','network'],['adapter','network'],['ip address','network'],['ip geolocation','network'],['geolocation','network'],['geo ipify','network'],['public ip','network'],['app trust','privacy'],['authenticode','privacy'],['signature','privacy'],['publisher','privacy'],['privacy','privacy'],['exposure','privacy'],['metadata','privacy'],['digital footprint','privacy'],['username','privacy'],['breach','privacy'],['dns intelligence','privacy'],['gateway','network'],['process','apps'],['task','apps'],['installed app','apps'],['program','apps'],['app manager','apps'],['cleanup','data'],['drive','data'],['disk space','data'],['large file','data'],['downloads','data'],['storage','data'],['data','data'],['ai command center','models'],['command deck','models'],['dragon council','models'],['openai','models'],['chatgpt','models'],['codex','models'],['claude','models'],['gemini','models'],['ollama','models'],['lm studio','models'],['dragon router','models'],['router','models'],['route','models'],['system-aware','models'],['system context','models'],['ai context','models'],['local ai','models'],['model','models'],['github','integrations'],['repository','integrations'],['commit','integrations'],['release center','integrations'],['integration','integrations'],['dashboard','dashboard']]; const hit=map.find(([k])=>q.includes(k)); if(hit){navigate(hit[1]);e.currentTarget.blur();} else if(q){toast('No direct match','Try stable, preflight, reliability, diagnostics, Defender, firewall, BitLocker, network, ping, DNS, processes, apps, system, BIOS, TPM, startup, performance, hardware, GPU, security, settings, automation, schedules, rules, or data, privacy, exposure, metadata, OpenAI, ChatGPT, Codex, Claude, Gemini, local AI, Ollama, LM Studio, or models.');} } });
+    $('#globalSearch')?.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();showCommandPalette(event.currentTarget.value);}});
+    $('#openCommandPalette').addEventListener('click',()=>showCommandPalette());
+    $('#openShortcutGuide').addEventListener('click',showShortcutGuide);
+    $('.navigation-hub').addEventListener('click',event=>{const pin=event.target.closest('[data-navigation-pin]');if(pin)toggleNavigationPin(pin.dataset.navigationPin);else {const item=event.target.closest('[data-navigation-id]');if(item)runNavigation(item.dataset.navigationId);}});
     window.addEventListener('keydown', e => {
       const modalOpen = !$('#modalBackdrop').hidden;
       if (modalOpen && e.key === 'Tab') {
@@ -2160,7 +2236,13 @@
         else if (!e.shiftKey && (document.activeElement === last || !controls.includes(document.activeElement))) { e.preventDefault(); first.focus(); }
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault(); if (!modalOpen) $('#globalSearch')?.focus();
+        e.preventDefault(); if (!modalOpen) showCommandPalette();
+      }
+      const typing = e.target?.matches?.('input, textarea, select, [contenteditable="true"]');
+      if (e.key === 'F1' && !modalOpen) { e.preventDefault(); showShortcutGuide(); }
+      if (!modalOpen && !typing && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+        if (e.key.toLowerCase() === 'h') { e.preventDefault(); navigate('dashboard'); }
+        if (e.code === 'Comma' || e.key === ',') { e.preventDefault(); navigate('settings'); }
       }
       if (e.key === 'Escape') { setProfileMenu(false); closeModal(); }
     });
@@ -2172,8 +2254,9 @@
     const hour = new Date().getHours();
     setText('#greeting', `${hour<12?'GOOD MORNING':hour<18?'GOOD AFTERNOON':'GOOD EVENING'}, ADMIN`);
     setText('#assistantMessage','Ask about performance, automation, security, network, hardware, storage, or use a selected AI provider/model.');
+    renderNavigationHub();
     bindEvents(); applySettings(true); renderDrafts(); resetAutomationBuilder(); renderAiContext(); renderPrivacySummary(); if($('#modelCustomEndpoint'))$('#modelCustomEndpoint').value=modelCustomEndpoint();
-    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.2.1';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Stable Release'}`;}).catch(()=>{});
+    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.3.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Stable Release'}`;}).catch(()=>{});
     window.addEventListener('error',event=>{nativeApi?.reportRendererError?.({message:event?.error?.stack||event?.message||'Renderer window error'});});
     window.addEventListener('unhandledrejection',event=>{nativeApi?.reportRendererError?.({message:event?.reason?.stack||event?.reason?.message||String(event?.reason||'Renderer unhandled rejection')});});
     if(nativeApi?.rendererReady) nativeApi.rendererReady().then(status=>{reliabilityState=status;reliabilityLoaded=Boolean(status);if($('#view-settings')?.classList.contains('active'))renderReliability();}).catch(()=>{});

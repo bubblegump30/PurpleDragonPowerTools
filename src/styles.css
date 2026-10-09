@@ -1361,3 +1361,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 @media(max-width:760px){.update-verification-head{align-items:flex-start;flex-direction:column}.update-verification-actions{justify-content:flex-start}.update-verification-grid{grid-template-columns:1fr}.update-verification-grid>div:last-child{grid-column:auto}}
 
 .update-verification-actions #updateInstallVerified:disabled{opacity:.48;filter:saturate(.45);cursor:not-allowed}
+
+/* Navigation & Quick Actions */
+.navigation-hub { margin-bottom:16px; }
+.navigation-groups { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px; }
+.navigation-groups h3 { margin:0 0 10px; font-size:12px; color:var(--muted); }
+.navigation-links { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.navigation-links p { margin:0; font-size:12px; color:var(--muted); line-height:1.5; }
+.navigation-link { display:flex; align-items:center; gap:4px; max-width:100%; }
+.navigation-link .small-btn { min-height:34px; white-space:normal; }
+.navigation-unpin { border:0; border-radius:8px; background:var(--panel-soft); color:var(--muted); width:28px; height:28px; cursor:pointer; }
+#commandCount { font-size:12px; }
+#commandResults { max-height:300px; overflow:auto; overscroll-behavior:contain; display:grid; gap:6px; }
+.command-result { padding:12px; border:1px solid var(--line); border-radius:10px; display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; }
+.command-result.selected, .command-result:hover { background:var(--panel-strong); border-color:var(--purple2); }
+.command-result strong, .command-result small { display:block; overflow-wrap:anywhere; }
+.command-result strong { font-size:13px; }
+.command-result small { margin-top:4px; font-size:11px; color:var(--muted); }
+.command-footer { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+.shortcut-guide { display:grid; grid-template-columns: minmax(110px,auto) 1fr; gap:12px; font-size:12px; line-height:1.5; }
+.shortcut-guide dt { color:var(--cyan); font-weight:700; }
+.shortcut-guide dd { margin:0; color:var(--muted); }
+@media(max-width:1040px) { .navigation-groups { grid-template-columns:1fr; } }
