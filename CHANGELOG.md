@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.5.0 — Clear Status & Notifications (Unreleased)
+
+- Added shared loading, ready, unavailable, unsupported, administrator-required and failed-read states for core center queries.
+- Added checked and last-success timestamps plus retries routed through existing read-only refresh functions.
+- Preserve process/app snapshots after refresh failure instead of replacing them with zero-count inventories.
+- Replaced the static notification dialog with session history, severity labels, unread count, dismissal and clear-history controls.
+- Added persistent Quiet Mode for routine in-app/Windows popups and separate routine in-app preferences; errors remain visible.
+- Forward desktop notification messages to the session center and record quiet-suppressed automation notifications.
+- Added status/concurrency/preference tests and prepared the guarded signed publisher. Native Windows acceptance and publication remain pending.
+
 ## v2.4.0 — Workspace Memory (Unreleased)
 
 - Restore the last-opened center and allowlisted search/category/state filters.

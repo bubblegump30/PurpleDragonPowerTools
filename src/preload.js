@@ -2,6 +2,13 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('powerTools', {
   resetWorkspaceWindow: () => ipcRenderer.invoke('window:resetWorkspace'),
+  onNotification: callback => {
+    const listener=(_event,payload)=>callback(payload);
+    ipcRenderer.on('notifications:event',listener);
+    return () => ipcRenderer.removeListener('notifications:event',listener);
+  },
+  getNotificationPreferences: () => ipcRenderer.invoke('notifications:getPreferences'),
+  saveNotificationPreferences: preferences => ipcRenderer.invoke('notifications:savePreferences', preferences),
   getAppInfo: () => ipcRenderer.invoke('app:getInfo'),
   getLiveMetrics: () => ipcRenderer.invoke('system:getLiveMetrics'),
   enableCpuSensor: () => ipcRenderer.invoke('sensor:enable'),

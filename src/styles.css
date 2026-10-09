@@ -1388,3 +1388,24 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .workspace-settings { margin-bottom:16px; }
 .workspace-settings > p { padding:0 16px; color:var(--muted); font-size:12px; line-height:1.6; }
 .workspace-sort { max-width:100%; min-height:30px; padding:4px 8px; border:1px solid var(--line); border-radius:8px; color:var(--text); background:var(--bg2); font-size:11px; }
+
+/* Clear Status & Notifications */
+[hidden].badge, .read-status[hidden] { display:none; }
+.read-status { display:grid; gap:8px; margin-bottom:16px; }
+.read-status-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:10px; background:var(--panel-soft); }
+.read-status-row strong { display:block; font-size:12px; }
+.read-status-row small { color:var(--muted); font-size:11px; }
+.read-status-row p { margin:6px 0 0; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.read-status-row.error, .toast.error, .notification-entry.error { border-color:var(--danger); }
+.read-status-row.admin, .read-status-row.unsupported, .read-status-row.unavailable, .notification-entry.warning { border-color:var(--amber); }
+.notification-settings { padding:0 16px 12px; margin-bottom:16px; }
+.notification-settings p { color:var(--muted); font-size:12px; }
+#notificationHistory { display:grid; gap:10px; margin-top:16px; }
+.notification-entry { padding:12px; border:1px solid var(--line); border-radius:10px; }
+.notification-entry strong, .notification-entry small { display:block; }
+.notification-entry strong { font-size:13px; overflow-wrap:anywhere; }
+.notification-entry small { color:var(--muted); font-size:11px; margin-top:4px; }
+.notification-entry p { margin-bottom:0; font-size:12px; overflow-wrap:anywhere; }
+.toast { position:relative; padding-right:38px; pointer-events:auto; }
+.toast-dismiss { position:absolute; top:8px; right:7px; width:26px; height:26px; border:0; border-radius:7px; background:var(--bg2); color:var(--text); cursor:pointer; }
+@media(max-width:820px) { .read-status-row { align-items:flex-start; flex-wrap:wrap; } }

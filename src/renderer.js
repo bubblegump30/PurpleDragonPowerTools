@@ -105,7 +105,7 @@
   let previewAutomationMaster = true;
 
   const fallbackApi = {
-    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.4.0',edition:'Development Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
+    async getAppInfo(){ return {name:'Purple Dragon PowerTools',version:'2.5.0',edition:'Development Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64',platform:'browser',electronVersion:null,nodeVersion:null}; },
     async getLiveMetrics() {
       const t = Date.now() / 1000;
       const cpu = Math.round(36 + Math.sin(t * .8) * 13 + Math.sin(t * .19) * 8);
@@ -188,7 +188,7 @@
     async modelChat(payload){const cloud=['openai','codex','claude','gemini'].includes(payload?.provider);const requested=payload?.systemAware?.enabled===true&&payload?.systemAware?.mode!=='off';const attached=requested&&(!cloud||payload?.systemAware?.allowCloud===true);return {ok:true,text:`Browser preview response from ${payload?.model||'local model'}${attached?' with System-Aware context':''}: ${String(payload?.prompt||'').slice(0,180)}`,provider:payload?.provider||'preview',model:payload?.model||'preview',scope:cloud?'cloud':'local',latencyMs:120,systemContext:{attached,requested,mode:payload?.systemAware?.mode||'smart',sections:attached?['system','performance','hardware']:[],generatedAt:attached?new Date().toISOString():null,reason:attached?'Preview redacted context attached.':cloud&&requested?'Cloud privacy guard blocked context.':'System-Aware AI disabled.'}};},
     async routeModel(payload){const center=await this.getModelCenter(false,payload?.customEndpoint||'');const prompt=String(payload?.prompt||'').toLowerCase();const profile=String(payload?.profile||'automatic');let models=center.models.slice();if(profile==='local-only'||payload?.allowCloud===false)models=models.filter(m=>m.scope!=='cloud');if(!models.length)return {ok:false,error:'No models available in preview.'};const coding=/code|script|javascript|python|powershell|debug/.test(prompt);const picked=(coding?models.find(m=>/qwen|coder|code/i.test(m.id||m.name)):null)||models[0];return {ok:true,profile,profileLabel:{automatic:'Automatic','best-quality':'Best Quality',fastest:'Fastest',cheapest:'Cheapest','local-only':'Local Only','privacy-first':'Privacy First'}[profile]||'Automatic',task:{id:coding?'coding':'general',label:coding?'Coding / Development':'General Assistant',confidence:coding?'medium':'normal'},selected:{...picked},confidence:coding?88:74,reason:[coding?'Coding terms detected.':'General task detected.','Local preview model available.','Runs through a local provider.'],alternatives:models.filter(m=>m.key!==picked.key).slice(0,3).map(m=>({model:{...m},score:50,reasons:['Available local alternative']})),considered:models.length,routedAt:new Date().toISOString()};},
     async getAISystemContext(payload={}){const mode=payload?.mode==='full'?'full':'smart';const generatedAt=new Date().toISOString();const sections=['system','performance','hardware'];if(mode==='full')sections.push('security','storage','processes','network','reliability','featureLab');return {ok:true,generatedAt,mode,sections,sectionLabels:sections.map(x=>x.toUpperCase()),sources:['preview live metrics','preview hardware identity'],unavailable:[],privacy:{level:'redacted-safe',omitted:['hostname','username','IP/MAC','paths','API keys']},text:`PURPLE DRAGON SYSTEM CONTEXT — BROWSER PREVIEW\nGenerated: ${generatedAt}\nMode: ${mode}\n\n[SYSTEM]\nOS: Windows 11 Preview build 26100 (x64)\nSecure Boot enabled; TPM ready\n\n[LIVE PERFORMANCE]\nCPU load ${live.cpu||36}%; Memory ${live.memory||58}%; CPU temperature ${live.cpuTemperatureC||58} C\nGPU ${live.gpu?.name||'Preview GPU'}; load ${live.gpu?.load||42}%; temperature ${live.gpu?.temperatureC||64} C\n\n[HARDWARE]\nCPU: Preview Processor; RAM 32 GB; GPU Preview GPU\n\nPrivacy: hostname, username, IP/MAC addresses, paths and API keys omitted.`};},
-    async getUpdateReleaseState(){return {ok:true,repository:'bubblegump30/PurpleDragonPowerTools',currentVersion:'2.4.0',channel:'stable',checkPolicy:'daily',updateAvailable:false,latestVersion:'2.1.0',latestReleaseUrl:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',latestPublishedAt:new Date(Date.now()-86400000).toISOString(),lastCheckAt:new Date().toISOString(),build:{packaged:false,type:'Browser preview build',platform:'win32',arch:'x64'},trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false},settings:{channel:'stable',checkPolicy:'daily',autoDownload:false,autoInstall:false,verifySha256:true,requireReleaseSignature:true,keepRollbackPackage:true,showNotifications:true},releases:[{tag:'v2.1.0',version:'2.1.0',name:'Purple Dragon PowerTools v2.1.0',publishedAt:new Date(Date.now()-86400000).toISOString(),url:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',prerelease:false,trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false}}]};},
+    async getUpdateReleaseState(){return {ok:true,repository:'bubblegump30/PurpleDragonPowerTools',currentVersion:'2.5.0',channel:'stable',checkPolicy:'daily',updateAvailable:false,latestVersion:'2.1.0',latestReleaseUrl:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',latestPublishedAt:new Date(Date.now()-86400000).toISOString(),lastCheckAt:new Date().toISOString(),build:{packaged:false,type:'Browser preview build',platform:'win32',arch:'x64'},trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false},settings:{channel:'stable',checkPolicy:'daily',autoDownload:false,autoInstall:false,verifySha256:true,requireReleaseSignature:true,keepRollbackPackage:true,showNotifications:true},releases:[{tag:'v2.1.0',version:'2.1.0',name:'Purple Dragon PowerTools v2.1.0',publishedAt:new Date(Date.now()-86400000).toISOString(),url:'https://github.com/bubblegump30/PurpleDragonPowerTools/releases/tag/v2.1.0',prerelease:false,trust:{manifestAvailable:false,checksumAvailable:true,signatureAvailable:false}}]};},
     async checkForAppUpdates(){return this.getUpdateReleaseState();},
     async saveUpdateReleaseSettings(payload={}){const st=await this.getUpdateReleaseState();st.settings={...st.settings,...payload};st.channel=st.settings.channel;st.checkPolicy=st.settings.checkPolicy;return {ok:true,settings:st.settings,state:st};},
     async stageAndVerifyUpdate(packageKind='installer'){return {ok:true,verified:true,installUnlocked:false,installImplemented:false,isUpdate:false,version:'2.1.0',tag:'v2.1.0',package:{kind:packageKind,name:packageKind==='portable'?'Purple-Dragon-PowerTools-Portable-2.1.0-x64.exe':'Purple-Dragon-PowerTools-Setup-2.1.0-x64.exe',sizeBytes:119013977,sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'},sha256:{required:true,verified:true,expected:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679',sources:[{source:'SHA256SUMS',sha256:'b9e07edb74e781890f32dff3150b09a3e1067487c7a3b0217c37a70a75e99679'}]},tagSignature:{checked:true,verified:true,reason:'valid',verifiedAt:new Date().toISOString()},manifest:{available:false,valid:null,errors:[],asset:null},manifestSignature:{available:false,verified:false,reason:'No detached manifest signature asset published.'},metadata:{checksums:'SHA256SUMS.txt',manifest:null,signature:null},stage:{label:'update-staging/2.1.0',retained:true},checkedAt:new Date().toISOString(),safety:'Package is staged only. Installation and execution remain locked.'};},
@@ -213,8 +213,8 @@
     async getChangeJournal(){return {generatedAt:new Date().toISOString(),count:3,reversibleCount:2,undoneCount:0,entries:[{id:'preview-1',at:new Date().toISOString(),category:'Automation',title:'Automation rule created',summary:'CPU Guard',source:'Automation Engine',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-2',at:new Date(Date.now()-120000).toISOString(),category:'Performance',title:'Power profile changed',summary:'Balanced → Performance',source:'Performance Center',reversible:true,undone:false,restartRequired:false,risk:'Low'},{id:'preview-3',at:new Date(Date.now()-300000).toISOString(),category:'GitHub',title:'GitHub release published',summary:'example/repo · v2.1.0 · 2 assets',source:'GitHub Release Center',reversible:false,undone:false,restartRequired:false,risk:'Medium'}]};},
     async undoChangeJournalEntry(){return {ok:false,error:'Desktop-only undo in browser preview'};},
     async clearChangeJournal(){return {ok:false,error:'Desktop-only action'};},
-    async getReliabilityStatus(){return {version:'2.4.0',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
-    async getStableReleaseStatus(){return {version:'2.4.0',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.4.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
+    async getReliabilityStatus(){return {version:'2.5.0',sessionId:'browser-preview',boot:{uiReadyMs:42,sessionUptimeMs:Date.now(),fastBoot:true},renderer:{state:'Preview',crashCount:0,unresponsiveCount:0,lastError:null},diagnostics:{exists:false,sizeBytes:0,path:'Browser preview'},cache:{staticPresent:true,inMemory:true,ageMs:0},providers:{nvidiaCached:true,windowsPerfCached:true,sensorBridgeRunning:false,automationInitialized:true},checks:[{id:'renderer',label:'Renderer process',ok:true,detail:'Browser preview renderer is active.'},{id:'userdata',label:'Local data directory',ok:true,detail:'Preview localStorage is available.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only sensor bridge.'}]};},
+    async getStableReleaseStatus(){return {version:'2.5.0',channel:'Stable',ready:true,passed:8,total:9,warnings:0,informational:1,previousSession:{available:true,cleanShutdown:true,version:'2.0.3'},checks:[{id:'version',label:'Stable version',ok:true,detail:'Runtime version 2.5.0'},{id:'renderer',label:'Renderer bridge',ok:true,detail:'Preview renderer connected.'},{id:'runtime',label:'Core runtime files',ok:true,detail:'Preview runtime is complete.'},{id:'single',label:'Single-instance guard',ok:true,detail:'Desktop-only guard represented in preview.'},{id:'sensor',label:'CPU sensor runtime',ok:false,optional:true,detail:'Desktop-only optional sensor bridge.'}]};}, async copyStableReleaseSummary(){return {ok:false,error:'Desktop-only action'};},
     async rendererReady(){return this.getReliabilityStatus();}, async reportRendererError(){return {ok:true};}, async copyReliabilitySummary(){return {ok:false,error:'Desktop-only action'};}, async openReliabilityLogs(){return {ok:false,error:'Desktop-only action'};}, async clearReliabilityDiagnostics(){return {ok:false,error:'Desktop-only action'};}, async resetHardwareCache(){return {ok:false,error:'Desktop-only action'};},
     async getAutomationState(){return {masterEnabled:previewAutomationMaster,running:previewAutomationMaster&&previewAutomationRules.some(r=>r.enabled),tickMs:3000,ruleCount:previewAutomationRules.length,enabledCount:previewAutomationRules.filter(r=>r.enabled).length,lastTriggeredAt:previewAutomationHistory[0]?.at||null,nextScheduledAt:null,rules:previewAutomationRules,history:previewAutomationHistory};},
     async saveAutomationRule(rule){const now=new Date().toISOString();const copy=JSON.parse(JSON.stringify(rule||{}));if(copy.id){const i=previewAutomationRules.findIndex(r=>r.id===copy.id);if(i>=0)previewAutomationRules[i]={...previewAutomationRules[i],...copy,updatedAt:now};}else{copy.id=`preview-${Date.now()}`;copy.enabled=true;copy.createdAt=now;copy.updatedAt=now;copy.runCount=0;copy.lastTriggeredAt=null;previewAutomationRules.unshift(copy);}return {ok:true,state:await this.getAutomationState(),rule:copy};},
@@ -291,7 +291,65 @@
     async openSystem() { return {ok:false}; },
     minimize() {}, maximize() {}, close() {}
   };
-  const api = nativeApi || fallbackApi;
+  const statusTools=window.PowerToolsStatus;
+  let notificationPrefs=statusTools.preferences({});
+  try {notificationPrefs=statusTools.preferences(JSON.parse(localStorage.getItem('pt.notifications.v1')||'{}'));}catch{}
+  let notificationPreferenceRevision=0;
+  let notificationHistory=[],notificationUnread=0;
+  const statusTracker=statusTools.tracker(state=>{
+    renderReadStatus(state.view);
+    const prior=readFailures.get(state.method);
+    if(['error','admin','unsupported','unavailable'].includes(state.state)) {
+      const signature=`${state.state}:${state.detail}`;
+      if(prior!==signature){readFailures.set(state.method,signature);toast(`${state.label}: ${state.state}`,state.detail,{severity:state.state==='error'?'error':'warning'});}
+    } else if(state.state==='success')readFailures.delete(state.method);
+  });
+  const readFailures=new Map();
+  const api=statusTracker.wrap(nativeApi || fallbackApi);
+  function renderReadStatus(view) {
+    const banner=$(`#view-${view} > .read-status`);if(!banner)return;
+    const states=[...statusTracker.states.values()].filter(item=>item.view===view);
+    banner.hidden=!states.length;
+    banner.innerHTML=states.map(item=>{
+      const label={loading:'Loading',success:'Ready',error:'Refresh failed',admin:'Administrator required',unsupported:'Unsupported',unavailable:'Unavailable'}[item.state];
+      const last=item.lastSuccessAt?` · Last successful read ${new Date(item.lastSuccessAt).toLocaleTimeString()}`:'';
+      return `<div class="read-status-row ${item.state}"><div><strong>${escapeHtml(item.label)} · ${label}</strong><small>${item.checkedAt?`Checked ${new Date(item.checkedAt).toLocaleTimeString()}`:'Waiting for first read'}${last}</small>${item.state!=='success'&&item.state!=='loading'?`<p>${escapeHtml(item.detail)}</p>`:''}</div>${item.state==='error'?`<button class="small-btn" data-status-retry="${item.method}">Retry read</button>`:['admin','unsupported','unavailable'].includes(item.state)?'<small>Review support or setup in this center.</small>':''}</div>`;
+    }).join('');
+  }
+  function updateNotificationCount() {
+    const badge=$('#notificationCount');if(!badge)return;
+    badge.hidden=!notificationUnread;badge.textContent=String(Math.min(99,notificationUnread));
+    $('#notifyBtn').setAttribute('aria-label',`Notifications${notificationUnread?`, ${notificationUnread} unread`:''}`);
+  }
+  function renderNotificationHistory() {
+    const root=$('#notificationHistory');if(!root)return;
+    root.innerHTML=notificationHistory.length?notificationHistory.map(item=>`<article class="notification-entry ${item.severity}"><strong>${escapeHtml(item.title)}</strong><small>${new Date(item.at).toLocaleTimeString()} · ${item.severity}</small>${item.detail?`<p>${escapeHtml(item.detail)}</p>`:''}</article>`).join(''):'<p>No notifications in this session.</p>';
+  }
+  function showNotifications() {
+    notificationUnread=0;updateNotificationCount();
+    openModal('Notifications','<p>Messages stay in this session only. Quiet mode keeps routine popups out of your way; errors remain visible.</p><div class="command-footer"><button class="small-btn" id="clearNotifications">Clear History</button><button class="secondary-btn" id="notificationPreferences">Preferences</button></div><div id="notificationHistory" aria-live="polite"></div>','STATUS');
+    renderNotificationHistory();
+    $('#clearNotifications').addEventListener('click',()=>{notificationHistory=[];notificationUnread=0;updateNotificationCount();renderNotificationHistory();});
+    $('#notificationPreferences').addEventListener('click',()=>{closeModal();navigate('settings');$('#notificationQuiet').focus();});
+  }
+  function bindStatusNotifications() {
+    for(const view of $$('.view')){const banner=document.createElement('section');banner.className='read-status';banner.setAttribute('aria-label','Read status');banner.setAttribute('role','status');banner.hidden=true;view.prepend(banner);}
+    $('#content').addEventListener('click',async event=>{const button=event.target.closest('[data-status-retry]');if(!button)return;button.disabled=true;try{
+      const retries={getLiveMetrics:refreshLive,getStaticInfo:()=>refreshStatic(true),getSecurityInfo:()=>refreshSecurity(true),listStartupItems:()=>refreshStartup(true),getPerformanceProfiles:refreshPowerProfiles,getStorageInventory:()=>loadDataHub(true),getProcesses:()=>refreshProcesses(true),getInstalledApps:()=>refreshInstalledApps(true),getNetworkOverview:()=>loadNetworkCenter(true),getVpnCenter:()=>loadVpnCenter(true),getModelCenter:()=>loadModelCenter(true),getFeatureLab:()=>loadFeatureLab(true,false),getGitHubCenter:()=>loadGitHubCenter(true),getUpdateReleaseState:()=>loadUpdateReleaseCenter(false),getReliabilityStatus:()=>loadReliability(true),getStableReleaseStatus:()=>loadStableRelease(true),getChangeJournal:loadChangeJournal,getAutomationState:()=>loadAutomationCenter(true)};
+      await retries[button.dataset.statusRetry]?.();
+    }catch{}finally{button.disabled=false;}});
+    if(nativeApi?.onNotification)nativeApi.onNotification(item=>toast(item.title,item.detail,{severity:item.severity}));
+    $('#notificationQuiet').checked=notificationPrefs.quiet;$('#notificationInfo').checked=notificationPrefs.infoToasts;
+    for(const id of ['notificationQuiet','notificationInfo'])$(`#${id}`).addEventListener('change',async()=>{
+      notificationPreferenceRevision++;
+      notificationPrefs=statusTools.preferences({quiet:$('#notificationQuiet').checked,infoToasts:$('#notificationInfo').checked});
+      let saved=true;try{localStorage.setItem('pt.notifications.v1',JSON.stringify(notificationPrefs));}catch{saved=false;}
+      if(nativeApi){try{const result=await api.saveNotificationPreferences(notificationPrefs);if(!result?.ok)saved=false;}catch{saved=false;}}
+      setText('#notificationSettingsStatus',saved?'Preferences saved.':'Some preferences could not be saved; current-session in-app controls still apply.');
+    });
+    if(nativeApi?.getNotificationPreferences)nativeApi.getNotificationPreferences().then(prefs=>{if(notificationPreferenceRevision)return;notificationPrefs=statusTools.preferences(prefs);$('#notificationQuiet').checked=notificationPrefs.quiet;$('#notificationInfo').checked=notificationPrefs.infoToasts;}).catch(()=>setText('#notificationSettingsStatus','Windows notification preferences could not be loaded.'));
+  }
+
 
   function clamp(v, min=0, max=100){ return Math.max(min, Math.min(max, Number(v) || 0)); }
   function finite(v){ return v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)); }
@@ -970,7 +1028,7 @@
   async function refreshProcesses(force=false) {
     if (!api.getProcesses) return;
     if (force) setText('#processManagerSubtitle','Refreshing running process telemetry…');
-    try { processSnapshot = await api.getProcesses(force); } catch { processSnapshot = {processes:[],summary:{count:0},generatedAt:new Date().toISOString()}; }
+    try { const snapshot=await api.getProcesses(force);if(snapshot?.error||snapshot?.ok===false)throw Error(snapshot.error||'Process read failed');processSnapshot=snapshot; } catch { renderProcesses();setText('#processManagerSubtitle',processSnapshot?'Refresh failed · showing the last successful process snapshot.':'Process inventory unavailable · use Retry read above.');return; }
     renderProcesses();
   }
 
@@ -995,7 +1053,7 @@
   async function refreshInstalledApps(force=false){
     if(!api.getInstalledApps)return;
     if(force)setText('#installedAppsSubtitle','Refreshing Windows installed-app inventory…');
-    try{installedAppsSnapshot=await api.getInstalledApps(force);}catch{installedAppsSnapshot={apps:[],summary:{count:0},generatedAt:new Date().toISOString()};}
+    try{const snapshot=await api.getInstalledApps(force);if(snapshot?.error||snapshot?.ok===false)throw Error(snapshot.error||'App read failed');installedAppsSnapshot=snapshot;}catch{renderInstalledApps();setText('#installedAppsSubtitle',installedAppsSnapshot?'Refresh failed · showing the last successful app snapshot.':'App inventory unavailable · use Retry read above.');return;}
     renderInstalledApps();
   }
 
@@ -1418,12 +1476,12 @@
     const st=stableReleaseState;
     if(!st)return;
     setText('#stableChannel', st.channel || 'Stable');
-    setText('#stableVersion', st.version || appInfo?.version || '2.4.0');
+    setText('#stableVersion', st.version || appInfo?.version || '2.5.0');
     setText('#stablePreflight', st.ready ? 'READY' : 'REVIEW');
     setText('#stablePreflightDetail', `${st.passed||0}/${st.total||0} checks passed${st.informational?` · ${st.informational} info`:''}`);
     const prev=st.previousSession;
     setText('#stablePreviousSession', !prev?.available ? 'FIRST RUN' : prev.cleanShutdown ? 'CLEAN' : 'NOTE');
-    setText('#stablePreviousSessionDetail', !prev?.available ? `No previous v${st.version||appInfo?.version||'2.4.0'} session marker yet` : prev.cleanShutdown ? `Previous ${prev.version||''} session closed cleanly` : 'Prior session has no clean-shutdown marker · informational only');
+    setText('#stablePreviousSessionDetail', !prev?.available ? `No previous v${st.version||appInfo?.version||'2.5.0'} session marker yet` : prev.cleanShutdown ? `Previous ${prev.version||''} session closed cleanly` : 'Prior session has no clean-shutdown marker · informational only');
     const root=$('#stableChecks');
     const checks=Array.isArray(st.checks)?st.checks:[];
     if(root)root.innerHTML=checks.length?checks.map(c=>`<div class="reliability-check ${c.ok?'':c.optional?'info':'warn'}"><i></i><div><strong>${escapeHtml(c.label||c.id||'Check')}</strong><small>${escapeHtml(c.detail||'')}</small></div></div>`).join(''):'<div class="empty">No release-readiness checks returned.</div>';
@@ -1706,7 +1764,7 @@
     finally{updateInstallBusy=false;renderUpdateReleaseCenter();}
   }
   function renderUpdateReleaseCenter(){
-    const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.4.0';const latest=st.latestVersion||null;const trust=st.trust||{};
+    const st=updateReleaseState||{};const settings=st.settings||{};const current=st.currentVersion||appInfo?.version||'2.5.0';const latest=st.latestVersion||null;const trust=st.trust||{};
     setText('#updateCurrentVersion',`v${current}`);setText('#updateBuildType',st.build?.type||'Build origin unavailable');
     setText('#updateLatestVersion',latest?`v${latest}`:'Not checked');
     setText('#updateLatestMeta',st.error?`Check failed · ${st.error}`:st.updateAvailable?'New release available':latest?'Installed version is current or newer':'Run an update check to query official releases');
@@ -1774,7 +1832,7 @@
   }
   async function loadGitHubRepoDetails(repo,force=true){
     if(!repo||githubRepoLoading)return;if(!force&&githubRepoDetails?.repository?.fullName===repo){renderGitHubRepoDetails();return;}githubRepoLoading=true;githubRepoDetails=null;renderGitHubRepoDetails();
-    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v${appInfo?.version||'2.4.0'}`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
+    try{const out=await api.getGitHubRepoDetails?.(repo);if(!out?.ok){toast('Repository details unavailable',out?.error||'GitHub request failed.');return;}githubRepoDetails=out;githubRepoDetails._selectedBranch=out.repository?.defaultBranch||githubSelectedRepoObject()?.defaultBranch||'';renderGitHubRepoDetails();if($('#githubReleaseTitle')&&!$('#githubReleaseTitle').value.trim())$('#githubReleaseTitle').value=`${out.repository?.name||'Release'} v${appInfo?.version||'2.5.0'}`;}catch(error){toast('Repository details unavailable',String(error?.message||error));}finally{githubRepoLoading=false;renderGitHubRepoDetails();renderGitHubCenter();}
   }
   function showGitHubSetup(){
     const configured=Boolean(githubCenterState?.configured||githubCenterState?.credential?.configured);const login=githubCenterState?.profile?.login||'';
@@ -2008,8 +2066,8 @@
   async function showAbout() {
     setProfileMenu(false);
     try { appInfo = await api.getAppInfo?.() || appInfo; } catch {}
-    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.4.0',edition:'Stable Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
-    const version = escapeHtml(info.version || '2.4.0');
+    const info = appInfo || {name:'Purple Dragon PowerTools',version:'2.5.0',edition:'Stable Release',creator:'Purple Dragon Foundation Ltd',company:'Purple Dragon Foundation Ltd',tagline:'Software Development · Innovation · Solutions',arch:'x64'};
+    const version = escapeHtml(info.version || '2.5.0');
     const edition = escapeHtml(info.edition || 'AI Command Center');
     const creator = escapeHtml(info.creator || 'Purple Dragon Foundation Ltd');
     const arch = escapeHtml(architectureLabel(info.arch));
@@ -2019,8 +2077,20 @@
     $('#aboutClose')?.addEventListener('click',closeModal);
     $('#aboutSettings')?.addEventListener('click',()=>{closeModal();navigate('settings');});
   }
-  function toast(title, detail='') {
-    const el = document.createElement('div'); el.className='toast'; el.innerHTML=`<strong>${escapeHtml(title)}</strong>${detail?`<small>${escapeHtml(detail)}</small>`:''}`; $('#toastStack').appendChild(el); setTimeout(()=>el.remove(),3200);
+  function toast(title, detail='', options={}) {
+    const severity=options.severity||statusTools.severity(String(title));
+    const now=Date.now(),previous=notificationHistory[0];
+    if(previous&&previous.title===title&&previous.detail===detail&&now-previous.at<5000)return;
+    notificationHistory.unshift({title:String(title),detail:String(detail),severity,at:now});notificationHistory=notificationHistory.slice(0,50);
+    if(!$('#modalBackdrop').hidden&&$('#notificationHistory'))renderNotificationHistory();else notificationUnread=Math.min(50,notificationUnread+1);
+    updateNotificationCount();
+    if(severity==='info'&&(notificationPrefs.quiet||!notificationPrefs.infoToasts))return;
+    const el=document.createElement('div');el.className=`toast ${severity}`;el.setAttribute('role',severity==='error'?'alert':'status');
+    const titleNode=document.createElement('strong');titleNode.textContent=title;el.appendChild(titleNode);
+    if(detail){const text=document.createElement('small');text.textContent=detail;el.appendChild(text);}
+    const close=document.createElement('button');close.className='toast-dismiss';close.textContent='×';close.setAttribute('aria-label','Dismiss notification');close.onclick=()=>el.remove();el.appendChild(close);
+    $('#toastStack').appendChild(el);while($('#toastStack').children.length>4)$('#toastStack').firstElementChild.remove();
+    setTimeout(()=>el.remove(),severity==='error'?10000:5000);
   }
 
   async function openWindows(target) {
@@ -2041,7 +2111,7 @@
 
   function showAssistant() {
     const contextLabel=!aiContextEnabled()?'SYSTEM CONTEXT: OFF':aiContextCloudAllowed()?'SYSTEM CONTEXT: LOCAL + CLOUD OPT-IN':'SYSTEM CONTEXT: LOCAL-ONLY';
-    openModal('PowerTools AI Assistant', `<div class="assistant-chat"><div class="assistant-context-pill">${contextLabel}</div><p>v2.4.0 AI Command Center can use a pinned model or Dragon Router with redacted System-Aware context. Cloud AI receives system context only when you explicitly enable the separate cloud-context option in AI Command Center.</p><input id="assistantInput" placeholder="Try: Why does my PC feel slow right now?" /><button class="primary-btn" id="assistantAsk">Ask</button><div class="response" id="assistantResponse">Ready.</div></div>`, 'AI ASSISTANT');
+    openModal('PowerTools AI Assistant', `<div class="assistant-chat"><div class="assistant-context-pill">${contextLabel}</div><p>v2.5.0 AI Command Center can use a pinned model or Dragon Router with redacted System-Aware context. Cloud AI receives system context only when you explicitly enable the separate cloud-context option in AI Command Center.</p><input id="assistantInput" placeholder="Try: Why does my PC feel slow right now?" /><button class="primary-btn" id="assistantAsk">Ask</button><div class="response" id="assistantResponse">Ready.</div></div>`, 'AI ASSISTANT');
     setTimeout(()=>$('#assistantInput')?.focus(),50);
     $('#assistantAsk')?.addEventListener('click', answerAssistant);
     $('#assistantInput')?.addEventListener('keydown', e=>{ if(e.key==='Enter') answerAssistant(); });
@@ -2068,7 +2138,7 @@
     else if(q.includes('privacy') || q.includes('metadata') || q.includes('digital footprint') || q.includes('exposure')) answer = 'Open Privacy & App Trust Intelligence for self-auditing public identifiers, domain DNS exposure, file metadata, installed-app publisher coverage, and local SHA-256 / Authenticode trust signals. Privacy and App Trust findings stay out of System-Aware AI context and exported reports.';
     else if(q.includes('feature lab') || q.includes('sandbox') || q.includes('wsl') || q.includes('hyper-v') || q.includes('hyperv')) answer = featureLabState ? `Windows Feature Lab has discovered ${featureLabState.summary?.featureCount||0} capabilities on this PC, with ${featureLabState.summary?.supported||0} reported as supported and ${featureLabState.summary?.enabled||0} enabled. Open Feature Lab for compatibility details and guarded changes.` : 'Open Windows Feature Lab to inspect buried Windows capabilities. The scan is lazy and can optionally request administrator approval for deeper optional-feature state.';
     else if(q.includes('vpn') || q.includes('nord') || q.includes('expressvpn')) answer = vpnCenterState ? `VPN Center sees ${vpnCenterState.summary?.installedCount||0} supported client${vpnCenterState.summary?.installedCount===1?'':'s'} installed, ${vpnCenterState.summary?.runningCount||0} running, and ${vpnCenterState.summary?.connectedCount||0} active tunnel${vpnCenterState.summary?.connectedCount===1?'':'s'}. Open Network PowerTools to launch, connect, disconnect, or refresh NordVPN and ExpressVPN.` : 'Open Network PowerTools to detect NordVPN and ExpressVPN. VPN detection is local and lazy; credentials remain inside the official provider apps.';
-    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.4.0 release preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
+    else if(q.includes('stable') || q.includes('release') || q.includes('preflight')) answer = stableReleaseState ? `Stable preflight is ${stableReleaseState.ready?'READY':'REVIEW'} with ${stableReleaseState.passed||0}/${stableReleaseState.total||0} checks passed. Open Settings for the complete local release-readiness list.` : 'Open Settings to run the v2.5.0 release preflight. It uses local runtime/configuration checks and does not trigger hardware or VPN scans.';
     else if(q.includes('automation') || q.includes('rule') || q.includes('schedule')) answer = automationState ? `Automation Engine is ${automationState.masterEnabled===false?'paused':automationState.running?'active':'ready'} with ${automationState.enabledCount||0} enabled rule${automationState.enabledCount===1?'':'s'} (${automationState.ruleCount||0} total).${automationState.nextScheduledAt?` Next daily schedule: ${formatAutomationSchedule(automationState.nextScheduledAt)}.`:''}` : 'Open Automation to load the local Automation Engine, rules, schedules, and run history.';
     else if(q.includes('process')) answer = processSnapshot?.summary ? `Process Manager+ currently sees ${processSnapshot.summary.count} processes using about ${formatBytes(processSnapshot.summary.totalMemoryBytes||0)} of working-set memory. Open Process & Apps for per-process CPU, memory and I/O.` : 'Open Process & Apps to load the on-demand process inventory.';
     else if(q.includes('installed app') || q.includes('program')) answer = installedAppsSnapshot?.summary ? `App Manager+ currently sees ${installedAppsSnapshot.summary.count} installed applications in Windows uninstall registry inventory.` : 'Open Process & Apps to load installed applications.';
@@ -2118,7 +2188,7 @@
     $('#profileMenu')?.addEventListener('click',e=>{const item=e.target.closest('[data-profile-action]');if(!item)return;const action=item.dataset.profileAction;setProfileMenu(false);if(action==='settings')navigate('settings');else if(action==='about')showAbout();});
     document.addEventListener('click',e=>{if(!e.target.closest('#profileAccount'))setProfileMenu(false);});
     $('#pulseBtn')?.addEventListener('click', async()=>{ await Promise.all([refreshLive(),refreshStatic(true),refreshSecurity(true),refreshActivity(),refreshPowerProfiles()]); toast('System refreshed'); });
-    $('#notifyBtn')?.addEventListener('click',()=>openModal('Notifications','<p>Performance+, System PowerTools, Security Center, VPN Center, Automation Engine, Reliability Center, and Stable Release readiness is online. v2.4.0 keeps update checks, VPN detection, GitHub publishing, Feature Lab, startup scans, and cloud AI providers lazy; diagnostics stay local.</p>','NOTIFICATIONS'));
+    $('#notifyBtn')?.addEventListener('click',showNotifications);
     $('#assistantStart')?.addEventListener('click',showAssistant);
     $('#modalClose')?.addEventListener('click',closeModal); $('#modalBackdrop')?.addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
     $('#refreshSystem')?.addEventListener('click',async()=>{await refreshStatic(true);toast('System profile refreshed')});
@@ -2305,8 +2375,8 @@
     setText('#greeting', `${hour<12?'GOOD MORNING':hour<18?'GOOD AFTERNOON':'GOOD EVENING'}, ADMIN`);
     setText('#assistantMessage','Ask about performance, automation, security, network, hardware, storage, or use a selected AI provider/model.');
     restoreWorkspaceFields(); renderNavigationHub();
-    bindWorkspace(); bindEvents(); applySettings(true); renderDrafts(); resetAutomationBuilder(); renderAiContext(); renderPrivacySummary(); if($('#modelCustomEndpoint'))$('#modelCustomEndpoint').value=modelCustomEndpoint();
-    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.4.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Stable Release'}`;}).catch(()=>{});
+    bindStatusNotifications(); bindWorkspace(); bindEvents(); applySettings(true); renderDrafts(); resetAutomationBuilder(); renderAiContext(); renderPrivacySummary(); if($('#modelCustomEndpoint'))$('#modelCustomEndpoint').value=modelCustomEndpoint();
+    api.getAppInfo?.().then(info=>{appInfo=info||null;const version=info?.version||'2.5.0';const menuVersion=$('#profileMenu .profile-menu-version');if(menuVersion)menuVersion.textContent=`v${version} · ${info?.edition||'Stable Release'}`;}).catch(()=>{});
     window.addEventListener('error',event=>{nativeApi?.reportRendererError?.({message:event?.error?.stack||event?.message||'Renderer window error'});});
     window.addEventListener('unhandledrejection',event=>{nativeApi?.reportRendererError?.({message:event?.reason?.stack||event?.reason?.message||String(event?.reason||'Renderer unhandled rejection')});});
     if(nativeApi?.rendererReady) nativeApi.rendererReady().then(status=>{reliabilityState=status;reliabilityLoaded=Boolean(status);if($('#view-settings')?.classList.contains('active'))renderReliability();}).catch(()=>{});
