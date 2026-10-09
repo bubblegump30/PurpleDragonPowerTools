@@ -1,3 +1,9 @@
+## v2.5.1 — Status Refresh Hotfix
+
+- Stabilize telemetry/process read-status banners during polling; retain immediate failure and recovery feedback.
+- Refresh unchanged status timestamps at most every 30 seconds without slowing live telemetry.
+- Add regression coverage for polling cadence, failures and recovery.
+
 # Changelog
 
 ## v2.5.0 — Clear Status & Notifications (Unreleased)
