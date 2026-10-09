@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, Notification, screen, safeStorage } = require('electron');
 const path = require('path');
 const workspace = require('./workspace');
+const statusTools = require('./status-notifications');
 const os = require('os');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -56,7 +57,7 @@ const updateReleaseCenter = createUpdateReleaseCenter({
   logDiagnostic: writeDiagnostic,
   addActivity,
   notify: (title, body) => {
-    try { if (Notification.isSupported()) new Notification({ title, body }).show(); } catch {}
+    emitDesktopNotification(title, body);
   },
   progress: (payload) => {
     try {
@@ -213,6 +214,32 @@ const POWER_SCHEMES = {
   performance: { name: 'Performance', guid: '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c' }
 };
 
+
+let cachedNotificationPreferences=null;
+function notificationPreferencesPath() { return path.join(app.getPath('userData'),'notification-preferences.json'); }
+function getNotificationPreferences() {
+  if(cachedNotificationPreferences)return cachedNotificationPreferences;
+  try {const file=notificationPreferencesPath();cachedNotificationPreferences=statusTools.preferences(fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{});}
+  catch {cachedNotificationPreferences=statusTools.preferences({});}
+  return cachedNotificationPreferences;
+}
+function emitDesktopNotification(title,body) {
+  const severity=statusTools.severity(String(title));
+  try {
+    mainWindow?.webContents.send('notifications:event',{title:String(title).slice(0,160),detail:String(body).slice(0,1200),severity});
+    if ((!getNotificationPreferences().quiet || severity==='error') && Notification.isSupported()) new Notification({title,body}).show();
+  } catch(error) {writeDiagnostic('notification',error);}
+}
+ipcMain.handle('notifications:getPreferences',event=>event.sender===mainWindow?.webContents?getNotificationPreferences():{quiet:false,infoToasts:true});
+ipcMain.handle('notifications:savePreferences',(event,payload)=>{
+  if(event.sender!==mainWindow?.webContents)return {ok:false,error:'Untrusted window'};
+  if(typeof payload?.quiet!=='boolean'||typeof payload?.infoToasts!=='boolean')return {ok:false,error:'Invalid preferences'};
+  try {
+    const prefs=statusTools.preferences(payload),file=notificationPreferencesPath(),temporary=file+'.tmp';
+    fs.writeFileSync(temporary,JSON.stringify(prefs),'utf8');fs.renameSync(temporary,file);cachedNotificationPreferences=prefs;
+    return {ok:true};
+  } catch(error) {return {ok:false,error:String(error.message||error)};}
+});
 
 function windowStatePath() {
   try { return path.join(app.getPath('userData'), 'window-state.json'); }
@@ -380,7 +407,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.4.0', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.5.0', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
@@ -2577,8 +2604,9 @@ async function executeAutomationAction(rule, triggerDetail, origin = 'engine') {
     const action = rule.action || {};
     if (action.type === 'notification') {
       const body = action.message || `${rule.name}: ${triggerDetail || automationTriggerLabel(rule)}`;
-      if (Notification?.isSupported?.()) new Notification({ title: 'Purple Dragon PowerTools', body }).show();
-      result.detail = body;
+      const quiet=getNotificationPreferences().quiet;
+      emitDesktopNotification('Purple Dragon PowerTools',body);
+      result.detail = quiet ? `Quiet mode suppressed notification: ${body}` : body;
     } else if (action.type === 'activity') {
       const message = action.message || triggerDetail || automationTriggerLabel(rule);
       addActivity(rule.name, message);

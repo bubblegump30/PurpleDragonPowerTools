@@ -6,13 +6,13 @@ Purple Dragon PowerTools is a Windows Electron system utility and AI command cen
 
 `v2.1.0` remains the first Stable public-release milestone, with `v2.1.0-rc.1` retained as the earlier public release-candidate record.
 
-## Next release: v2.4.0 — Workspace Memory
+## Next release: v2.5.0 — Clear Status & Notifications
 
-The source branch prepares restoration of the last-opened center, supported search/category/state filters, and process/app sorting. Window bounds are fitted to current display work areas at launch and on monitor removal or display changes. Settings includes a confirmed workspace reset that preserves pins, recent tools, provider credentials, and other settings.
+The source branch prepares shared read-status indicators for core centers, checked/last-success timestamps, and read-only retry actions. Process/app inventory failures retain the last successful snapshot with an explicit stale-data message.
 
-Workspace memory stores supported filter strings locally (up to 200 characters), selected options, and the last center. It never stores AI prompt fields or credentials. Use Reset Workspace to clear these saved searches and choices.
+The notification button opens a session-only history (up to 50 messages), with unread count, severity labels, dismissal, and clear-history controls. Settings includes persistent Quiet Mode for routine in-app/Windows popups and a separate routine in-app popup switch. Errors remain visible. Suppressed automation notifications remain recorded, and desktop notification messages are forwarded to the session center when the renderer is connected. Existing release-specific notification settings still apply.
 
-v2.4.0 includes the merged v2.2.1 Interface Cleanup and v2.3.0 Navigation & Quick Actions. Windows native acceptance and signed publication remain pending; the published Stable release remains v2.2.0.
+Native Windows notification/visual acceptance and signed publication remain pending. The published Stable release remains v2.2.0. The source also includes the merged v2.2.1–v2.4.0 improvements.
 
 ## Release status
 

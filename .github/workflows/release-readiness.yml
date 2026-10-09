@@ -75,6 +75,8 @@ jobs:
           node scripts/test-navigation.js
           node --check src/workspace.js
           node scripts/test-workspace.js
+          node --check src/status-notifications.js
+          node scripts/test-status-notifications.js
 
       - name: Validate package metadata
         shell: pwsh
