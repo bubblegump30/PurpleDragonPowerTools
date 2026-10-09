@@ -8,6 +8,10 @@ Download the [v2.5.0 Stable release](https://github.com/bubblegump30/PurpleDrago
 
 `v2.1.0` remains the first Stable public-release milestone, with `v2.1.0-rc.1` retained as the earlier public release-candidate record.
 
+## Upcoming hotfix: v2.5.1 — Status Refresh Hotfix
+
+The source includes the fix for telemetry/process status banners flashing on every sample. Routine status timestamps update at most every 30 seconds; failures and recovery remain immediate. v2.5.0 remains the published download until the v2.5.1 publishing workflow succeeds.
+
 ## Latest release: v2.5.0 — Clear Status & Notifications
 
 This release adds shared read-status indicators for core centers, checked/last-success timestamps, and read-only retry actions. Process/app inventory failures retain the last successful snapshot with an explicit stale-data message.
