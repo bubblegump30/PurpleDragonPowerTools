@@ -3,16 +3,17 @@
 const assert = require('assert');
 const fs = require('fs');
 
-const workflowPath = '.github/workflows/publish-v2.2.0-stable.yml';
+for (const version of ['2.2.0', '2.2.1']) {
+const workflowPath = `.github/workflows/publish-v${version}-stable.yml`;
 const workflow = fs.readFileSync(workflowPath, 'utf8');
 const manifestScript = fs.readFileSync('scripts/New-ReleaseManifest.ps1', 'utf8');
 
-assert(workflow.includes('name: Publish v2.2.0 Stable'));
+assert(workflow.includes(`name: Publish v${version} Stable`));
 assert(workflow.includes('workflow_dispatch:'));
 assert(!/\n\s+push:\s*\n/.test(workflow), 'Stable publisher must remain manual-only.');
-assert(workflow.includes('PUBLISH-v2.2.0'));
+assert(workflow.includes(`PUBLISH-v${version}`));
 assert(workflow.includes('refs/heads/main'));
-assert(workflow.includes('TAG_NAME: v2.2.0'));
+assert(workflow.includes(`TAG_NAME: v${version}`));
 assert(workflow.includes('secrets.STABLE_TAG_SIGNING_KEY'));
 assert(workflow.includes('ssh-keygen -Y sign'));
 assert(workflow.includes('ssh-keygen -Y verify'));
@@ -29,8 +30,8 @@ assert(workflow.includes('release-artifacts/release-manifest.json'));
 assert(workflow.includes('release-artifacts/release-manifest.json.sig'));
 
 for (const name of [
-  'Purple-Dragon-PowerTools-Setup-2.2.0-x64.exe',
-  'Purple-Dragon-PowerTools-Portable-2.2.0-x64.exe',
+  `Purple-Dragon-PowerTools-Setup-${version}-x64.exe`,
+  `Purple-Dragon-PowerTools-Portable-${version}-x64.exe`,
   'SHA256SUMS.txt',
   'release-manifest.json',
   'release-manifest.json.sig'
@@ -41,4 +42,5 @@ for (const name of [
 assert(manifestScript.includes('[string]$KeyId'));
 assert(manifestScript.includes('keyId = $KeyId'));
 
-console.log('Stable publisher policy tests passed.');
+console.log(`Stable publisher v${version} policy tests passed.`);
+}

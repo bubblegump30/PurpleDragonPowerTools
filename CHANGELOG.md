@@ -1,6 +1,17 @@
 # Changelog
 
-## v2.2.0 — Update & Release Center 2.0 (In development)
+## v2.2.1 — Interface Cleanup (Unreleased)
+
+- Centered page headings above wrapping action groups, with consistent spacing and readable descriptions.
+- Allowed the sidebar to scroll independently so every center remains reachable at the minimum window height.
+- Allowed shared panel headers to grow and wrap instead of clipping long labels and controls.
+- Constrained dialogs to the viewport with internal scrolling and an always-reachable close control.
+- Added visible keyboard focus, accessible icon/navigation labels, disabled primary-button feedback, and reduced-motion support.
+- Added dialog focus containment and focus restoration when closed.
+- Updated app/package labels and prepared the guarded manual signed v2.2.1 publisher; publication and Windows acceptance remain pending.
+- Corrected the published v2.2.0 changelog status.
+
+## v2.2.0 — Update & Release Center 2.0
 
 - Added a dedicated Update & Release Center 2.0 above the existing GitHub publishing workspace.
 - Added public, token-free checks against the official `bubblegump30/PurpleDragonPowerTools` GitHub releases feed.
