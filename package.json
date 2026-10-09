@@ -1,6 +1,6 @@
 {
   "name": "purple-dragon-powertools",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "Purple Dragon PowerTools - Windows system utility and AI command center by Purple Dragon Foundation Ltd.",
   "main": "src/main.js",
   "author": "Purple Dragon Foundation Ltd",
@@ -50,7 +50,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Purple Dragon PowerTools",
-      "artifactName": "Purple-Dragon-PowerTools-Setup-${version}-${arch}.${ext}"
+      "artifactName": "Purple-Dragon-PowerTools-Setup-${version}-${arch}.${ext}",
+      "include": "build/installer.nsh"
     },
     "extraResources": [
       {
@@ -58,7 +59,7 @@
         "to": "sensor-bridge"
       }
     ],
-    "copyright": "Copyright © 2026 Purple Dragon Foundation Ltd",
+    "copyright": "Copyright \u00a9 2026 Purple Dragon Foundation Ltd",
     "portable": {
       "artifactName": "Purple-Dragon-PowerTools-Portable-${version}-${arch}.${ext}"
     }

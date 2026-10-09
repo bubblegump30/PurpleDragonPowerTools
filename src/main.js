@@ -407,7 +407,7 @@ function getStableReleaseStatus() {
   const sensorDir = sensorBridgeDirectory();
   const sensorPresent = fs.existsSync(path.join(sensorDir,'LibreHardwareMonitorLib.dll')) && fs.existsSync(path.join(sensorDir,'hardware-sensor-bridge.ps1'));
   const checks = [
-    { id:'version', label:'Stable version', ok:app.getVersion()==='2.5.1', detail:`Runtime version ${app.getVersion()}` },
+    { id:'version', label:'Stable version', ok:app.getVersion()==='2.5.2', detail:`Runtime version ${app.getVersion()}` },
     { id:'renderer', label:'Renderer bridge', ok:Boolean(rendererReadyAt && mainWindow && !mainWindow.isDestroyed()), detail:rendererReadyAt ? 'UI-ready handshake received.' : 'Waiting for renderer ready signal.' },
     { id:'userdata', label:'Local data directory', ok:writable, detail:writable ? 'PowerTools local data directory is writable.' : 'PowerTools local data directory is not writable.' },
     { id:'runtime', label:'Core runtime files', ok:runtimeFiles.every(fs.existsSync), detail:runtimeFiles.every(fs.existsSync) ? 'HTML, preload, renderer, and styles are present.' : 'One or more required UI runtime files are missing.' },
